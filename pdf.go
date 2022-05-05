@@ -40,7 +40,8 @@ func buildPdf(db *sql.DB) (filename string) {
     m.Row(10, func() {
       m.ColSpace(1)
       m.Col(5, func() {
-        m.Text(article.Id, props.Text{
+        id := fmt.Sprintf("%v", article.Id)
+        m.Text(id, props.Text{
           Size: 10,
           Top: 3,
         })
