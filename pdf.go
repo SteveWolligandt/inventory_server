@@ -10,7 +10,7 @@ import (
 )
 //------------------------------------------------------------------------------
 func buildPdf(db *sql.DB) (filename string) {
-  m := pdf.NewMaroto(consts.Portrait, consts.Letter)
+  m := pdf.NewMaroto(consts.Portrait, consts.A4)
   //m.SetBorder(true)
 
   m.Row(40, func() {
@@ -23,38 +23,55 @@ func buildPdf(db *sql.DB) (filename string) {
   })
 
 
-  rows, err := db.Query("SELECT * FROM articles")
+  companyRows, err := db.Query("SELECT * FROM companies")
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
-
-  m.Line(1)
-  for rows.Next() {
-    var article Article
+  for companyRows.Next() {
+    m.Row(20, func(){})
+    //m.AddPage()
+    var company Company
     // for each row, scan the result into our tag composite object
-    err = rows.Scan(&article.Id, &article.Name)
-    if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-    }
-
-    m.Row(10, func() {
-      m.ColSpace(1)
-      m.Col(5, func() {
-        id := fmt.Sprintf("%v", article.Id)
-        m.Text(id, props.Text{
-          Size: 10,
-          Top: 3,
-        })
-      })
-      m.Col(6, func() {
-        m.Text(article.Name, props.Text{
-          Size: 15,
-          Top: 1,
-        })
+    err = companyRows.Scan(&company.Id, &company.Name)
+    m.Row(20, func() {
+      m.Text(company.Name, props.Text{
+        Size: 30,
       })
     })
     m.Line(1)
+    q := fmt.Sprintf("SELECT id, name FROM articles WHERE companyId = %v",
+                     company.Id)
+    articleRows, err := db.Query(q)
+    if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+    }
+    for articleRows.Next() {
+      var article Article
+      // for each row, scan the result into our tag composite object
+      if err = articleRows.Scan(&article.Id, &article.Name); err != nil {
+        panic(err.Error()) // proper error handling instead of panic in your app
+      }
+
+      m.Row(10, func() {
+        m.ColSpace(1)
+        m.Col(5, func() {
+          id := fmt.Sprintf("%v", article.Id)
+          m.Text(id, props.Text{
+            Size: 10,
+            Top: 3,
+          })
+        })
+        m.Col(6, func() {
+          m.Text(article.Name, props.Text{
+            Size: 15,
+            Top: 1,
+          })
+        })
+      })
+      m.Line(1)
+    }
   }
+
 
   m.SetBorder(false)
 
