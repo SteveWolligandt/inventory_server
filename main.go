@@ -54,6 +54,16 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 }
 //------------------------------------------------------------------------------
+func sendPdf(w http.ResponseWriter, r *http.Request) {
+  filename := buildPdf(db)
+  fileBytes, err := ioutil.ReadFile(filename)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  w.Write(fileBytes)
+  w.Header().Set("Content-Type", "application/pdf")
+}
+//------------------------------------------------------------------------------
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllArticles")
   // Execute the query
@@ -134,6 +144,7 @@ func deleteArticle(w http.ResponseWriter, r *http.Request) {
 func handleRequests() {
   router := mux.NewRouter().StrictSlash(true)
   router.HandleFunc("/", homePage)
+  router.HandleFunc("/pdf", sendPdf)
   router.HandleFunc("/articles", returnAllArticles)
   router.HandleFunc("/article", createNewArticle).Methods("POST")
   router.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
