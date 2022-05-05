@@ -7,6 +7,7 @@ import (
   "io/ioutil"
   "net/http"
   "database/sql"
+  "html/template"
 
   _ "github.com/go-sql-driver/mysql"
   "github.com/gorilla/mux"
@@ -35,37 +36,11 @@ type ArticleWithCompany struct {
 }
 //------------------------------------------------------------------------------
 func homePage(w http.ResponseWriter, r *http.Request) {
-  fmt.Fprintf(w, "<html><body>")
-  fmt.Fprintf(w, "<table><tr><th>Id</th><th>Name</th></tr>")
-
-
-  rows, err := db.Query("SELECT id, name FROM articles")
+  t, err := template.ParseFiles("public/index.html")
   if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
+    fmt.Println(err)
   }
-
-  for rows.Next() {
-    var article Article
-    // for each row, scan the result into our tag composite object
-    err = rows.Scan(&article.Id, &article.Name)
-    if err != nil {
-        panic(err.Error()) // proper error handling instead of panic in your app
-    }
-            // and then print out the tag's Name attribute
-    fmt.Fprintf(w, "<tr>")
-    fmt.Fprintf(w, "<td>")
-    fmt.Fprintf(w, "%v", article.Id)
-    fmt.Fprintf(w, "</td>")
-    fmt.Fprintf(w, "<td>")
-    fmt.Fprintf(w, article.Name)
-    fmt.Fprintf(w, "</td>")
-    fmt.Fprintf(w, "</tr>")
-  }
-
-  fmt.Fprintf(w, "</table>")
-  fmt.Fprintf(w, "</body></html>")
-  fmt.Println("Endpoint Hit: homePage")
-
+  t.Execute(w, nil)
 }
 //------------------------------------------------------------------------------
 func sendPdf(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +203,7 @@ func deleteArticle(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func handleRequests() {
   router := mux.NewRouter().StrictSlash(true)
-  router.HandleFunc("/", homePage)
+  router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public")))
   router.HandleFunc("/pdf", sendPdf)
   router.HandleFunc("/rest/companies", returnAllCompanies)
   router.HandleFunc("/rest/articles", returnAllArticles)
@@ -237,7 +212,7 @@ func handleRequests() {
   router.HandleFunc("/rest/company/{id}/articles", returnArticlesOfCompany)
   router.HandleFunc("/rest/article/{id}", deleteArticle).Methods("DELETE")
   router.HandleFunc("/rest/article/{id}", returnSingleArticle)
-  log.Fatal(http.ListenAndServe(":3000", router))
+  log.Fatal(http.ListenAndServe(":8080", router))
 }
 //------------------------------------------------------------------------------
 func main() {
