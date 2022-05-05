@@ -25,7 +25,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "<table><tr><th>Id</th><th>Name</th></tr>")
 
 
-  rows, err := db.Query("SELECT * FROM Articles")
+  rows, err := db.Query("SELECT * FROM articles")
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
@@ -57,12 +57,12 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 func returnAllArticles(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllArticles")
   // Execute the query
-  rows, err := db.Query("SELECT * FROM Articles")
+  rows, err := db.Query("SELECT * FROM articles")
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
 
-  var articles []Article
+  var articles [] Article
   for rows.Next() {
     var article Article
     // for each row, scan the result into our tag composite object
@@ -80,7 +80,7 @@ func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   key := vars["id"]
 
-  q := fmt.Sprintf("SELECT * FROM Articles WHERE id = %v", key)
+  q := fmt.Sprintf("SELECT * FROM articles WHERE id = %v", key)
   fmt.Println(q)
 
   rows, err := db.Query(q)
@@ -109,23 +109,12 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
   // update our global Articles array to include
   // our new Article
 
-  q := fmt.Sprintf("INSERT INTO Articles (Name) VALUES ('%v')", article.Name)
+  q := fmt.Sprintf("INSERT INTO articles (Name) VALUES ('%v')", article.Name)
   fmt.Println(q)
 
-  rows, err := db.Query(q)
+  _, err := db.Query(q)
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
-  }
-
-  for rows.Next() {
-    var article Article
-    // for each row, scan the result into our tag composite object
-    err = rows.Scan(&article.Id, &article.Name)
-    if err != nil {
-        panic(err.Error()) // proper error handling instead of panic in your app
-    }
-            // and then print out the tag's Name attribute
-    json.NewEncoder(w).Encode(article)
   }
 }
 //------------------------------------------------------------------------------
@@ -133,7 +122,7 @@ func deleteArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   id := vars["id"]
 
-  q := fmt.Sprintf("DELETE FROM Articles WHERE id =%v", id)
+  q := fmt.Sprintf("DELETE FROM articles WHERE id =%v", id)
   fmt.Println(q)
 
   _, err := db.Query(q)
@@ -143,18 +132,18 @@ func deleteArticle(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func handleRequests() {
-  myRouter := mux.NewRouter().StrictSlash(true)
-  myRouter.HandleFunc("/", homePage)
-  myRouter.HandleFunc("/articles", returnAllArticles)
-  myRouter.HandleFunc("/article", createNewArticle).Methods("POST")
-  myRouter.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
-  myRouter.HandleFunc("/article/{id}", returnSingleArticle)
-  log.Fatal(http.ListenAndServe(":10000", myRouter))
+  router := mux.NewRouter().StrictSlash(true)
+  router.HandleFunc("/", homePage)
+  router.HandleFunc("/articles", returnAllArticles)
+  router.HandleFunc("/article", createNewArticle).Methods("POST")
+  router.HandleFunc("/article/{id}", deleteArticle).Methods("DELETE")
+  router.HandleFunc("/article/{id}", returnSingleArticle)
+  log.Fatal(http.ListenAndServe(":3000", router))
 }
 //------------------------------------------------------------------------------
 func main() {
   var err error
-  db, err = sql.Open("mysql", "inventory:@tcp(127.0.0.1:3306)/Inventory")
+  db, err = sql.Open("mysql", "inventory:@tcp(127.0.0.1:3306)/inventory")
   // if there is an error opening the connection, handle it
   if err != nil {
       panic(err.Error())
