@@ -13,12 +13,17 @@ func buildPdf(db *sql.DB) (filename string) {
   m := pdf.NewMaroto(consts.Portrait, consts.A4)
   //m.SetBorder(true)
 
-  m.Row(40, func() {
-    m.Col(4, func() {
-      _ = m.FileImage("logo.jpg", props.Rect{
-              Center:  true,
-              Percent: 100,
-      })
+  m.Row(60, func() {
+    _ = m.FileImage("logo.jpg", props.Rect{
+            Center:  false,
+            Left:100,
+            Percent: 50,
+    })
+  })
+
+  m.Row(30, func() {
+    m.Text("Inventur", props.Text{
+      Size: 30,
     })
   })
 
@@ -33,9 +38,9 @@ func buildPdf(db *sql.DB) (filename string) {
     var company Company
     // for each row, scan the result into our tag composite object
     err = companyRows.Scan(&company.Id, &company.Name)
-    m.Row(20, func() {
+    m.Row(10, func() {
       m.Text(company.Name, props.Text{
-        Size: 30,
+        Size: 20,
       })
     })
     m.Line(1)
