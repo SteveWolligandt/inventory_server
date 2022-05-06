@@ -10,6 +10,8 @@ import (
   "html/template"
 
   _ "github.com/go-sql-driver/mysql"
+  
+  "github.com/gorilla/handlers"
   "github.com/gorilla/mux"
 )
 
@@ -203,16 +205,26 @@ func deleteArticle(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func handleRequests() {
   router := mux.NewRouter().StrictSlash(true)
-  router.PathPrefix("/").Handler(http.FileServer(http.Dir("./public")))
+  router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+    http.ServeFile(w, r, "./frontend/build/index.html")
+  })
+
+  router.PathPrefix("/static").Handler(
+    http.StripPrefix(
+      "/static",
+      http.FileServer(
+        http.Dir("frontend/build/static"))))
   router.HandleFunc("/pdf", sendPdf)
-  router.HandleFunc("/rest/companies", returnAllCompanies)
-  router.HandleFunc("/rest/articles", returnAllArticles)
-  router.HandleFunc("/rest/article", createNewArticle).Methods("POST")
-  router.HandleFunc("/rest/company", createNewCompany).Methods("POST")
-  router.HandleFunc("/rest/company/{id}/articles", returnArticlesOfCompany)
-  router.HandleFunc("/rest/article/{id}", deleteArticle).Methods("DELETE")
-  router.HandleFunc("/rest/article/{id}", returnSingleArticle)
-  log.Fatal(http.ListenAndServe(":8080", router))
+  router.HandleFunc("/api/companies", returnAllCompanies).Methods("GET", "OPTIONS")
+  router.HandleFunc("/api/articles", returnAllArticles).Methods("GET", "OPTIONS")
+  router.HandleFunc("/api/article", createNewArticle).Methods("POST")
+  router.HandleFunc("/api/company", createNewCompany).Methods("POST")
+  router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany)
+  router.HandleFunc("/api/article/{id}", deleteArticle).Methods("DELETE")
+  router.HandleFunc("/api/article/{id}", returnSingleArticle)
+
+  headersOk := handlers.AllowedHeaders([]string{"*"})
+  log.Fatal(http.ListenAndServe(":8080", handlers.CORS(headersOk)(router)))
 }
 //------------------------------------------------------------------------------
 func main() {
