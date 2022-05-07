@@ -18,16 +18,17 @@ import (
 var db *sql.DB // Database connection pool.
 
 //------------------------------------------------------------------------------
-// Company - Our struct for all articles
-type Company struct {
-  Id   int `json:"id"`
-  Name string `json:"name"`
-}
-//------------------------------------------------------------------------------
 // Article - Our struct for all articles
 type Article struct {
   Id   int `json:"id"`
   Name string `json:"name"`
+}
+//------------------------------------------------------------------------------
+// Company - Our struct for all articles
+type Company struct {
+  Id   int `json:"id"`
+  Name string `json:"name"`
+  Articles [] Article `json:"articles"`
 }
 //------------------------------------------------------------------------------
 // Article - Our struct for all articles
@@ -76,6 +77,40 @@ func returnAllArticles(w http.ResponseWriter, r *http.Request) {
   json.NewEncoder(w).Encode(articles)
 }
 //------------------------------------------------------------------------------
+func returnAllCompaniesWithAllArticles(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Endpoint Hit: returnAllCompaniesWithAllArticles")
+  // Execute the query
+  companyRows, companyErr := db.Query("SELECT id, name FROM companies")
+  if companyErr != nil {
+    panic(companyErr.Error()) // proper error handling instead of panic in your app
+  }
+
+  var companies [] Company
+  for companyRows.Next() {
+    var company Company
+    // for each row, scan the result into our tag composite object
+    if err := companyRows.Scan(&company.Id, &company.Name); err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+    }
+    articleQuery := fmt.Sprintf("SELECT id, name FROM articles WHERE articles.companyId = %v", company.Id)
+    fmt.Println(articleQuery)
+    articleRows, articleErr := db.Query(articleQuery)
+    if articleErr != nil {
+      panic(articleErr.Error()) // proper error handling instead of panic in your app
+    }
+    for articleRows.Next() {
+      var article Article
+      // for each row, scan the result into our tag composite object
+      if err := articleRows.Scan(&article.Id, &article.Name); err != nil {
+        panic(err.Error()) // proper error handling instead of panic in your app
+      }
+      company.Articles = append(company.Articles, article)
+    }
+    companies = append(companies, company)
+  }
+  json.NewEncoder(w).Encode(companies)
+}
+//------------------------------------------------------------------------------
 func returnAllCompanies(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllCompanies")
   // Execute the query
@@ -120,6 +155,29 @@ func returnArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
     articles = append(articles, article)
   }
     json.NewEncoder(w).Encode(articles)
+}
+//------------------------------------------------------------------------------
+func returnSingleCompany(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  key := vars["id"]
+
+  q := fmt.Sprintf("SELECT id, name FROM companies WHERE id = %v", key)
+  fmt.Println(q)
+
+  rows, err := db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  for rows.Next() {
+    var company Company
+    // for each row, scan the result into our tag composite object
+    err = rows.Scan(&company.Id, &company.Name)
+    if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+    }
+            // and then print out the tag's Name attribute
+    json.NewEncoder(w).Encode(company)
+  }
 }
 //------------------------------------------------------------------------------
 func returnSingleArticle(w http.ResponseWriter, r *http.Request) {
@@ -190,6 +248,23 @@ func createNewCompany(w http.ResponseWriter, r *http.Request) {
   }
 }
 //------------------------------------------------------------------------------
+func updateCompany(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  id := vars["id"]
+
+  reqBody, _ := ioutil.ReadAll(r.Body)
+  var company Company 
+  json.Unmarshal(reqBody, &company)
+
+  q := fmt.Sprintf("UPDATE companies SET name = '%v' WHERE id = %v", company.Name, id)
+  fmt.Println(q)
+
+  _, err := db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+}
+//------------------------------------------------------------------------------
 func deleteArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   id := vars["id"]
@@ -215,11 +290,14 @@ func handleRequests() {
       http.FileServer(
         http.Dir("frontend/build/static"))))
   router.HandleFunc("/pdf", sendPdf)
+  router.HandleFunc("/api/companiesWithArticles", returnAllCompaniesWithAllArticles).Methods("GET", "OPTIONS")
   router.HandleFunc("/api/companies", returnAllCompanies).Methods("GET", "OPTIONS")
   router.HandleFunc("/api/articles", returnAllArticles).Methods("GET", "OPTIONS")
   router.HandleFunc("/api/article", createNewArticle).Methods("POST")
   router.HandleFunc("/api/company", createNewCompany).Methods("POST")
   router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany)
+  router.HandleFunc("/api/company/{id}", returnSingleCompany)
+  router.HandleFunc("/api/company/{id}", updateCompany).Methods("PUT")
   router.HandleFunc("/api/article/{id}", deleteArticle).Methods("DELETE")
   router.HandleFunc("/api/article/{id}", returnSingleArticle)
 

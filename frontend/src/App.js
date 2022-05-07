@@ -1,42 +1,37 @@
+import React, { useState, useEffect } from 'react';
 import BasicTable from './BasicTable.js';
+import CollapsibleTable from './CombinedTable.js';
 
 import {Component} from 'react';
 import './App.css';
 
-const api = 'http://localhost:8080/api';
+const api = 'api';
 const companiesEndPoint = '/companies';
-class App extends Component {
-  constructor(props) {
-    super(props);
+function App() {
+  var [isLoading, setIsLoading] = React.useState(true);
+  var [companies, setCompanies] = React.useState([]);
 
-    this.state = {
-      companies:null,
-      isLoading:true,
-    };
-  }
-
-  componentDidMount() {
-    var cs = [];
-    fetch(api + companiesEndPoint)
-      .then(response => response.json())
-      .then(companiesJson => {
-          console.log(companiesJson);
-          for (var company in companiesJson) {
-            if (companiesJson.hasOwnProperty(company)) {
-              cs.push({id:companiesJson[company].id, name:companiesJson[company].name});
-            }
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await fetch(api + companiesEndPoint);
+        const companiesJson = await response.json();
+        var cs = [];
+        console.log(companiesJson);
+        for (var company in companiesJson) {
+          if (companiesJson.hasOwnProperty(company)) {
+            cs.push({id:companiesJson[company].id, name:companiesJson[company].name});
           }
-          this.setState({companies:cs, isLoading:false});
         }
-      );
-  }
-
-  render() {
-    const {companies, isLoading} = this.state;
-    if (isLoading) {
-      return <p>Loading ...</p>;
+        setIsLoading(false);
+        setCompanies(cs);
+      } catch (error) {
+          console.error(error);
+      }
     }
-    return BasicTable(companies);
-  }
+    loadData();
+  }, []);
+
+  return BasicTable(companies);
 }
 export default App;
