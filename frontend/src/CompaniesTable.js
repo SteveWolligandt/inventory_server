@@ -6,6 +6,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 import React, { useState, useEffect } from 'react';
 
@@ -19,6 +20,34 @@ function computeMutation(newRow, oldRow) {
 export default function CompaniesTable(params) {
   var [isLoading, setIsLoading] = React.useState(true);
   var [companies, setCompanies] = React.useState([]);
+  const [messageHistory, setMessageHistory] = useState([]);
+  var loc = window.location, new_uri;
+  if (loc.protocol === 'https:') {
+    new_uri = 'wss';
+  } else {
+    new_uri = 'ws';
+  }
+  new_uri += '://';
+  console.log(loc.host)
+  if (loc.host === 'localhost:3000'){
+    new_uri += 'localhost:8080';
+  } else {
+    new_uri += loc.host;
+  }
+    new_uri += loc.pathname + 'ws';
+
+  const websocketAddr = new_uri;
+  const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
+
+  useEffect(() => {
+    if (lastMessage !== null) {
+      let data = JSON.parse(lastMessage.data);
+      console.log(data);
+      if (data.action === 'newCompany') {
+        setCompanies(companies => companies.concat(data.data));
+      }
+    }
+  }, [lastMessage, setCompanies]);
 
   useEffect(() => {
     async function loadData() {
