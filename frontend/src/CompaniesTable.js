@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import Snackbar from '@mui/material/Snackbar';
 import Dialog from '@mui/material/Dialog';
@@ -8,6 +7,8 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 
+import React, { useState, useEffect } from 'react';
+
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
     return `Name from '${oldRow.name}' to '${newRow.name}'`;
@@ -15,7 +16,30 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function CompaniesTable(companies) {
+export default function CompaniesTable() {
+  var [isLoading, setIsLoading] = React.useState(true);
+  var [companies, setCompanies] = React.useState([]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await fetch('/api/companies');
+        const companiesJson = await response.json();
+        var cs = [];
+        for (var company in companiesJson) {
+          if (companiesJson.hasOwnProperty(company)) {
+            cs.push({id:companiesJson[company].id, name:companiesJson[company].name});
+          }
+        }
+        setIsLoading(false);
+        setCompanies(cs);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    loadData();
+  }, []);
+
   const mutateRow = React.useCallback(
     (company) =>
       new Promise((resolve, reject) =>

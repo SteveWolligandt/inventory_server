@@ -11,7 +11,6 @@ import (
 
   _ "github.com/go-sql-driver/mysql"
   
-  "github.com/gorilla/handlers"
   "github.com/gorilla/mux"
 )
 
@@ -286,25 +285,36 @@ func handleRequests() {
     http.ServeFile(w, r, "./frontend/build/index.html")
   })
 
-  router.PathPrefix("/static").Handler(
-    http.StripPrefix(
-      "/static",
-      http.FileServer(
-        http.Dir("frontend/build/static"))))
-  router.HandleFunc("/pdf", sendPdf)
-  router.HandleFunc("/api/companiesWithArticles", returnAllCompaniesWithAllArticles).Methods("GET", "OPTIONS")
-  router.HandleFunc("/api/companies", returnAllCompanies).Methods("GET", "OPTIONS")
-  router.HandleFunc("/api/articles", returnAllArticles).Methods("GET", "OPTIONS")
-  router.HandleFunc("/api/article", createNewArticle).Methods("POST")
-  router.HandleFunc("/api/company", createNewCompany).Methods("POST", "OPTIONS")
-  router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany)
-  router.HandleFunc("/api/company/{id}", returnSingleCompany)
-  router.HandleFunc("/api/company/{id}", updateCompany).Methods("PUT")
-  router.HandleFunc("/api/article/{id}", deleteArticle).Methods("DELETE")
-  router.HandleFunc("/api/article/{id}", returnSingleArticle)
+  //router.PathPrefix("/static").Handler(
+  //  http.StripPrefix(
+  //    "/static",
+  //    http.FileServer(
+  //      http.Dir("frontend/build/static"))))
+  //router.HandleFunc("/pdf", sendPdf).
+  //  Methods("GET")
+  //router.HandleFunc("/api/articles", returnAllArticles).
+  //  Methods("GET")
+  //router.HandleFunc("/api/article", createNewArticle).
+  //  Methods("POST")
 
-  headersOk := handlers.AllowedHeaders([]string{"*"})
-  log.Fatal(http.ListenAndServe(":8080", handlers.CORS(headersOk)(router)))
+  router.HandleFunc("/api/companies", returnAllCompanies).
+    Methods("GET")
+  //router.HandleFunc("/api/companiesWithArticles", returnAllCompaniesWithAllArticles).
+  //  Methods("GET")
+  router.HandleFunc("/api/company", createNewCompany).
+    Methods("POST")
+  //router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany).
+  //  Methods("GET")
+  //router.HandleFunc("/api/company/{id}", returnSingleCompany).
+  //  Methods("GET")
+  //router.HandleFunc("/api/company/{id}", updateCompany).
+  //  Methods("PUT")
+  //router.HandleFunc("/api/article/{id}", deleteArticle).
+  //  Methods("DELETE")
+  //router.HandleFunc("/api/article/{id}", returnSingleArticle).
+  //  Methods("GET")
+
+  log.Fatal(http.ListenAndServe(":8080", router))
 }
 //------------------------------------------------------------------------------
 func main() {
