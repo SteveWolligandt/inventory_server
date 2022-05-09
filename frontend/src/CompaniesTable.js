@@ -6,7 +6,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import useWebSocket from 'react-use-websocket';
 
 import React, { useState, useEffect } from 'react';
 
@@ -28,23 +28,25 @@ export default function CompaniesTable(params) {
     new_uri = 'ws';
   }
   new_uri += '://';
-  console.log(loc.host)
-  if (loc.host === 'localhost:3000'){
-    new_uri += 'localhost:8080';
-  } else {
-    new_uri += loc.host;
-  }
-    new_uri += loc.pathname + 'ws';
+  if (loc.host === 'localhost:3000') { new_uri += 'localhost:8080'; }
+  else { new_uri += loc.host; }
+  new_uri += loc.pathname + 'ws';
 
   const websocketAddr = new_uri;
   const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
 
   useEffect(() => {
     if (lastMessage !== null) {
-      let data = JSON.parse(lastMessage.data);
-      console.log(data);
-      if (data.action === 'newCompany') {
-        setCompanies(companies => companies.concat(data.data));
+      let msg = JSON.parse(lastMessage.data);
+      let action = msg.action;
+      if (action === 'newCompany') {
+        let newCompany = msg.data;
+        setCompanies(companies => companies.concat(newCompany));
+      } else if (action === 'updateCompany') {
+        let updatedCompany = msg.data;
+        setCompanies(companies => companies.map((company, j) => {
+          return updatedCompany.id === company.id ? updatedCompany : company;
+        }));
       }
     }
   }, [lastMessage, setCompanies]);
@@ -168,7 +170,7 @@ export default function CompaniesTable(params) {
   };
 
   if (params.open) {
-    const style = {height: 1000, width: '100%'};
+    const style = {height: 500, width: '100%'};
     return (
       <div style={style}>
         {renderConfirmDialog()}

@@ -6,6 +6,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Grid from '@mui/material/Grid';
+import Fab from '@mui/material/Fab';
+import AddIcon from '@mui/icons-material/Add';
 
 export default function CreateCompanyDialog() {
   const [open, setOpen] = React.useState(false);
@@ -32,13 +34,16 @@ export default function CreateCompanyDialog() {
     });
   };
 
+  const style = {
+    margin: 0,
+    top: 'auto',
+    right: 20,
+    bottom: 20,
+    left: 'auto',
+    position: 'fixed',
+  };
   return (
     <div>
-      <Grid container justifyContent="flex-end">
-        <Button variant="contained" onClick={handleClickOpen}>
-          Neue Firma
-        </Button>
-      </Grid>
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Neue Firma</DialogTitle>
         <DialogContent>
@@ -57,6 +62,9 @@ export default function CreateCompanyDialog() {
           <Button onClick={handleCreate}>Erstellen</Button>
         </DialogActions>
       </Dialog>
+      <Fab color="primary" aria-label="add" style={style} onClick={handleClickOpen}>
+        <AddIcon />
+      </Fab>
     </div>
   );
 }

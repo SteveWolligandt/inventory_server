@@ -18,7 +18,7 @@ function App() {
   return (
     <>
     <TopBar name='Firmen'/>
-    <div style={spaceStyle}></div>
+    <div style={{marginBottom: '100px'}}></div>
     <div style={outerStyle}>
     <CompaniesTable open={showCompaniesTable}/>
     <div style={spaceStyle}></div>
