@@ -237,7 +237,7 @@ func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
-  action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":{id:\"%v\", \"name\":\"%v\"}}", id, company.Name)
+  action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":{\"id\":%v, \"name\":\"%v\"}}", id, company.Name)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
