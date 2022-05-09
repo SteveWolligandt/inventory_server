@@ -285,34 +285,34 @@ func handleRequests() {
     http.ServeFile(w, r, "./frontend/build/index.html")
   })
 
-  //router.PathPrefix("/static").Handler(
-  //  http.StripPrefix(
-  //    "/static",
-  //    http.FileServer(
-  //      http.Dir("frontend/build/static"))))
-  //router.HandleFunc("/pdf", sendPdf).
-  //  Methods("GET")
-  //router.HandleFunc("/api/articles", returnAllArticles).
-  //  Methods("GET")
-  //router.HandleFunc("/api/article", createNewArticle).
-  //  Methods("POST")
+  router.PathPrefix("/static").Handler(
+    http.StripPrefix(
+      "/static",
+      http.FileServer(
+        http.Dir("frontend/build/static"))))
+  router.HandleFunc("/pdf", sendPdf).
+    Methods("GET")
+  router.HandleFunc("/api/articles", returnAllArticles).
+    Methods("GET")
+  router.HandleFunc("/api/article", createNewArticle).
+    Methods("POST")
 
   router.HandleFunc("/api/companies", returnAllCompanies).
     Methods("GET")
-  //router.HandleFunc("/api/companiesWithArticles", returnAllCompaniesWithAllArticles).
-  //  Methods("GET")
+  router.HandleFunc("/api/companiesWithArticles", returnAllCompaniesWithAllArticles).
+    Methods("GET")
   router.HandleFunc("/api/company", createNewCompany).
     Methods("POST")
-  //router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany).
-  //  Methods("GET")
-  //router.HandleFunc("/api/company/{id}", returnSingleCompany).
-  //  Methods("GET")
-  //router.HandleFunc("/api/company/{id}", updateCompany).
-  //  Methods("PUT")
-  //router.HandleFunc("/api/article/{id}", deleteArticle).
-  //  Methods("DELETE")
-  //router.HandleFunc("/api/article/{id}", returnSingleArticle).
-  //  Methods("GET")
+  router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany).
+    Methods("GET")
+  router.HandleFunc("/api/company/{id}", returnSingleCompany).
+    Methods("GET")
+  router.HandleFunc("/api/company/{id}", updateCompany).
+    Methods("PUT")
+  router.HandleFunc("/api/article/{id}", deleteArticle).
+    Methods("DELETE")
+  router.HandleFunc("/api/article/{id}", returnSingleArticle).
+    Methods("GET")
 
   log.Fatal(http.ListenAndServe(":8080", router))
 }
