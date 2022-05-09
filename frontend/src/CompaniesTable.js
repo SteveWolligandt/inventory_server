@@ -8,34 +8,27 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 
-const useFakeMutation = () => {
-  return React.useCallback(
-    (user) =>
+function computeMutation(newRow, oldRow) {
+  if (newRow.name !== oldRow.name) {
+    return `Name from '${oldRow.name}' to '${newRow.name}'`;
+  }
+  return null;
+}
+
+export default function CompaniesTable(companies) {
+  const mutateRow = React.useCallback(
+    (company) =>
       new Promise((resolve, reject) =>
         setTimeout(() => {
-          if (user.name?.trim() === '') {
+          if (company.name?.trim() === '') {
             reject();
           } else {
-            resolve(user);
+            resolve(company);
           }
         }, 200),
       ),
     [],
   );
-};
-
-function computeMutation(newRow, oldRow) {
-  if (newRow.name !== oldRow.name) {
-    return `Name from '${oldRow.name}' to '${newRow.name}'`;
-  }
-  if (newRow.age !== oldRow.age) {
-    return `Age from '${oldRow.age || ''}' to '${newRow.age || ''}'`;
-  }
-  return null;
-}
-
-export default function BasicTable(companies) {
-  const mutateRow = useFakeMutation();
   const noButtonRef = React.useRef(null);
   const [promiseArguments, setPromiseArguments] = React.useState(null);
 

@@ -230,6 +230,7 @@ func createNewArticle(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func createNewCompany(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Endpoint Hit: createNewCompany")
   // get the body of our POST request
   // unmarshal this into a new Company struct
   // append this to our Articles array.    
@@ -249,6 +250,7 @@ func createNewCompany(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func updateCompany(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Endpoint Hit: updateCompany")
   vars := mux.Vars(r)
   id := vars["id"]
 
@@ -294,7 +296,7 @@ func handleRequests() {
   router.HandleFunc("/api/companies", returnAllCompanies).Methods("GET", "OPTIONS")
   router.HandleFunc("/api/articles", returnAllArticles).Methods("GET", "OPTIONS")
   router.HandleFunc("/api/article", createNewArticle).Methods("POST")
-  router.HandleFunc("/api/company", createNewCompany).Methods("POST")
+  router.HandleFunc("/api/company", createNewCompany).Methods("POST", "OPTIONS")
   router.HandleFunc("/api/company/{id}/articles", returnArticlesOfCompany)
   router.HandleFunc("/api/company/{id}", returnSingleCompany)
   router.HandleFunc("/api/company/{id}", updateCompany).Methods("PUT")

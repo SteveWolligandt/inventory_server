@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import BasicTable from './BasicTable.js';
-import CollapsibleTable from './CombinedTable.js';
+import CompaniesTable from './CompaniesTable.js';
+import CreateCompanyDialog from './CreateCompanyDialog.js';
 
 import {Component} from 'react';
 import './App.css';
 
-const api = 'api';
+const api = '/api';
 const companiesEndPoint = '/companies';
 function App() {
   var [isLoading, setIsLoading] = React.useState(true);
@@ -14,7 +14,9 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch(api + companiesEndPoint);
+        const response = await fetch(api + companiesEndPoint, {
+          mode: 'no-cors', // no-cors, *cors, same-origin
+        });
         const companiesJson = await response.json();
         var cs = [];
         console.log(companiesJson);
@@ -26,12 +28,21 @@ function App() {
         setIsLoading(false);
         setCompanies(cs);
       } catch (error) {
-          console.error(error);
+        console.error(error);
       }
     }
     loadData();
   }, []);
 
-  return BasicTable(companies);
+  const divStyle = {
+    margin: '0 auto',
+    'max-width': '500px',
+  };
+  return (<>
+    <div style={divStyle}>
+    {CompaniesTable(companies)}
+    <CreateCompanyDialog />
+    </div>
+    </>);
 }
 export default App;
