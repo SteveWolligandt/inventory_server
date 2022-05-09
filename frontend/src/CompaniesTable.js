@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
-    return `Name from '${oldRow.name}' to '${newRow.name}'`;
+    return (<>Von <i>{oldRow.name}</i> zu <i>{newRow.name}</i> ändern?</>);
   }
   return null;
 }
@@ -124,7 +124,7 @@ export default function CompaniesTable(params) {
       });
 
       const response = await mutateRow(newRow);
-      setSnackbar({ children: 'User successfully saved', severity: 'success' });
+      setSnackbar({ children: 'Firma in Datenbank geändert', severity: 'success' });
       resolve(response);
       setPromiseArguments(null);
     } catch (error) {
@@ -155,15 +155,15 @@ export default function CompaniesTable(params) {
         TransitionProps={{ onEntered: handleEntered }}
         open={!!promiseArguments}
       >
-        <DialogTitle>Are you sure?</DialogTitle>
+        <DialogTitle>Firma wirklich ändern?</DialogTitle>
         <DialogContent dividers>
-          {`Pressing 'Yes' will change ${mutation}.`}
+          {mutation}
         </DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleNo}>
-            No
+            Nein
           </Button>
-          <Button onClick={handleYes}>Yes</Button>
+          <Button onClick={handleYes}>Ja</Button>
         </DialogActions>
       </Dialog>
     );
