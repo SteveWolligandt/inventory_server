@@ -16,7 +16,7 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function CompaniesTable() {
+export default function CompaniesTable(params) {
   var [isLoading, setIsLoading] = React.useState(true);
   var [companies, setCompanies] = React.useState([]);
 
@@ -138,25 +138,29 @@ export default function CompaniesTable() {
     );
   };
 
-  return (
-    <div style={{ height: 400, width: '100%' }}>
-      {renderConfirmDialog()}
-      <DataGrid
-        rows={companies}
-        columns={columns}
-        processRowUpdate={processRowUpdate}
-        experimentalFeatures={{ newEditingApi: true }}
-      />
-      {!!snackbar && (
-        <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
-          <Alert {...snackbar} onClose={handleCloseSnackbar} />
-        </Snackbar>
-      )}
-    </div>
-  );
+  if (params.open) {
+    const style = {height: 1000, width: '100%'};
+    return (
+      <div style={style}>
+        {renderConfirmDialog()}
+        <DataGrid
+          rows={companies}
+          columns={columns}
+          processRowUpdate={processRowUpdate}
+          experimentalFeatures={{ newEditingApi: true }}
+        />
+        {!!snackbar && (
+          <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
+            <Alert {...snackbar} onClose={handleCloseSnackbar} />
+          </Snackbar>
+        )}
+      </div>
+    );
+  } else {
+    return (<></>);
+  }
 }
 
 const columns = [
-  { field: 'id', headerName: 'Id', width: 180, editable: true },
   { field: 'name', headerName: 'Name', width: 180, editable: true },
 ];
