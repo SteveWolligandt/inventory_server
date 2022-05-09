@@ -1,4 +1,5 @@
 import CompaniesTable from './CompaniesTable.js';
+import TopBar from './TopBar.js';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import React, { useState, useEffect } from 'react';
 import {Component} from 'react';
@@ -15,11 +16,14 @@ function App() {
   };
 
   return (
+    <>
+    <TopBar />
     <div style={outerStyle}>
     <CompaniesTable open={showCompaniesTable}/>
     <div style={spaceStyle}></div>
     <CreateCompanyDialog />
     </div>
+    </>
   );
 }
 export default App;
