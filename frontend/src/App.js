@@ -17,7 +17,7 @@ function App() {
 
   return (
     <>
-    <TopBar />
+    <TopBar name='Firmen'/>
     <div style={outerStyle}>
     <CompaniesTable open={showCompaniesTable}/>
     <div style={spaceStyle}></div>

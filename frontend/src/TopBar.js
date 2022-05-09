@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 
-export default function TopBar() {
+export default function TopBar(params) {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -22,7 +22,9 @@ export default function TopBar() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Inventur
+            {params.hasOwnProperty('name')
+              ? params.name
+              : "Inventur"}
           </Typography>
           {/*
           <Button color="inherit">Login</Button>
