@@ -14,7 +14,7 @@ func buildPdf(db *sql.DB) (filename string) {
   //m.SetBorder(true)
 
   m.Row(60, func() {
-    _ = m.FileImage("logo.jpg", props.Rect{
+    _ = m.FileImage("assets/logo.jpg", props.Rect{
             Center:  false,
             Left:100,
             Percent: 50,
