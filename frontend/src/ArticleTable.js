@@ -6,12 +6,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
-import Fab from '@mui/material/Fab';
-import AddIcon from '@mui/icons-material/Add';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import useWebSocket from 'react-use-websocket';
 
 import React, { useState, useEffect } from 'react';
-import useWebSocket from 'react-use-websocket';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
@@ -20,9 +17,12 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function CompaniesTable(params) {
+export default function ArticlesTable(params) {
+  console.log('dsda');
+  var isOpen = params.open;
+  var companyId = params.companyId;
   var [isLoading, setIsLoading] = React.useState(true);
-  var [companies, setCompanies] = React.useState([]);
+  var [articles, setArticles] = React.useState([]);
   const [messageHistory, setMessageHistory] = useState([]);
   var loc = window.location, new_uri;
   if (loc.protocol === 'https:') {
@@ -42,31 +42,32 @@ export default function CompaniesTable(params) {
     if (lastMessage !== null) {
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
-      if (action === 'newCompany') {
-        let newCompany = msg.data;
-        setCompanies(companies => companies.concat(newCompany));
-      } else if (action === 'updateCompany') {
-        let updatedCompany = msg.data;
-        setCompanies(companies => companies.map((company, j) => {
-          return updatedCompany.id === company.id ? updatedCompany : company;
+      if (action === 'newArticle') {
+        let newArticle = msg.data;
+        setArticles(articles => articles.concat(newArticle));
+      } else if (action === 'updateArticle') {
+        let updatedArticle = msg.data;
+        setArticles(articles => articles.map((company, j) => {
+          return updatedArticle.id === company.id ? updatedArticle : company;
         }));
       }
     }
-  }, [lastMessage, setCompanies]);
+  }, [lastMessage, setArticles]);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const response = await fetch('/api/companies');
-        const companiesJson = await response.json();
+        const response = await fetch('/api/company/'+companyId+'/articles');
+        console.log(response);
+        const articlesJson = await response.json();
         var cs = [];
-        for (var company in companiesJson) {
-          if (companiesJson.hasOwnProperty(company)) {
-            cs.push({id:companiesJson[company].id, name:companiesJson[company].name});
+        for (var company in articlesJson) {
+          if (articlesJson.hasOwnProperty(company)) {
+            cs.push({id:articlesJson[company].id, name:articlesJson[company].name});
           }
         }
         setIsLoading(false);
-        setCompanies(cs);
+        setArticles(cs);
       } catch (error) {
         console.error(error);
       }
@@ -127,7 +128,7 @@ export default function CompaniesTable(params) {
       });
 
       const response = await mutateRow(newRow);
-      setSnackbar({ children: 'Firma in Datenbank geändert', severity: 'success' });
+      setSnackbar({ children: 'Artikel in Datenbank geändert', severity: 'success' });
       resolve(response);
       setPromiseArguments(null);
     } catch (error) {
@@ -158,7 +159,7 @@ export default function CompaniesTable(params) {
         TransitionProps={{ onEntered: handleEntered }}
         open={!!promiseArguments}
       >
-        <DialogTitle>Firma wirklich ändern?</DialogTitle>
+        <DialogTitle>Artikel wirklich ändern?</DialogTitle>
         <DialogContent dividers>
           {mutation}
         </DialogContent>
@@ -172,14 +173,14 @@ export default function CompaniesTable(params) {
     );
   };
 
-  if (params.open) {
+  if (isOpen) {
     const style = {height: 500, width: '100%'};
     return (
       <div style={style}>
         {renderConfirmDialog()}
         <DataGrid
-          rows={companies}
-          columns={columns(params.onOpenCompany)}
+          rows={articles}
+          columns={columns}
           processRowUpdate={processRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />
@@ -195,36 +196,10 @@ export default function CompaniesTable(params) {
   }
 }
 
-function columns(handleOpenCompany) {
-  return [
-    { field: 'name', headerName: 'Name', flex: 1, editable: true },
-    { field: 'action',
-      editable: false,
-      headerName: '',
-      align: 'center',
-      width: 60,
-      sortable: false,
-      renderCell: (params) => {
-        const onClick = (e) => {
-          e.stopPropagation(); // don't select this row after clicking
-
-          const api = params.api;
-          const thisRow = {};
-
-          api
-            .getAllColumns()
-            .filter((c) => c.field !== "__check__" && !!c)
-            .forEach(
-              (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-            );
-
-          return alert(JSON.stringify(thisRow, null, 4));
-        };
-
-        return <Fab size="small" aria-label="gotoCompany" onClick={handleOpenCompany}>
-                 <ArrowForwardIosIcon fontSize="small" />
-               </Fab>;
-      }
-    },
-  ];
-}
+const columns = [
+  { field: 'name', headerName: 'Name', width: 180, editable: true },
+  //{ field: 'purchasePrice', headerName: 'Einkaufspreis', width: 180, editable: true },
+  //{ field: 'sellingPercentage', headerName: '%', width: 180, editable: true },
+  //{ field: 'sellingPrice', headerName: 'Verkaufspreis', width: 180, editable: true },
+  //{ field: 'quantity', headerName: 'Anzah', width: 180, editable: true },
+];
