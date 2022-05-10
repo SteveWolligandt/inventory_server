@@ -9,18 +9,19 @@ import Grid from '@mui/material/Grid';
 import Fab from '@mui/material/Fab';
 import AddIcon from '@mui/icons-material/Add';
 
-export default function CreateCompanyDialog(params) {
+export default function CreateArticleDialog(params) {
   const [open, setOpen] = React.useState(false);
 
   const handleClickOpen = () => { setOpen(true); };
   const handleClose     = () => { setOpen(false); };
   const handleCreate    = () => {
     const data = {
-      name : document.getElementById("createCompany.name").value,
+      name : document.getElementById("createArticle.name").value,
+      companyId : params.companyId,
     };
 
     fetch(
-      '/api/company',{
+      '/api/article',{
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -29,7 +30,7 @@ export default function CreateCompanyDialog(params) {
     ).then((response) => {
       setOpen(false);
     }).catch(() => {
-      console.log('Could not create Company');
+      console.log('Could not create Article');
       setOpen(false);
     });
   };
@@ -46,12 +47,12 @@ export default function CreateCompanyDialog(params) {
     return (
       <div>
         <Dialog open={open} onClose={handleClose}>
-          <DialogTitle>Neue Firma</DialogTitle>
+          <DialogTitle>Neuer Artikel</DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
               margin="dense"
-              id="createCompany.name"
+              id="createArticle.name"
               label="Name"
               type="string"
               fullWidth
