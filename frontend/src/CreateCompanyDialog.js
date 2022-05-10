@@ -7,13 +7,14 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Grid from '@mui/material/Grid';
 import Fab from '@mui/material/Fab';
-import AddIcon from '@mui/icons-material/Add';
+import Zoom from '@mui/material/Zoom';
+import BusinessIcon from '@mui/icons-material/Business';
 
 export default function CreateCompanyDialog(params) {
-  const [open, setOpen] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
 
-  const handleClickOpen = () => { setOpen(true); };
-  const handleClose     = () => { setOpen(false); };
+  const handleClickOpen = () => { setDialogOpen(true); };
+  const handleClose     = () => { setDialogOpen(false); };
   const handleCreate    = () => {
     const data = {
       name : document.getElementById("createCompany.name").value,
@@ -27,10 +28,10 @@ export default function CreateCompanyDialog(params) {
       },
       body: JSON.stringify(data)}
     ).then((response) => {
-      setOpen(false);
+      setDialogOpen(false);
     }).catch(() => {
       console.log('Could not create Company');
-      setOpen(false);
+      setDialogOpen(false);
     });
   };
 
@@ -42,10 +43,9 @@ export default function CreateCompanyDialog(params) {
     left: 'auto',
     position: 'fixed',
   };
-  if (params.open) {
     return (
       <div>
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog open={dialogOpen} onClose={handleClose}>
           <DialogTitle>Neue Firma</DialogTitle>
           <DialogContent>
             <TextField
@@ -63,12 +63,11 @@ export default function CreateCompanyDialog(params) {
             <Button onClick={handleCreate}>Erstellen</Button>
           </DialogActions>
         </Dialog>
-        <Fab color="primary" aria-label="add" style={style} onClick={handleClickOpen}>
-          <AddIcon />
-        </Fab>
+        <Zoom in={params.open}>
+          <Fab color="primary" aria-label="add" style={style} onClick={handleClickOpen}>
+            <BusinessIcon />
+          </Fab>
+        </Zoom>
       </div>
     );
-  } else {
-    return (<></>);
-  }
 }

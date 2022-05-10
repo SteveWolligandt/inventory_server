@@ -18,7 +18,7 @@ function computeMutation(newRow, oldRow) {
 }
 
 export default function ArticlesTable(params) {
-  var companyId = params.companyId;
+  var company = params.company;
   var isOpen = params.open;
   var [isLoading, setIsLoading] = React.useState(true);
   var [articles, setArticles] = React.useState([]);
@@ -54,21 +54,23 @@ export default function ArticlesTable(params) {
   }, [lastMessage, setArticles]);
 
   useEffect(()=> {
-    fetch('/api/company/'+ companyId +'/articles')
-      .then((response)=> response.json())
-      .then((articlesJson) => {
-        var cs = [];
-        for (var company in articlesJson) {
-          if (articlesJson.hasOwnProperty(company)) {
-            cs.push({id:articlesJson[company].id, name:articlesJson[company].name});
+    if (company !== null) {
+      fetch('/api/company/'+ company.id +'/articles')
+        .then((response)=> response.json())
+        .then((articlesJson) => {
+          var cs = [];
+          for (var article in articlesJson) {
+            if (articlesJson.hasOwnProperty(article)) {
+              cs.push({id:articlesJson[article].id, name:articlesJson[article].name});
+            }
           }
-        }
-        setIsLoading(false);
-        setArticles(cs);
-      }).catch((error) => {
-        console.error(error);
-      });
-  }, [companyId, setArticles]);
+          setIsLoading(false);
+          setArticles(cs);
+        }).catch((error) => {
+          console.error(error);
+        });
+    }
+  }, [company, setArticles]);
 
   const mutateRow = React.useCallback(
     (company) =>

@@ -221,7 +221,9 @@ function columns(handleOpenCompany) {
           return alert(JSON.stringify(thisRow, null, 4));
         };
 
-        return <Fab size="small" aria-label="gotoCompany" onClick={()=>{console.log(params);handleOpenCompany(params.id);}}>
+        return <Fab size="small" aria-label="gotoCompany" onClick={()=>{
+                     handleOpenCompany(params);}
+                   }>
                  <ArrowForwardIosIcon fontSize="small" />
                </Fab>;
       }
