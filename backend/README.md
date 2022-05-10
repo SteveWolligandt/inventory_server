@@ -32,7 +32,7 @@ CREATE TABLE inventories (
 CREATE TABLE amountsPerArticle (
   articleId int NOT NULL,
   inventoryId int NOT NULL,
-  amount int,
+  amount int DEFAULT 0,
   FOREIGN KEY (articleId) REFERENCES articles(id),
   FOREIGN KEY (inventoryId) REFERENCES inventories(id)
 );
