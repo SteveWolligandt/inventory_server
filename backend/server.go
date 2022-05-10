@@ -258,6 +258,8 @@ func (s *Server)deleteCompanyAndItsArticles(w http.ResponseWriter, r *http.Reque
   if dbCompDeleteErr != nil {
     panic(dbCompDeleteErr.Error()) // proper error handling instead of panic in your app
   }
+  action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", id)
+  s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
 func (s *Server)deleteArticle(w http.ResponseWriter, r *http.Request) {

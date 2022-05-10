@@ -51,6 +51,9 @@ export default function CompaniesTable(params) {
         setCompanies(companies => companies.map((company, j) => {
           return updatedCompany.id === company.id ? updatedCompany : company;
         }));
+      } else if (action === 'deleteCompany') {
+        let deletedCompany = msg.data;
+        setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
       }
     }
   }, [lastMessage, setCompanies]);
