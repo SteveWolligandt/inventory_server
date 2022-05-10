@@ -1,7 +1,7 @@
 package main
 //------------------------------------------------------------------------------
 // Company - Our struct for all articles
-type Amunt struct {
-  ArticleId   int `json:"articleId"`
-  Amount int `json:"amount"`
+type Inventory struct {
+  Id    int    `json:"id"`
+  Name  string `json:"name"`
 }
