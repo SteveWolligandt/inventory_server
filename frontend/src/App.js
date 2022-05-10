@@ -13,6 +13,7 @@ import './App.css';
 function App() {
   var [title, setTitle] = React.useState('Inventur');
   var [showCompanies, setShowCompanies] = React.useState(true);
+  var [showCompanyDeleteRequest, setShowCompanyDeleteRequest] = React.useState(false);
   var [showArticles , setShowArticles ] = React.useState(false);
   var [activeCompany, setActiveCompany] = React.useState(null);
 
@@ -22,16 +23,23 @@ function App() {
     <div style={{marginBottom: '100px'}}></div>
     <div style={{
       margin: '0 auto',
-      maxWidth: '700px',
+      maxWidth: '1000px',
     }}>
-    <CompaniesTable open={showCompanies} onOpenCompany={
+    <CompaniesTable
+      open={showCompanies}
+      showDeleteRequest={setShowCompanyDeleteRequest}
+      onOpenCompany={
+        (company) => {
+          setShowCompanies(false);
+          setShowArticles(true);
+          setActiveCompany(company);
+          setTitle(company.name);
+        }}
+      onDeleteCompany={
       (company) => {
-        console.log(company);
-        setShowCompanies(false);
-        setShowArticles(true);
-        setActiveCompany(company);
-        setTitle(company.name);
-      }}/>
+        setShowCompanyDeleteRequest(true)
+      }}
+    />
     <ArticlesTable open={showArticles} company={activeCompany}/>
     <CreateCompanyDialog open={showCompanies}/>
     <CreateArticleDialog open={showArticles} company={activeCompany}/>

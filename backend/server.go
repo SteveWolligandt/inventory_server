@@ -66,40 +66,6 @@ func (s *Server) returnAllArticles(w http.ResponseWriter, r *http.Request) {
   json.NewEncoder(w).Encode(articles)
 }
 //------------------------------------------------------------------------------
-func (s *Server) returnAllCompaniesWithAllArticles(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: returnAllCompaniesWithAllArticles")
-  // Execute the query
-  companyRows, companyErr := s.db.Query("SELECT id, name FROM companies")
-  if companyErr != nil {
-    panic(companyErr.Error()) // proper error handling instead of panic in your app
-  }
-
-  var companies [] Company
-  for companyRows.Next() {
-    var company Company
-    // for each row, scan the result into our tag composite object
-    if err := companyRows.Scan(&company.Id, &company.Name); err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-    }
-    articleQuery := fmt.Sprintf("SELECT id, name FROM articles WHERE articles.companyId = %v", company.Id)
-    fmt.Println(articleQuery)
-    articleRows, articleErr := s.db.Query(articleQuery)
-    if articleErr != nil {
-      panic(articleErr.Error()) // proper error handling instead of panic in your app
-    }
-    for articleRows.Next() {
-      var article Article
-      // for each row, scan the result into our tag composite object
-      if err := articleRows.Scan(&article.Id, &article.Name); err != nil {
-        panic(err.Error()) // proper error handling instead of panic in your app
-      }
-      company.Articles = append(company.Articles, article)
-    }
-    companies = append(companies, company)
-  }
-  json.NewEncoder(w).Encode(companies)
-}
-//------------------------------------------------------------------------------
 func (s *Server) returnAllCompanies(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllCompanies")
   // Execute the query
@@ -277,6 +243,23 @@ func (s *Server) updateCompany(w http.ResponseWriter, r *http.Request) {
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
+func (s *Server)deleteCompanyAndItsArticles(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  id := vars["id"]
+
+  q := fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", id)
+  _, dbArtDeleteErr := s.db.Query(q)
+  if dbArtDeleteErr != nil {
+    panic(dbArtDeleteErr.Error()) // proper error handling instead of panic in your app
+  }
+  q = fmt.Sprintf("DELETE FROM companies WHERE id =%v", id)
+  fmt.Println(q)
+  _, dbCompDeleteErr := s.db.Query(q)
+  if dbCompDeleteErr != nil {
+    panic(dbCompDeleteErr.Error()) // proper error handling instead of panic in your app
+  }
+}
+//------------------------------------------------------------------------------
 func (s *Server)deleteArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   id := vars["id"]
@@ -295,6 +278,7 @@ func (s* Server) handleRequests() {
     http.ServeFile(w, r, "../frontend/build/index.html")
   })
 
+  // frontend
   s.router.HandleFunc("/ws", s.echo)
 
   s.router.PathPrefix("/static").Handler(
@@ -302,50 +286,65 @@ func (s* Server) handleRequests() {
       "/static",
       http.FileServer(
         http.Dir("../frontend/build/static"))))
+
+  // pdf
   s.router.HandleFunc(
       "/pdf",
       s.sendPdf).
     Methods("GET")
-  s.router.HandleFunc(
-      "/api/articles",
-      s.returnAllArticles).
-    Methods("GET")
-  s.router.HandleFunc(
-      "/api/article",
-      s.createNewArticle).
-    Methods("POST")
+
+  // company related
   s.router.HandleFunc(
       "/api/companies",
       s.returnAllCompanies).
     Methods("GET")
-  s.router.HandleFunc(
-      "/api/companiesWithArticles",
-      s.returnAllCompaniesWithAllArticles).
-    Methods("GET")
+
   s.router.HandleFunc(
       "/api/company",
       s.createNewCompany).
     Methods("POST")
-  s.router.HandleFunc(
-      "/api/company/{id}/articles",
-      s.returnArticlesOfCompany).
-    Methods("GET")
+
   s.router.HandleFunc(
       "/api/company/{id}",
       s.returnSingleCompany).
     Methods("GET")
-  s.router.HandleFunc(
-      "/api/article/{id}",
-      s.updateArticle).
-    Methods("PUT")
+
   s.router.HandleFunc(
       "/api/company/{id}",
       s.updateCompany).
     Methods("PUT")
+
+  s.router.HandleFunc(
+      "/api/company/{id}",
+      s.deleteCompanyAndItsArticles).
+    Methods("DELETE")
+
+  // article related
+  s.router.HandleFunc(
+      "/api/articles",
+      s.returnAllArticles).
+    Methods("GET")
+
+  s.router.HandleFunc(
+      "/api/article",
+      s.createNewArticle).
+    Methods("POST")
+
+  s.router.HandleFunc(
+      "/api/company/{id}/articles",
+      s.returnArticlesOfCompany).
+    Methods("GET")
+
+  s.router.HandleFunc(
+      "/api/article/{id}",
+      s.updateArticle).
+    Methods("PUT")
+
   s.router.HandleFunc(
       "/api/article/{id}",
       s.deleteArticle).
     Methods("DELETE")
+
   s.router.HandleFunc(
       "/api/article/{id}",
       s.returnSingleArticle).

@@ -199,9 +199,9 @@ export default function ArticlesTable(params) {
 }
 
 const columns = [
-  { field: 'name', headerName: 'Name', width: 180, editable: true },
-  //{ field: 'purchasePrice', headerName: 'Einkaufspreis', width: 180, editable: true },
-  //{ field: 'sellingPercentage', headerName: '%', width: 180, editable: true },
-  //{ field: 'sellingPrice', headerName: 'Verkaufspreis', width: 180, editable: true },
-  //{ field: 'quantity', headerName: 'Anzah', width: 180, editable: true },
+  { field: 'name', flex: 1, align:'center', headerAlign:'center', headerName: 'Name', width: 180, editable: true },
+  { field: 'purchasePrice', headerAlign:'center', headerName: 'Einkaufspreis', width: 180, editable: true },
+  { field: 'sellingPercentage', headerAlign:'center', headerName: '%', width: 100, editable: true },
+  { field: 'sellingPrice', headerAlign:'center', headerName: 'Verkaufspreis', width: 180, editable: true },
+  { field: 'quantity', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
 ];

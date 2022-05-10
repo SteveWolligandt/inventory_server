@@ -6,8 +6,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
-import Fab from '@mui/material/Fab';
+import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 import React, { useState, useEffect } from 'react';
@@ -88,7 +89,8 @@ export default function CompaniesTable(params) {
     [],
   );
   const noButtonRef = React.useRef(null);
-  const [promiseArguments, setPromiseArguments] = React.useState(null);
+  const [changeArguments, setChangeArguments] = React.useState(null);
+  const [deleteArguments, setDeleteArguments] = React.useState(null);
 
   const [snackbar, setSnackbar] = React.useState(null);
 
@@ -100,7 +102,7 @@ export default function CompaniesTable(params) {
         const mutation = computeMutation(newRow, oldRow);
         if (mutation) {
           // Save the arguments to resolve or reject the promise later
-          setPromiseArguments({ resolve, reject, newRow, oldRow });
+          setChangeArguments({ resolve, reject, newRow, oldRow });
         } else {
           resolve(oldRow); // Nothing was changed
         }
@@ -108,14 +110,14 @@ export default function CompaniesTable(params) {
     [],
   );
 
-  const handleNo = () => {
-    const { oldRow, resolve } = promiseArguments;
+  const handleChangeNo = () => {
+    const { oldRow, resolve } = changeArguments;
     resolve(oldRow); // Resolve with the old row to not update the internal state
-    setPromiseArguments(null);
+    setChangeArguments(null);
   };
 
-  const handleYes = async () => {
-    const { newRow, oldRow, reject, resolve } = promiseArguments;
+  const handleChangeYes = async () => {
+    const { newRow, oldRow, reject, resolve } = changeArguments;
 
     try {
       const url = '/api/company/' + newRow.id;
@@ -129,11 +131,30 @@ export default function CompaniesTable(params) {
       const response = await mutateRow(newRow);
       setSnackbar({ children: 'Firma in Datenbank geändert', severity: 'success' });
       resolve(response);
-      setPromiseArguments(null);
+      setChangeArguments(null);
     } catch (error) {
       setSnackbar({ children: "Name darf nicht leer sein!", severity: 'error' });
       reject(oldRow);
-      setPromiseArguments(null);
+      setChangeArguments(null);
+    }
+  };
+
+  const handleDeleteNo = () => {
+    setDeleteArguments(null);
+  };
+
+  const handleDeleteYes = async () => {
+    try {
+      const url = '/api/company/' + deleteArguments.id;
+      await fetch(url, {
+        method: 'DELETE',
+      });
+
+      setSnackbar({ children: 'Firma in Datenbank gelöscht', severity: 'success' });
+      setDeleteArguments(null);
+    } catch (error) {
+      setSnackbar({ children: "Name darf nicht leer sein!", severity: 'error' });
+      setDeleteArguments(null);
     }
   };
 
@@ -144,29 +165,50 @@ export default function CompaniesTable(params) {
     // noButtonRef.current?.focus();
   };
 
-  const renderConfirmDialog = () => {
-    if (!promiseArguments) {
+  const renderDeleteConfirmDialog = () => {
+    if (!deleteArguments) {
       return null;
     }
-
-    const { newRow, oldRow } = promiseArguments;
-    const mutation = computeMutation(newRow, oldRow);
-
     return (
       <Dialog
         maxWidth="xs"
         TransitionProps={{ onEntered: handleEntered }}
-        open={!!promiseArguments}
+        open={!!deleteArguments}
+      >
+        <DialogTitle>Firma wirklich löschen?</DialogTitle>
+        <DialogContent dividers>
+          Diese Aktion löscht die Firma und alle Artikel der Firma und dessen Stückzahlen!
+        </DialogContent>
+        <DialogActions>
+          <Button ref={noButtonRef} onClick={handleDeleteNo}>
+            Nein
+          </Button>
+          <Button onClick={handleDeleteYes}>Ja</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+  const renderChangeConfirmDialog = () => {
+    if (!changeArguments) {
+      return null;
+    }
+    const { newRow, oldRow } = changeArguments;
+    const mutation = computeMutation(newRow, oldRow);
+    return (
+      <Dialog
+        maxWidth="xs"
+        TransitionProps={{ onEntered: handleEntered }}
+        open={!!changeArguments}
       >
         <DialogTitle>Firma wirklich ändern?</DialogTitle>
         <DialogContent dividers>
           {mutation}
         </DialogContent>
         <DialogActions>
-          <Button ref={noButtonRef} onClick={handleNo}>
+          <Button ref={noButtonRef} onClick={handleChangeNo}>
             Nein
           </Button>
-          <Button onClick={handleYes}>Ja</Button>
+          <Button onClick={handleChangeYes}>Ja</Button>
         </DialogActions>
       </Dialog>
     );
@@ -176,10 +218,11 @@ export default function CompaniesTable(params) {
     const style = {height: 500, width: '100%'};
     return (
       <div style={style}>
-        {renderConfirmDialog()}
+        {renderChangeConfirmDialog()}
+        {renderDeleteConfirmDialog()}
         <DataGrid
           rows={companies}
-          columns={columns(params.onOpenCompany)}
+          columns={columns(params.onOpenCompany, setDeleteArguments)}
           processRowUpdate={processRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />
@@ -195,10 +238,10 @@ export default function CompaniesTable(params) {
   }
 }
 
-function columns(handleOpenCompany) {
+function columns(handleOpenCompany, setDeleteArguments) {
   return [
-    { field: 'name', headerName: 'Name', flex: 1, editable: true },
-    { field: 'action',
+    { field: 'name', align:'center', headerAlign:'center', headerName: 'Name', flex: 1, editable: true },
+    { field: 'delete',
       editable: false,
       headerName: '',
       align: 'center',
@@ -221,11 +264,40 @@ function columns(handleOpenCompany) {
           return alert(JSON.stringify(thisRow, null, 4));
         };
 
-        return <Fab size="small" aria-label="gotoCompany" onClick={()=>{
-                     handleOpenCompany(params);}
+        return <IconButton size="small" aria-label="deleteCompany" onClick={()=>{
+                   setDeleteArguments(params.row); }}>
+                 <DeleteIcon fontSize="small" />
+               </IconButton>;
+      }
+    },
+    { field: 'open',
+      editable: false,
+      headerName: '',
+      align: 'center',
+      width: 60,
+      sortable: false,
+      renderCell: (params) => {
+        const onClick = (e) => {
+          e.stopPropagation(); // don't select this row after clicking
+
+          const api = params.api;
+          const thisRow = {};
+
+          api
+            .getAllColumns()
+            .filter((c) => c.field !== "__check__" && !!c)
+            .forEach(
+              (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
+            );
+
+          return alert(JSON.stringify(thisRow, null, 4));
+        };
+
+        return <IconButton size="small" aria-label="gotoCompany" onClick={()=>{
+                     handleOpenCompany(params.row);}
                    }>
                  <ArrowForwardIosIcon fontSize="small" />
-               </Fab>;
+               </IconButton>;
       }
     },
   ];

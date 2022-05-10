@@ -6,9 +6,14 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Grid from '@mui/material/Grid';
 import Fab from '@mui/material/Fab';
+import PercentIcon from '@mui/icons-material/Percent';
 import ArticleIcon from '@mui/icons-material/Article';
+import EuroIcon from '@mui/icons-material/Euro';
+import InputAdornment from '@mui/material/InputAdornment';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Input from '@mui/material/Input';
 
 export default function CreateArticleDialog(params) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -49,15 +54,34 @@ export default function CreateArticleDialog(params) {
       <Dialog open={dialogOpen} onClose={handleClose}>
         <DialogTitle>Neuer Artikel</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
+        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+          <InputLabel htmlFor="createArticle.name">Name</InputLabel>
+          <Input
             id="createArticle.name"
-            label="Name"
-            type="string"
-            fullWidth
-            variant="standard"
+            startAdornment={<InputAdornment position="start"><ArticleIcon /></InputAdornment>}
           />
+        </FormControl>
+        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+          <InputLabel htmlFor="createArticle.purchasePrice">Einkaufspreis</InputLabel>
+          <Input
+            id="createArticle.purchasePrice"
+            startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
+          />
+        </FormControl>
+        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+          <InputLabel htmlFor="createArticle.percentage">Prozent</InputLabel>
+          <Input
+            id="createArticle.percentage"
+            startAdornment={<InputAdornment position="start"><PercentIcon /></InputAdornment>}
+          />
+        </FormControl>
+        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+          <InputLabel htmlFor="createArticle.sellingPrice">Verkaufspreis</InputLabel>
+          <Input
+            id="createArticle.sellingPrice"
+            startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
+          />
+        </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Abbrechen</Button>
