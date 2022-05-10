@@ -24,6 +24,8 @@ export default function CreateArticleDialog(params) {
     const data = {
       name : document.getElementById("createArticle.name").value,
       companyId : params.company.id,
+      purchasePrice : document.getElementById("createArticle.purchasePrice").value,
+      percentage : document.getElementById("createArticle.percentage").value,
     };
 
     fetch(
@@ -66,6 +68,11 @@ export default function CreateArticleDialog(params) {
           <Input
             id="createArticle.purchasePrice"
             startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
+            onChange={()=>{
+              var purchasePrice = document.getElementById("createArticle.purchasePrice").value;
+              var percentage = document.getElementById("createArticle.percentage").value;
+                document.getElementById("createArticle.sellingPrice").value = purchasePrice * (1 + percentage/100);
+            }}
           />
         </FormControl>
         <FormControl fullWidth sx={{ m: 1 }} variant="standard">
@@ -73,6 +80,11 @@ export default function CreateArticleDialog(params) {
           <Input
             id="createArticle.percentage"
             startAdornment={<InputAdornment position="start"><PercentIcon /></InputAdornment>}
+            onChange={()=>{
+              var purchasePrice = document.getElementById("createArticle.purchasePrice").value;
+              var percentage = document.getElementById("createArticle.percentage").value;
+                document.getElementById("createArticle.sellingPrice").value = purchasePrice * (1 + percentage/100);
+            }}
           />
         </FormControl>
         <FormControl fullWidth sx={{ m: 1 }} variant="standard">
@@ -80,6 +92,11 @@ export default function CreateArticleDialog(params) {
           <Input
             id="createArticle.sellingPrice"
             startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
+            onChange={()=>{
+              var sellingPrice = document.getElementById("createArticle.sellingPrice").value;
+              var percentage = document.getElementById("createArticle.percentage").value;
+                document.getElementById("createArticle.purchasePrice").value = sellingPrice / (1 + percentage/100);
+            }}
           />
         </FormControl>
         </DialogContent>
