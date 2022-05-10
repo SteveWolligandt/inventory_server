@@ -175,15 +175,17 @@ export default function CompaniesTable(params) {
         TransitionProps={{ onEntered: handleEntered }}
         open={!!deleteArguments}
       >
-        <DialogTitle>Firma wirklich löschen?</DialogTitle>
+        <DialogTitle><div style={{color:'red'}}>Firma wirklich löschen?</div></DialogTitle>
         <DialogContent dividers>
-          Diese Aktion löscht die Firma und alle Artikel der Firma und dessen Stückzahlen!
+          Diese Aktion löscht die Firma <i><b>{deleteArguments.name}</b></i> und alle Artikel der Firma und dessen Stückzahlen!
         </DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleDeleteNo}>
-            Nein
+            <div style={{color:'green'}}>Nein</div>
           </Button>
-          <Button onClick={handleDeleteYes}>Ja</Button>
+          <Button onClick={handleDeleteYes}>
+            <div style={{color:'red'}}>Ja</div>
+          </Button>
         </DialogActions>
       </Dialog>
     );
