@@ -273,6 +273,8 @@ func (s *Server)deleteArticle(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
+  action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", id)
+  s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
 func (s* Server) handleRequests() {

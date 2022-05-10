@@ -54,6 +54,9 @@ export default function ArticlesTable(params) {
         setArticles(articles => articles.map((article, j) => {
           return updatedArticle.id === article.id ? updatedArticle : article;
         }));
+      } else if (action === 'deleteArticle') {
+        let deletedArticle = msg.data;
+        setArticles(articles => articles.filter(article => article.id !== deletedArticle.id));
       }
     }
   }, [company, lastMessage, setArticles]);
