@@ -16,7 +16,7 @@ import useWebSocket from 'react-use-websocket';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
-    return (<>Von <i>{oldRow.name}</i> zu <i>{newRow.name}</i> ändern?</>);
+    return (<>Von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
   }
   return null;
 }

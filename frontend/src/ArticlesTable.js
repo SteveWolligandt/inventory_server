@@ -1,4 +1,6 @@
 import { DataGrid } from '@mui/x-data-grid';
+import IconButton from '@mui/material/IconButton';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Snackbar from '@mui/material/Snackbar';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -12,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
-    return (<>Von <i>{oldRow.name}</i> zu <i>{newRow.name}</i> ändern?</>);
+    return (<>Von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
   }
   return null;
 }
@@ -94,7 +96,8 @@ export default function ArticlesTable(params) {
     [],
   );
   const noButtonRef = React.useRef(null);
-  const [promiseArguments, setPromiseArguments] = React.useState(null);
+  const [changeArguments, setChangeArguments] = React.useState(null);
+  const [deleteArguments, setDeleteArguments] = React.useState(null);
 
   const [snackbar, setSnackbar] = React.useState(null);
 
@@ -106,7 +109,7 @@ export default function ArticlesTable(params) {
         const mutation = computeMutation(newRow, oldRow);
         if (mutation) {
           // Save the arguments to resolve or reject the promise later
-          setPromiseArguments({ resolve, reject, newRow, oldRow });
+          setChangeArguments({ resolve, reject, newRow, oldRow });
         } else {
           resolve(oldRow); // Nothing was changed
         }
@@ -114,14 +117,14 @@ export default function ArticlesTable(params) {
     [],
   );
 
-  const handleNo = () => {
-    const { oldRow, resolve } = promiseArguments;
+  const handleChangeNo = () => {
+    const { oldRow, resolve } = changeArguments;
     resolve(oldRow); // Resolve with the old row to not update the internal state
-    setPromiseArguments(null);
+    setChangeArguments(null);
   };
 
-  const handleYes = async () => {
-    const { newRow, oldRow, reject, resolve } = promiseArguments;
+  const handleChangeYes = async () => {
+    const { newRow, oldRow, reject, resolve } = changeArguments;
 
     try {
       const url = '/api/article/' + newRow.id;
@@ -135,11 +138,30 @@ export default function ArticlesTable(params) {
       const response = await mutateRow(newRow);
       setSnackbar({ children: 'Artikel in Datenbank geändert', severity: 'success' });
       resolve(response);
-      setPromiseArguments(null);
+      setChangeArguments(null);
     } catch (error) {
       setSnackbar({ children: "Name darf nicht leer sein!", severity: 'error' });
       reject(oldRow);
-      setPromiseArguments(null);
+      setChangeArguments(null);
+    }
+  };
+
+  const handleDeleteNo = () => {
+    setDeleteArguments(null);
+  };
+
+  const handleDeleteYes = async () => {
+    try {
+      const url = '/api/article/' + deleteArguments.id;
+      await fetch(url, {
+        method: 'DELETE',
+      });
+
+      setSnackbar({ children: 'Artikel in Datenbank gelöscht', severity: 'success' });
+      setDeleteArguments(null);
+    } catch (error) {
+      setSnackbar({ children: "Artikel konnte nicht gelöscht werden!", severity: 'error' });
+      setDeleteArguments(null);
     }
   };
 
@@ -150,29 +172,53 @@ export default function ArticlesTable(params) {
     // noButtonRef.current?.focus();
   };
 
-  const renderConfirmDialog = () => {
-    if (!promiseArguments) {
+  const renderConfirmChangeDialog = () => {
+    if (!changeArguments) {
       return null;
     }
 
-    const { newRow, oldRow } = promiseArguments;
+    const { newRow, oldRow } = changeArguments;
     const mutation = computeMutation(newRow, oldRow);
 
     return (
       <Dialog
         maxWidth="xs"
         TransitionProps={{ onEntered: handleEntered }}
-        open={!!promiseArguments}
+        open={!!changeArguments}
       >
         <DialogTitle>Artikel wirklich ändern?</DialogTitle>
         <DialogContent dividers>
           {mutation}
         </DialogContent>
         <DialogActions>
-          <Button ref={noButtonRef} onClick={handleNo}>
+          <Button ref={noButtonRef} onClick={handleChangeNo}>
             Nein
           </Button>
-          <Button onClick={handleYes}>Ja</Button>
+          <Button onClick={handleChangeYes}>Ja</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  };
+  const renderConfirmDeleteDialog = () => {
+    if (!deleteArguments) {
+      return null;
+    }
+
+    return (
+      <Dialog
+        maxWidth="xs"
+        TransitionProps={{ onEntered: handleEntered }}
+        open={!!deleteArguments}
+      >
+        <DialogTitle>Artikel wirklich löschen?</DialogTitle>
+        <DialogContent dividers>
+          Artikel <i><b>{deleteArguments.name}</b></i> wirlich löschen?
+        </DialogContent>
+        <DialogActions>
+          <Button ref={noButtonRef} onClick={handleDeleteNo}>
+            Nein
+          </Button>
+          <Button onClick={handleDeleteYes}>Ja</Button>
         </DialogActions>
       </Dialog>
     );
@@ -182,10 +228,11 @@ export default function ArticlesTable(params) {
     const style = {height: 500, width: '100%'};
     return (
       <div style={style}>
-        {renderConfirmDialog()}
+        {renderConfirmChangeDialog()}
+        {renderConfirmDeleteDialog()}
         <DataGrid
           rows={articles}
-          columns={columns}
+          columns={columns(setDeleteArguments)}
           processRowUpdate={processRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />
@@ -201,10 +248,40 @@ export default function ArticlesTable(params) {
   }
 }
 
-const columns = [
+function columns(setDeleteArguments) {return [
   { field: 'name', flex: 1, align:'center', headerAlign:'center', headerName: 'Name', width: 180, editable: true },
   { field: 'purchasePrice', headerAlign:'center', headerName: 'Einkaufspreis', width: 180, editable: true },
   { field: 'sellingPercentage', headerAlign:'center', headerName: '%', width: 100, editable: true },
   { field: 'sellingPrice', headerAlign:'center', headerName: 'Verkaufspreis', width: 180, editable: true },
   { field: 'quantity', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
+  { field: 'delete',
+    editable: false,
+    headerName: '',
+    align: 'center',
+    width: 60,
+    sortable: false,
+    renderCell: (params) => {
+      const onClick = (e) => {
+        e.stopPropagation(); // don't select this row after clicking
+
+        const api = params.api;
+        const thisRow = {};
+
+        api
+          .getAllColumns()
+          .filter((c) => c.field !== "__check__" && !!c)
+          .forEach(
+            (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
+          );
+
+        return alert(JSON.stringify(thisRow, null, 4));
+      };
+
+      return <IconButton size="small" aria-label="deleteCompany" onClick={()=>{
+                 setDeleteArguments(params.row); }}>
+               <DeleteIcon fontSize="small" />
+             </IconButton>;
+    }
+  },
 ];
+}
