@@ -17,6 +17,7 @@ export default function TopBar(params) {
             color="inherit"
             aria-label="menu"
             sx={{ mr: 2 }}
+            onClick={params.onClick}
           >
             <MenuIcon />
           </IconButton>

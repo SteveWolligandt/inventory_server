@@ -294,22 +294,40 @@ func (s *Server) updateCompany(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 // server-related
 //------------------------------------------------------------------------------
-func (s *Server)deleteCompanyAndItsArticles(w http.ResponseWriter, r *http.Request) {
+func (s *Server)deleteCompany(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  id := vars["id"]
+  companyId := vars["id"]
 
-  q := fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", id)
+  articleRows, articleRowsErr := s.db.Query("SELECT id FROM articles WHERE companyId = ?", companyId)
+  if articleRowsErr != nil {
+    panic(articleRowsErr.Error()) // proper error handling instead of panic in your app
+  }
+  for articleRows.Next() {
+    articleId := 0
+    // for each row, scan the result into our tag composite object
+    if err := articleRows.Scan(&articleId); err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+    }
+            // and then print out the tag's Name attribute
+    _, amountsDeleteErr := s.db.Query("DELETE FROM amounts WHERE articleId = ?", articleId)
+    if amountsDeleteErr != nil {
+      panic(amountsDeleteErr.Error()) // proper error handling instead of panic in your app
+    }
+  }
+
+  q := fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", companyId)
   _, dbArtDeleteErr := s.db.Query(q)
   if dbArtDeleteErr != nil {
     panic(dbArtDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-  q = fmt.Sprintf("DELETE FROM companies WHERE id =%v", id)
+
+  q = fmt.Sprintf("DELETE FROM companies WHERE id =%v", companyId)
   fmt.Println(q)
   _, dbCompDeleteErr := s.db.Query(q)
   if dbCompDeleteErr != nil {
     panic(dbCompDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-  action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", id)
+  action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", companyId)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
@@ -466,8 +484,22 @@ func (s *Server)returnInventoryAmounts(w http.ResponseWriter, r *http.Request) {
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
-  action := fmt.Sprintf("{\"action\":\"deleteInventory\", \"data\":{\"id\":%v}}", id)
-  s.writeMessage([]byte(action))
+}
+//------------------------------------------------------------------------------
+func (s *Server)returnInventoryAmountOfArticle(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  inventoryId := vars["inventoryId"]
+  articleId := vars["articleId"]
+
+  q := fmt.Sprintf(
+    "SELECT * FROM amounts WHERE inventoryId =%v AND articleId =%v ",
+    inventoryId, articleId)
+  fmt.Println(q)
+
+  _, err := s.db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
 }
 //------------------------------------------------------------------------------
 func (s* Server) handleRequests() {
@@ -513,7 +545,7 @@ func (s* Server) handleRequests() {
 
   s.router.HandleFunc(
       "/api/company/{id}",
-      s.deleteCompanyAndItsArticles).
+      s.deleteCompany).
     Methods("DELETE")
 
   // article-related
@@ -576,6 +608,11 @@ func (s* Server) handleRequests() {
   s.router.HandleFunc(
       "/api/inventory/{id}/amounts",
       s.returnInventoryAmounts).
+    Methods("GET")
+
+  s.router.HandleFunc(
+      "/api/inventory/{inventoryId}/amounts/{articleId}",
+      s.returnInventoryAmountOfArticle).
     Methods("GET")
 }
 //------------------------------------------------------------------------------
