@@ -7,9 +7,9 @@ import {Component} from 'react';
 import './App.css';
 
 function App() {
-  var [showCompaniesTable, setShowCompaniesTable] = React.useState(false);
-  var [showArticlesTable, setShowArticlesTable] = React.useState(true);
-  var [activeCompanyId, setActiveCompanyId] = React.useState(44);
+  var [showCompaniesTable, setShowCompaniesTable] = React.useState(true);
+  var [showArticlesTable, setShowArticlesTable] = React.useState(false);
+  var [activeCompanyId, setActiveCompanyId] = React.useState(0);
   const outerStyle = {
     margin: '0 auto',
     maxWidth: '700px',
@@ -25,6 +25,7 @@ function App() {
     <div style={outerStyle}>
     <CompaniesTable open={showCompaniesTable} onOpenCompany={
       (id) => {
+        console.log(id);
         setShowCompaniesTable(false);
         setShowArticlesTable(true);
         setActiveCompanyId(id)}}/>

@@ -53,11 +53,10 @@ export default function ArticlesTable(params) {
     }
   }, [lastMessage, setArticles]);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await fetch('/api/company/'+companyId+'/articles');
-        const articlesJson = await response.json();
+  useEffect(()=> {
+    fetch('/api/company/'+ companyId +'/articles')
+      .then((response)=> response.json())
+      .then((articlesJson) => {
         var cs = [];
         for (var company in articlesJson) {
           if (articlesJson.hasOwnProperty(company)) {
@@ -66,12 +65,10 @@ export default function ArticlesTable(params) {
         }
         setIsLoading(false);
         setArticles(cs);
-      } catch (error) {
+      }).catch((error) => {
         console.error(error);
-      }
-    }
-    loadData();
-  }, []);
+      });
+  }, [companyId, setArticles]);
 
   const mutateRow = React.useCallback(
     (company) =>
