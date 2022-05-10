@@ -27,24 +27,7 @@ function App() {
   var [showCompanyDeleteRequest, setShowCompanyDeleteRequest] = React.useState(false);
   var [showArticles , setShowArticles ] = React.useState(false);
   var [activeCompany, setActiveCompany] = React.useState(null);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  const [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
+  var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -125,8 +108,5 @@ function App() {
     </div>
     </>
   );
-
-
-
 }
 export default App;
