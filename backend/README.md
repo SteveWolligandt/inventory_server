@@ -24,21 +24,23 @@ CREATE TABLE articles (
   FOREIGN KEY (companyId) REFERENCES companies(id),
   primary key (id)
 );
-CREATE TABLE amounts (
+CREATE TABLE inventories (
   id int NOT NULL AUTO_INCREMENT,
-  name varchar(255) NOT NULL
+  name varchar(255) NOT NULL,
+  primary key (id)
 );
 CREATE TABLE amountsPerArticle (
   articleId int NOT NULL,
   inventoryId int NOT NULL,
   amount int,
   FOREIGN KEY (articleId) REFERENCES articles(id),
-  FOREIGN KEY (inventoryId) REFERENCES inventories(id),
+  FOREIGN KEY (inventoryId) REFERENCES inventories(id)
 );
 CREATE TABLE users (
   id int NOT NULL AUTO_INCREMENT,
   name varchar(255) NOT NULL,
   hashedPassword varchar(255) NOT NULL,
   salt varchar(255) NOT NULL,
+  primary key (id)
 );
 ```
