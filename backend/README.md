@@ -29,10 +29,10 @@ CREATE TABLE inventories (
   name varchar(255) NOT NULL,
   primary key (id)
 );
-CREATE TABLE amountsPerArticle (
+CREATE TABLE amounts (
   articleId int NOT NULL,
   inventoryId int NOT NULL,
-  amount int,
+  amount int DEFAULT 0,
   FOREIGN KEY (articleId) REFERENCES articles(id),
   FOREIGN KEY (inventoryId) REFERENCES inventories(id)
 );
