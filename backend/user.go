@@ -1,8 +1,9 @@
 package main
 //------------------------------------------------------------------------------
-// Company - Our struct for all articles
-type Company struct {
+// Article - Our struct for all articles
+type User struct {
   Id   int `json:"id"`
   Name string `json:"name"`
-  ImagePath string `json:"-"`
+  HashedPassword string `json:"-"`
+  Salt string `json:"-"`
 }
