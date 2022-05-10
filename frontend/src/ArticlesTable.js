@@ -38,20 +38,25 @@ export default function ArticlesTable(params) {
   const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
 
   useEffect(() => {
-    if (lastMessage !== null) {
+    if (lastMessage !== null && company !== null) {
       let msg = JSON.parse(lastMessage.data);
+      console.log(msg);
       let action = msg.action;
       if (action === 'newArticle') {
         let newArticle = msg.data;
-        setArticles(articles => articles.concat(newArticle));
+        setArticles(articles => {if (newArticle.companyId === company.id) {
+                                   return articles.concat(newArticle);
+                                 } else {
+                                   return articles;
+                                 }});
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
-        setArticles(articles => articles.map((company, j) => {
-          return updatedArticle.id === company.id ? updatedArticle : company;
+        setArticles(articles => articles.map((article, j) => {
+          return updatedArticle.id === article.id ? updatedArticle : article;
         }));
       }
     }
-  }, [lastMessage, setArticles]);
+  }, [company, lastMessage, setArticles]);
 
   useEffect(()=> {
     if (company !== null) {
@@ -116,8 +121,8 @@ export default function ArticlesTable(params) {
     const { newRow, oldRow, reject, resolve } = promiseArguments;
 
     try {
-      const url = '/api/company/' + newRow.id;
-      const body = JSON.stringify({name:newRow.name});
+      const url = '/api/article/' + newRow.id;
+      const body = JSON.stringify(newRow);
       await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

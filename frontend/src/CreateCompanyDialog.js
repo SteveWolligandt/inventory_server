@@ -37,9 +37,9 @@ export default function CreateCompanyDialog(params) {
 
   const style = {
     margin: 0,
-    top: 'auto',
+    top: 80,
+    bottom: 'auto',
     right: 20,
-    bottom: 20,
     left: 'auto',
     position: 'fixed',
   };
@@ -64,7 +64,7 @@ export default function CreateCompanyDialog(params) {
           </DialogActions>
         </Dialog>
         <Zoom in={params.open}>
-          <Fab color="primary" aria-label="add" style={style} onClick={handleClickOpen}>
+          <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
             <BusinessIcon />
           </Fab>
         </Zoom>

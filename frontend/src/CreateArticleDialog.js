@@ -18,7 +18,7 @@ export default function CreateArticleDialog(params) {
   const handleCreate    = () => {
     const data = {
       name : document.getElementById("createArticle.name").value,
-      companyId : params.companyId,
+      companyId : params.company.id,
     };
 
     fetch(
@@ -38,9 +38,9 @@ export default function CreateArticleDialog(params) {
 
   const style = {
     margin: 0,
-    top: 'auto',
+    top: 80,
+    bottom: 'auto',
     right: 20,
-    bottom: 20,
     left: 'auto',
     position: 'fixed',
   };
@@ -65,7 +65,7 @@ export default function CreateArticleDialog(params) {
         </DialogActions>
       </Dialog>
       <Zoom in={params.open}>
-        <Fab color="primary" aria-label="add" style={style} onClick={handleClickOpen}>
+        <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
           <ArticleIcon />
         </Fab>
       </Zoom>

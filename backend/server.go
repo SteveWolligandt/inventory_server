@@ -197,25 +197,21 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
   // unmarshal this into a new Article struct
   // append this to our Articles array.    
   reqBody, _ := ioutil.ReadAll(r.Body)
-  var article ArticleWithCompany 
+  var article Article 
   json.Unmarshal(reqBody, &article)
 
   // update our global Articles array to include
   // our new Article
-  var q string
-  if article.CompanyId != 0 {
-    q = fmt.Sprintf("INSERT INTO articles (name, companyId) VALUES ('%v', %v)",
-                    article.Name, article.CompanyId)
-  } else {
-    q = fmt.Sprintf("INSERT INTO articles (name) VALUES ('%v')", article.Name)
-  }
+  q := fmt.Sprintf("INSERT INTO articles (name, companyId) VALUES ('%v', %v) RETURNING id",
+                  article.Name, article.CompanyId)
 
-  fmt.Println(q)
-
-  _, err := s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
+  id := 0
+  dbErr := s.db.QueryRow(q).Scan(&id)
+  if dbErr != nil {
+    panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
+  action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":{\"id\":%v, \"companyId\":%v, \"name\":\"%v\"}}", id, article.CompanyId, article.Name)
+  s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
 func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
@@ -238,6 +234,26 @@ func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
   action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":{\"id\":%v, \"name\":\"%v\"}}", id, company.Name)
+  s.writeMessage([]byte(action))
+}
+//------------------------------------------------------------------------------
+func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Endpoint Hit: updateArticle")
+  vars := mux.Vars(r)
+  id := vars["id"]
+
+  reqBody, _ := ioutil.ReadAll(r.Body)
+  var article Article 
+  json.Unmarshal(reqBody, &article)
+
+  q := fmt.Sprintf("UPDATE articles SET name = '%v' WHERE id = %v", article.Name, id)
+  fmt.Println(q)
+
+  _, err := s.db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":{\"id\":%v, \"companyId\":%v, \"name\":\"%v\"}}", id, article.CompanyId, article.Name)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
@@ -318,6 +334,10 @@ func (s* Server) handleRequests() {
       "/api/company/{id}",
       s.returnSingleCompany).
     Methods("GET")
+  s.router.HandleFunc(
+      "/api/article/{id}",
+      s.updateArticle).
+    Methods("PUT")
   s.router.HandleFunc(
       "/api/company/{id}",
       s.updateCompany).
