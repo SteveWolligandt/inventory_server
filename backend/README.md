@@ -25,9 +25,15 @@ CREATE TABLE articles (
   primary key (id)
 );
 CREATE TABLE amounts (
+  id int NOT NULL AUTO_INCREMENT,
+  name varchar(255) NOT NULL
+);
+CREATE TABLE amountsPerArticle (
   articleId int NOT NULL,
+  inventoryId int NOT NULL,
   amount int,
   FOREIGN KEY (articleId) REFERENCES articles(id),
+  FOREIGN KEY (inventoryId) REFERENCES inventories(id),
 );
 CREATE TABLE users (
   id int NOT NULL AUTO_INCREMENT,
