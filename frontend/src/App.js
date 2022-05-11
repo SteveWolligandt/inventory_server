@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
+import TextField from '@mui/material/TextField';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
@@ -56,7 +57,25 @@ function App() {
           onClick={toggleDrawer( false)}
           onKeyDown={toggleDrawer(false)}
         >
-        dsdsa
+        <TextField id="createInventory.name" label="Outlined" variant="outlined" />
+        <Button variant="contained" onClick={()=>{
+          const data = {
+            name : document.getElementById("createInventory.name").value,
+          };
+          fetch(
+            '/api/inventory',{
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)}
+          ).then((response) => {
+            toggleDrawer(false)
+          }).catch(() => {
+            console.log('Could not create Article');
+            toggleDrawer(false)
+          });
+        }}>Neue Inventur</Button>
         </Box>
             </Drawer>
           </React.Fragment>
