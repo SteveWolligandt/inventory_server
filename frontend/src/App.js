@@ -27,6 +27,7 @@ import Collapse from '@mui/material/Collapse';
 
 // MUI Icons
 import InboxIcon from '@mui/icons-material/Inbox';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -107,6 +108,12 @@ function App() {
         </ListSubheader>
       }
     >
+      <ListItemButton component="a" href="/pdf">
+        <ListItemIcon>
+          <PictureAsPdfIcon />
+        </ListItemIcon>
+        <ListItemText primary="PDF" />
+      </ListItemButton>
       <ListItemButton onClick={handleLeftPaneInventoryClick}>
         <ListItemIcon>
           <InventoryIcon />
