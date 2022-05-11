@@ -107,7 +107,7 @@ function App() {
         setShowCompanyDeleteRequest(true)
       }}
     />
-    <ArticlesTable open={showArticles} company={activeCompany}/>
+    <ArticlesTable open={showArticles} company={activeCompany} inventory={activeInventory}/>
     <CreateCompanyDialog open={showCompanies}/>
     <CreateArticleDialog open={showArticles} company={activeCompany}/>
       <div>

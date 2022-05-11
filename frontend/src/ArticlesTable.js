@@ -12,6 +12,12 @@ import useWebSocket from 'react-use-websocket';
 
 import React, { useState, useEffect } from 'react';
 
+function computeMutationAmount(newRow, oldRow) {
+  if (newRow.amount !== oldRow.amount) {
+    return (<>Anzahl von <i><b>{oldRow.name}</b></i> auf <i><b>{newRow.amount}</b></i> setzen?</>);
+  }
+  return null;
+}
 function computeMutationName(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
     return (<>Von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
@@ -33,6 +39,7 @@ function computeMutationPricing(newRow, oldRow) {
 
 export default function ArticlesTable(params) {
   var company = params.company;
+  var inventory = params.inventory;
   var isOpen = params.open;
   var [isLoading, setIsLoading] = React.useState(true);
   var [articles, setArticles] = React.useState([]);
@@ -71,13 +78,22 @@ export default function ArticlesTable(params) {
       } else if (action === 'deleteArticle') {
         let deletedArticle = msg.data;
         setArticles(articles => articles.filter(article => article.id !== deletedArticle.id));
+      } else if (action === 'updateAmount') {
+        let updatedAmount = msg.data;
+        console.log(updatedAmount);
+        setArticles(articles => articles.map((article, j) => {
+          if (updatedAmount.inventoryId === inventory && updatedAmount.articleId === article.id) {
+            article.amount = updatedAmount.amount;
+          }
+          return article;
+        }));
       }
     }
   }, [company, lastMessage, setArticles]);
 
   useEffect(()=> {
     if (company !== null) {
-      fetch('/api/company/'+ company.id +'/articles')
+      fetch(inventory ? '/api/company/'+ company.id +'/inventory/'+inventory : '/api/company/'+ company.id +'/articles')
         .then((response)=> response.json())
         .then((articlesJson) => {
           var cs = [];
@@ -120,12 +136,11 @@ export default function ArticlesTable(params) {
       new Promise((resolve, reject) => {
         const mutationName = computeMutationName(newRow, oldRow);
         const mutationPrice = computeMutationPricing(newRow, oldRow);
+        const mutationAmount = computeMutationAmount(newRow, oldRow);
         if (mutationName) {
-          // Save the arguments to resolve or reject the promise later
           setChangeArguments({ resolve, reject, newRow, oldRow });
-        } else if (mutationPrice) {
-          // Save the arguments to resolve or reject the promise later
 
+        } else if (mutationPrice) {
           if (newRow.purchasePrice !== oldRow.purchasePrice) {
             newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
           }
@@ -136,6 +151,10 @@ export default function ArticlesTable(params) {
             newRow.purchasePrice = newRow.sellingPrice / (1 + newRow.percentage / 100);
           }
           setChangeArguments({ resolve, reject, newRow, oldRow });
+
+        } else if (mutationAmount) {
+          setChangeArguments({ resolve, reject, newRow, oldRow });
+
         } else {
           resolve(oldRow); // Nothing was changed
         }
@@ -155,12 +174,21 @@ export default function ArticlesTable(params) {
     try {
       const url = '/api/article/' + newRow.id;
       const body = JSON.stringify(newRow);
-      console.log('newrow: ' + body);
       await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: body
       });
+
+      if (inventory) {
+        const url = '/api/amount/';
+        const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory, amount:newRow.amount});
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: body
+        });
+      }
 
       const response = await mutateRow(newRow);
       setSnackbar({ children: 'Artikel in Datenbank geändert', severity: 'success' });
@@ -306,7 +334,7 @@ function columns(setDeleteArguments) {return [
       return `${valueFormatted} €`;
     },
    },
-  { field: 'quantity', type: 'number', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
+  { field: 'amount', type: 'number', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
   { field: 'delete',
     editable: false,
     type: 'action',

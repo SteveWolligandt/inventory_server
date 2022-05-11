@@ -306,7 +306,33 @@ func (s *Server)deleteCompany(w http.ResponseWriter, r *http.Request) {
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
-// server-related
+// amount-related
+//------------------------------------------------------------------------------
+func (s *Server)updateAmount(w http.ResponseWriter, r *http.Request)  {
+  fmt.Println("Endpoint Hit: updateAmount")
+
+  reqBody, _ := ioutil.ReadAll(r.Body)
+  var amount Amount 
+  json.Unmarshal(reqBody, &amount)
+
+  q := fmt.Sprintf("UPDATE amounts SET amount = '%v' WHERE articleId = %v AND inventoryId = %v", amount.Amount, amount.ArticleId, amount.InventoryId)
+  fmt.Println(q)
+
+  _, err := s.db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  marshaledAmount, marshalErr := json.Marshal(amount)
+  if marshalErr != nil {
+    panic(marshalErr.Error()) // proper error handling instead of panic in your app
+  }
+  fmt.Println(string(marshaledAmount))
+  action := fmt.Sprintf("{\"action\":\"updateAmount\", \"data\":%v}", string(marshaledAmount))
+  s.writeMessage([]byte(action))
+  
+}
+//------------------------------------------------------------------------------
+// inventory-related
 //------------------------------------------------------------------------------
 func (s *Server)returnAllInventories(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllInventories")
@@ -550,6 +576,12 @@ func (s* Server) handleRequests() {
       "/api/article/{id}",
       s.returnSingleArticle).
     Methods("GET")
+
+  // amount-related
+  s.router.HandleFunc(
+      "/api/amount",
+      s.updateAmount).
+    Methods("PUT")
 
   // inventory-related
   s.router.HandleFunc(
