@@ -19,8 +19,8 @@ CREATE TABLE articles (
   name varchar(255) NOT NULL,
   imagePath varchar(255),
   barcode int,
-  purchasePrice float,
-  percentage float,
+  purchasePrice float DEFAULT 0,
+  percentage float DEFAULT 0,
   FOREIGN KEY (companyId) REFERENCES companies(id),
   primary key (id)
 );
