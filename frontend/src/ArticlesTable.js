@@ -12,9 +12,21 @@ import useWebSocket from 'react-use-websocket';
 
 import React, { useState, useEffect } from 'react';
 
-function computeMutation(newRow, oldRow) {
+function computeMutationName(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
     return (<>Von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
+  }
+  return null;
+}
+function computeMutationPricing(newRow, oldRow) {
+  if (newRow.purchasePrice !== oldRow.purchasePrice) {
+    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice}<b><br/>Neuer VK Preis: </b>{newRow.purchasePrice * (1 + newRow.percentage  /100)}</>);
+  }
+  if (newRow.percentage !== oldRow.percentage) {
+    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice}<b><br/>Neuer VK Preis: </b>{newRow.purchasePrice * (1 + newRow.percentage / 100)}</>);
+  }
+  if (newRow.sellingPrice !== oldRow.sellingPrice) {
+    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice / (1 + newRow.percentage / 100)}<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice}</>);
   }
   return null;
 }
@@ -42,7 +54,6 @@ export default function ArticlesTable(params) {
   useEffect(() => {
     if (lastMessage !== null && company !== null) {
       let msg = JSON.parse(lastMessage.data);
-      console.log(msg);
       let action = msg.action;
       if (action === 'newArticle') {
         let newArticle = msg.data;
@@ -53,6 +64,7 @@ export default function ArticlesTable(params) {
                                  }});
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
+        console.log(updatedArticle);
         setArticles(articles => articles.map((article, j) => {
           return updatedArticle.id === article.id ? updatedArticle : article;
         }));
@@ -71,7 +83,7 @@ export default function ArticlesTable(params) {
           var cs = [];
           for (var article in articlesJson) {
             if (articlesJson.hasOwnProperty(article)) {
-              cs.push({id:articlesJson[article].id, name:articlesJson[article].name});
+              cs.push(articlesJson[article]);
             }
           }
           setIsLoading(false);
@@ -83,13 +95,13 @@ export default function ArticlesTable(params) {
   }, [company, setArticles]);
 
   const mutateRow = React.useCallback(
-    (company) =>
+    (article) =>
       new Promise((resolve, reject) =>
         setTimeout(() => {
-          if (company.name?.trim() === '') {
+          if (article.name?.trim() === '') {
             reject();
           } else {
-            resolve(company);
+            resolve(article);
           }
         }, 200),
       ),
@@ -106,9 +118,23 @@ export default function ArticlesTable(params) {
   const processRowUpdate = React.useCallback(
     (newRow, oldRow) =>
       new Promise((resolve, reject) => {
-        const mutation = computeMutation(newRow, oldRow);
-        if (mutation) {
+        const mutationName = computeMutationName(newRow, oldRow);
+        const mutationPrice = computeMutationPricing(newRow, oldRow);
+        if (mutationName) {
           // Save the arguments to resolve or reject the promise later
+          setChangeArguments({ resolve, reject, newRow, oldRow });
+        } else if (mutationPrice) {
+          // Save the arguments to resolve or reject the promise later
+
+          if (newRow.purchasePrice !== oldRow.purchasePrice) {
+            newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
+          }
+          if (newRow.percentage !== oldRow.percentage) {
+            newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
+          }
+          if (newRow.sellingPrice !== oldRow.sellingPrice) {
+            newRow.purchasePrice = newRow.sellingPrice / (1 + newRow.percentage / 100);
+          }
           setChangeArguments({ resolve, reject, newRow, oldRow });
         } else {
           resolve(oldRow); // Nothing was changed
@@ -129,6 +155,7 @@ export default function ArticlesTable(params) {
     try {
       const url = '/api/article/' + newRow.id;
       const body = JSON.stringify(newRow);
+      console.log('newrow: ' + body);
       await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -178,7 +205,8 @@ export default function ArticlesTable(params) {
     }
 
     const { newRow, oldRow } = changeArguments;
-    const mutation = computeMutation(newRow, oldRow);
+    const mutationName = computeMutationName(newRow, oldRow);
+    const mutationPrice = computeMutationPricing(newRow, oldRow);
 
     return (
       <Dialog
@@ -188,7 +216,8 @@ export default function ArticlesTable(params) {
       >
         <DialogTitle>Artikel wirklich ändern?</DialogTitle>
         <DialogContent dividers>
-          {mutation}
+          {mutationName}
+          {mutationPrice}
         </DialogContent>
         <DialogActions>
           <Button ref={noButtonRef} onClick={handleChangeNo}>
@@ -250,12 +279,37 @@ export default function ArticlesTable(params) {
 
 function columns(setDeleteArguments) {return [
   { field: 'name', flex: 1, align:'center', headerAlign:'center', headerName: 'Name', width: 180, editable: true },
-  { field: 'purchasePrice', headerAlign:'center', headerName: 'Einkaufspreis', width: 180, editable: true },
-  { field: 'sellingPercentage', headerAlign:'center', headerName: '%', width: 100, editable: true },
-  { field: 'sellingPrice', headerAlign:'center', headerName: 'Verkaufspreis', width: 180, editable: true },
-  { field: 'quantity', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
+  { field: 'purchasePrice', type: 'number', headerAlign:'center', headerName: 'Einkaufspreis', width: 180, editable: true, valueFormatter: (params) => {
+      if (params.value == null) {
+        return '';
+      }
+
+      const valueFormatted = params.value.toFixed(2).toLocaleString();
+      return `${valueFormatted} €`;
+    },
+  },
+  { field: 'percentage', type: 'number', headerAlign:'center', headerName: '%', width: 100, editable: true, valueFormatter: (params) => {
+      if (params.value == null) {
+        return '';
+      }
+
+      const valueFormatted = Number(params.value).toLocaleString();
+      return `${valueFormatted} %`;
+    },
+   },
+  { field: 'sellingPrice', type: 'number', headerAlign:'center', headerName: 'Verkaufspreis', width: 180, editable: true, valueFormatter: (params) => {
+      if (params.value == null) {
+        return '';
+      }
+
+      const valueFormatted = params.value.toFixed(2).toLocaleString();
+      return `${valueFormatted} €`;
+    },
+   },
+  { field: 'quantity', type: 'number', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
   { field: 'delete',
     editable: false,
+    type: 'action',
     headerName: '',
     align: 'center',
     width: 60,

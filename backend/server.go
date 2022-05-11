@@ -5,6 +5,7 @@ import (
   "fmt"
   "log"
   "io/ioutil"
+  "strconv"
   "net/http"
   "database/sql"
   "html/template"
@@ -48,7 +49,7 @@ func (s *Server) sendPdf(w http.ResponseWriter, r *http.Request) {
 func (s *Server) returnAllArticles(w http.ResponseWriter, r *http.Request) {
   fmt.Println("Endpoint Hit: returnAllArticles")
   // Execute the query
-  rows, err := s.db.Query("SELECT id, name FROM articles")
+  rows, err := s.db.Query("SELECT id, name, purchasePrice, percentage, barcode FROM articles")
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
   }
@@ -57,20 +58,22 @@ func (s *Server) returnAllArticles(w http.ResponseWriter, r *http.Request) {
   for rows.Next() {
     var article Article
     // for each row, scan the result into our tag composite object
-    if err = rows.Scan(&article.Id, &article.Name); err != nil {
+    if err = rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode); err != nil {
       panic(err.Error()) // proper error handling instead of panic in your app
     }
+    article.SellingPrice = article.PurchasePrice * (article.Percentage/100 + 1)
             // and then print out the tag's Name attribute
     articles = append(articles, article)
   }
+  fmt.Println(articles)
   json.NewEncoder(w).Encode(articles)
 }
 //------------------------------------------------------------------------------
 func (s *Server) returnSingleArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  key := vars["id"]
+  articleId := vars["id"]
 
-  q := fmt.Sprintf("SELECT id, name FROM articles WHERE id = %v", key)
+  q := fmt.Sprintf("SELECT id, name FROM articles WHERE id = %v", articleId)
   fmt.Println(q)
 
   rows, err := s.db.Query(q)
@@ -95,9 +98,12 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
   var article Article 
   json.Unmarshal(reqBody, &article)
 
+  fmt.Println(article)
+
   // create new article in database
   dbErr := s.db.QueryRow(
-    fmt.Sprintf("INSERT INTO articles (name, companyId) VALUES ('%v', %v) RETURNING id", article.Name, article.CompanyId)).Scan(&article.Id)
+    fmt.Sprintf("INSERT INTO articles (name, companyId, purchasePrice, percentage) VALUES ('%v', %v, %v, %v) RETURNING id",
+                article.Name, article.CompanyId, article.PurchasePrice, article.Percentage)).Scan(&article.Id)
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
@@ -107,10 +113,43 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
 
-  // send action to websocket
-  action := fmt.Sprintf(
-    "{\"action\":\"newArticle\", \"data\":{\"id\":%v, \"companyId\":%v, \"name\":\"%v\"}}",
-    article.Id, article.CompanyId, article.Name)
+  article.SellingPrice = article.PurchasePrice * (article.Percentage/100 + 1)
+  marshaledArticle, marshalErr := json.Marshal(article)
+  if marshalErr != nil {
+    panic(marshalErr.Error()) // proper error handling instead of panic in your app
+  }
+  fmt.Println(string(marshaledArticle))
+  action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":%v}", string(marshaledArticle))
+  s.writeMessage([]byte(action))
+}
+//------------------------------------------------------------------------------
+func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("Endpoint Hit: updateArticle")
+  vars := mux.Vars(r)
+
+  reqBody, _ := ioutil.ReadAll(r.Body)
+  var article Article 
+  json.Unmarshal(reqBody, &article)
+ var strConvErr error
+  article.Id, strConvErr = strconv.Atoi(vars["id"])
+  if (strConvErr != nil) {
+    panic(strConvErr.Error())
+  }
+
+  q := fmt.Sprintf("UPDATE articles SET name = '%v', purchasePrice = %v, percentage = %v WHERE id = %v", article.Name, article.PurchasePrice, article.Percentage, article.Id)
+  fmt.Println(q)
+
+  _, err := s.db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  article.SellingPrice = article.PurchasePrice * (article.Percentage/100 + 1)
+  marshaledArticle, marshalErr := json.Marshal(article)
+  if marshalErr != nil {
+    panic(marshalErr.Error()) // proper error handling instead of panic in your app
+  }
+  fmt.Println(string(marshaledArticle))
+  action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":%v}", string(marshaledArticle))
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
@@ -156,11 +195,10 @@ func (s *Server) returnAllCompanies(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func (s *Server) returnArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  key := vars["id"]
+  companyId := vars["id"]
 
-  q := fmt.Sprintf("SELECT id, name FROM articles WHERE companyId = %v", key)
+  q := fmt.Sprintf("SELECT id, name, purchasePrice, percentage, barcode FROM articles WHERE companyId = %v", companyId)
   fmt.Println(q)
-
   rows, err := s.db.Query(q)
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
@@ -169,11 +207,12 @@ func (s *Server) returnArticlesOfCompany(w http.ResponseWriter, r *http.Request)
   for rows.Next() {
     var article Article
     // for each row, scan the result into our tag composite object
-    err = rows.Scan(&article.Id, &article.Name)
+    err := rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode)
     if err != nil {
         panic(err.Error()) // proper error handling instead of panic in your app
     }
-            // and then print out the tag's Name attribute
+    article.SellingPrice = article.PurchasePrice * (article.Percentage/100 + 1)
+    // and then print out the tag's Name attribute
     articles = append(articles, article)
   }
     json.NewEncoder(w).Encode(articles)
@@ -181,9 +220,9 @@ func (s *Server) returnArticlesOfCompany(w http.ResponseWriter, r *http.Request)
 //------------------------------------------------------------------------------
 func (s *Server) returnSingleCompany(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  key := vars["id"]
+  companyId := vars["id"]
 
-  q := fmt.Sprintf("SELECT id, name FROM companies WHERE id = %v", key)
+  q := fmt.Sprintf("SELECT id, name FROM companies WHERE id = %v", companyId)
   fmt.Println(q)
 
   rows, err := s.db.Query(q)
@@ -222,26 +261,6 @@ func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
   action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":{\"id\":%v, \"name\":\"%v\"}}", id, company.Name)
-  s.writeMessage([]byte(action))
-}
-//------------------------------------------------------------------------------
-func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: updateArticle")
-  vars := mux.Vars(r)
-  id := vars["id"]
-
-  reqBody, _ := ioutil.ReadAll(r.Body)
-  var article Article 
-  json.Unmarshal(reqBody, &article)
-
-  q := fmt.Sprintf("UPDATE articles SET name = '%v' WHERE id = %v", article.Name, id)
-  fmt.Println(q)
-
-  _, err := s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
-  }
-  action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":{\"id\":%v, \"companyId\":%v, \"name\":\"%v\"}}", id, article.CompanyId, article.Name)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
@@ -312,9 +331,9 @@ func (s *Server)returnAllInventories(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func (s *Server)returnSingleInventory(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  key := vars["id"]
+  inventoryId := vars["id"]
 
-  q := fmt.Sprintf("SELECT id, name FROM inventories WHERE id = %v", key)
+  q := fmt.Sprintf("SELECT id, name FROM inventories WHERE id = %v", inventoryId)
   fmt.Println(q)
 
   rows, err := s.db.Query(q)
