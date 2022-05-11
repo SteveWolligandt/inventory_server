@@ -1,27 +1,35 @@
+import React from 'react';
+import './App.css';
+
 import CompaniesTable from './CompaniesTable.js';
-import InventoryIcon from '@mui/icons-material/Inventory';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
-import Fab from '@mui/material/Fab';
-import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import TextField from '@mui/material/TextField';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import Button from '@mui/material/Button';
-import Drawer from '@mui/material/Drawer';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import InboxIcon from '@mui/icons-material/Inbox';
-import MailIcon from '@mui/icons-material/Mail';
 import ArticlesTable from './ArticlesTable.js';
 import CreateArticleDialog from './CreateArticleDialog.js';
 import TopBar from './TopBar.js';
-import React, { useState, useEffect } from 'react';
-import {Component} from 'react';
+
+// MUI Widgets
+import Fab from '@mui/material/Fab';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Drawer from '@mui/material/Drawer';
 import Zoom from '@mui/material/Zoom';
-import './App.css';
+import List from '@mui/material/List';
+import ListSubheader from '@mui/material/ListSubheader';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Collapse from '@mui/material/Collapse';
+
+// MUI Icons
+import InboxIcon from '@mui/icons-material/Inbox';
+import SendIcon from '@mui/icons-material/Send';
+import DraftsIcon from '@mui/icons-material/Drafts';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import StarBorder from '@mui/icons-material/StarBorder';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+
 
 function App() {
   var [title, setTitle] = React.useState('Inventur');
@@ -31,6 +39,11 @@ function App() {
   var [activeInventory , setActiveInventory] = React.useState(null);
   var [activeCompany, setActiveCompany] = React.useState(null);
   var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
+  const [inboxOpen, setInboxOpen] = React.useState(true);
+
+  const handleInboxClick = () => {
+    setInboxOpen(!inboxOpen);
+  };
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
@@ -51,6 +64,46 @@ function App() {
       <TextField id="createInventory.name"
                  label="Outlined"
                  variant="outlined" />
+      <List
+      sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
+      component="nav"
+      aria-labelledby="nested-list-subheader"
+      subheader={
+        <ListSubheader component="div" id="nested-list-subheader">
+          Nested List Items
+        </ListSubheader>
+      }
+    >
+      <ListItemButton>
+        <ListItemIcon>
+          <SendIcon />
+        </ListItemIcon>
+        <ListItemText primary="Sent mail" />
+      </ListItemButton>
+      <ListItemButton>
+        <ListItemIcon>
+          <DraftsIcon />
+        </ListItemIcon>
+        <ListItemText primary="Drafts" />
+      </ListItemButton>
+      <ListItemButton onClick={handleInboxClick}>
+        <ListItemIcon>
+          <InboxIcon />
+        </ListItemIcon>
+        <ListItemText primary="Inbox" />
+        {inboxOpen ? <ExpandLess /> : <ExpandMore />}
+      </ListItemButton>
+      <Collapse in={inboxOpen} timeout="auto" unmountOnExit>
+        <List component="div" disablePadding>
+          <ListItemButton sx={{ pl: 4 }}>
+            <ListItemIcon>
+              <StarBorder />
+            </ListItemIcon>
+            <ListItemText primary="Starred" />
+          </ListItemButton>
+        </List>
+      </Collapse>
+    </List>
       <Fab color="secondary"
            aria-label="add"
            style={{margin: 0,
