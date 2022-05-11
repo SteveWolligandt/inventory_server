@@ -96,39 +96,17 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
   json.Unmarshal(reqBody, &article)
 
   // create new article in database
-  q := fmt.Sprintf("INSERT INTO articles (name, companyId) VALUES ('%v', %v) RETURNING id",
-                  article.Name, article.CompanyId)
-  fmt.Println(q)
-  dbErr := s.db.QueryRow(q).Scan(&article.Id)
+  dbErr := s.db.QueryRow(
+    fmt.Sprintf("INSERT INTO articles (name, companyId) VALUES ('%v', %v) RETURNING id", article.Name, article.CompanyId)).Scan(&article.Id)
+  if dbErr != nil {
+    panic(dbErr.Error()) // proper error handling instead of panic in your app
+  }
+  // create new amount for new articles in database
+  _, dbErr = s.db.Query("INSERT INTO amounts (articleId, inventoryId) SELECT ? as articleId, id as inventoryId FROM inventories", article.Id)
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
 
-  // for each inventory create a new amount for the new article
-
-  // get all inventory ids
-  q ="SELECT id FROM inventories" 
-  inventoryIds, inventoryIdsDbErr := s.db.Query(q)
-  if inventoryIdsDbErr != nil {
-    panic(inventoryIdsDbErr.Error()) // proper error handling instead of panic in your app
-  }
-  for inventoryIds.Next() {
-    inventoryId := 0
-    if scanErr := inventoryIds.Scan(&inventoryId); scanErr != nil {
-      panic(scanErr.Error()) // proper error handling instead of panic in your app
-    }
-
-    // for each inventory create a new amount
-    q = fmt.Sprintf(
-      "INSERT INTO amounts (inventoryId, articleId) VALUES (%v, %v)",
-      inventoryId, article.Id)
-    fmt.Println(q)
-    _, dbErr := s.db.Query(q)
-    if dbErr != nil {
-      panic(dbErr.Error()) // proper error handling instead of panic in your app
-    }
-  }
- 
   // send action to websocket
   action := fmt.Sprintf(
     "{\"action\":\"newArticle\", \"data\":{\"id\":%v, \"companyId\":%v, \"name\":\"%v\"}}",
@@ -138,25 +116,20 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func (s *Server)deleteArticle(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  id := vars["id"]
-
-  q := fmt.Sprintf("DELETE FROM articles WHERE id =%v", id)
-  fmt.Println(q)
-
-  _, err := s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
-  }
+  articleId := vars["id"]
 
   // delete amounts of article
-  q = fmt.Sprintf("DELETE FROM amounts WHERE articleId =%v", id)
-  fmt.Println(q)
-  _, err = s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
+  _, deleteAmountsErr := s.db.Query("DELETE FROM amounts WHERE articleId =?", articleId)
+  if deleteAmountsErr != nil {
+    panic(deleteAmountsErr.Error()) // proper error handling instead of panic in your app
+  }
+  _, deleteArticlesErr := s.db.Query("DELETE FROM articles WHERE id =?", articleId)
+  if deleteArticlesErr != nil {
+    panic(deleteArticlesErr.Error()) // proper error handling instead of panic in your app
   }
 
-  action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", id)
+
+  action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", articleId)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
@@ -297,35 +270,18 @@ func (s *Server) updateCompany(w http.ResponseWriter, r *http.Request) {
 func (s *Server)deleteCompany(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   companyId := vars["id"]
-
-  articleRows, articleRowsErr := s.db.Query("SELECT id FROM articles WHERE companyId = ?", companyId)
-  if articleRowsErr != nil {
-    panic(articleRowsErr.Error()) // proper error handling instead of panic in your app
+  // delete all amounts of all articles of company
+  _, amountsDeleteErr := s.db.Query("DELETE amounts FROM articles JOIN amounts ON amounts.articleId = articles.id WHERE companyId = ?", companyId)
+  if amountsDeleteErr != nil {
+    panic(amountsDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-  for articleRows.Next() {
-    articleId := 0
-    // for each row, scan the result into our tag composite object
-    if err := articleRows.Scan(&articleId); err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-    }
-            // and then print out the tag's Name attribute
-    _, amountsDeleteErr := s.db.Query("DELETE FROM amounts WHERE articleId = ?", articleId)
-    if amountsDeleteErr != nil {
-      panic(amountsDeleteErr.Error()) // proper error handling instead of panic in your app
-    }
+  _, articlesDeleteErr := s.db.Query("DELETE FROM articles WHERE companyId =%?", companyId)
+  if articlesDeleteErr != nil {
+    panic(articlesDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-
-  q := fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", companyId)
-  _, dbArtDeleteErr := s.db.Query(q)
-  if dbArtDeleteErr != nil {
-    panic(dbArtDeleteErr.Error()) // proper error handling instead of panic in your app
-  }
-
-  q = fmt.Sprintf("DELETE FROM companies WHERE id =%v", companyId)
-  fmt.Println(q)
-  _, dbCompDeleteErr := s.db.Query(q)
-  if dbCompDeleteErr != nil {
-    panic(dbCompDeleteErr.Error()) // proper error handling instead of panic in your app
+  _, companiesDeleteErr := s.db.Query("DELETE FROM companies WHERE id =?", companyId)
+  if companiesDeleteErr != nil {
+    panic(companiesDeleteErr.Error()) // proper error handling instead of panic in your app
   }
   action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", companyId)
   s.writeMessage([]byte(action))
@@ -382,40 +338,16 @@ func (s *Server) createNewInventory (w http.ResponseWriter, r *http.Request) {
   var inventory Inventory 
   json.Unmarshal(reqBody, &inventory)
 
-  q := fmt.Sprintf("INSERT INTO inventories (name) VALUES ('%v') RETURNING id",
-                   inventory.Name)
-  fmt.Println(q)
-
-  dbErr := s.db.QueryRow(q).Scan(&inventory.Id)
+  
+  dbErr := s.db.QueryRow(fmt.Sprintf("INSERT INTO inventories (name) VALUES ('%v') RETURNING id", inventory.Name)).Scan(&inventory.Id)
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
 
-
-  // for each existing article create a new amount for the new inventory
-
-  // get all inventory ids
-  q = "SELECT id FROM articles" 
-  fmt.Println(q)
-  articleIds, articleIdsDbErr := s.db.Query(q)
-  if articleIdsDbErr != nil {
-    panic(articleIdsDbErr.Error()) // proper error handling instead of panic in your app
-  }
-  for articleIds.Next() {
-    articleId := 0
-    if scanErr := articleIds.Scan(&articleId); scanErr != nil {
-      panic(scanErr.Error()) // proper error handling instead of panic in your app
-    }
-
-    // for each inventory create a new amount
-    q = fmt.Sprintf(
-      "INSERT INTO amounts (inventoryId, articleId) VALUES (%v, %v)",
-      inventory.Id, articleId)
-    fmt.Println(q)
-    _, dbErr := s.db.Query(q)
-    if dbErr != nil {
-      panic(dbErr.Error()) // proper error handling instead of panic in your app
-    }
+  // create new amount for new articles in database
+  _, dbErr = s.db.Query("INSERT INTO amounts (articleId, inventoryId) SELECT id as articleId, ? as inventoryId FROM articles", inventory.Id)
+  if dbErr != nil {
+    panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
 
   action := fmt.Sprintf(
@@ -450,26 +382,22 @@ func (s *Server)updateInventory(w http.ResponseWriter, r *http.Request) {
 //------------------------------------------------------------------------------
 func (s *Server)deleteInventory(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
-  id := vars["id"]
+  inventoryId := vars["id"]
 
-  q := fmt.Sprintf("DELETE FROM inventories WHERE id =%v", id)
-  fmt.Println(q)
-
-  _, err := s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
-  }
 
   // delete amounts of inventory
-  q = fmt.Sprintf("DELETE FROM amounts WHERE articleId =%v", id)
-  fmt.Println(q)
-  _, err = s.db.Query(q)
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
+  _, amountsDeleteErr := s.db.Query("DELETE FROM amounts WHERE articleId =?", inventoryId)
+  if amountsDeleteErr != nil {
+    panic(amountsDeleteErr.Error()) // proper error handling instead of panic in your app
+  }
+
+  _, inventoryDeleteErr := s.db.Query("DELETE FROM inventories WHERE id =?", inventoryId)
+  if inventoryDeleteErr != nil {
+    panic(inventoryDeleteErr.Error()) // proper error handling instead of panic in your app
   }
 
   // handle websocket
-  action := fmt.Sprintf("{\"action\":\"deleteInventory\", \"data\":{\"id\":%v}}", id)
+  action := fmt.Sprintf("{\"action\":\"deleteInventory\", \"data\":{\"id\":%v}}", inventoryId)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
