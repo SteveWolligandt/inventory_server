@@ -1,4 +1,4 @@
-import React from 'react';
+import React , { useState, useEffect } from 'react';
 import './App.css';
 
 import CompaniesTable from './CompaniesTable.js';
@@ -8,6 +8,11 @@ import CreateArticleDialog from './CreateArticleDialog.js';
 import TopBar from './TopBar.js';
 
 // MUI Widgets
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import Fab from '@mui/material/Fab';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
@@ -22,27 +27,40 @@ import Collapse from '@mui/material/Collapse';
 
 // MUI Icons
 import InboxIcon from '@mui/icons-material/Inbox';
-import SendIcon from '@mui/icons-material/Send';
-import DraftsIcon from '@mui/icons-material/Drafts';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import StarBorder from '@mui/icons-material/StarBorder';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 
+function useStickyState(defaultValue, key) {
+  const [value, setValue] = React.useState(() => {
+    const stickyValue = window.localStorage.getItem(key);
+    return stickyValue !== null
+      ? JSON.parse(stickyValue)
+      : defaultValue;
+  });
+  React.useEffect(() => {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+  return [value, setValue];
+}
 
 function App() {
-  var [title, setTitle] = React.useState('Inventur');
-  var [showCompanies, setShowCompanies] = React.useState(true);
+  var [createInventoryDialogOpen, setCreateInventoryDialogOpen] = React.useState(false);
+  var [title, setTitle] = useStickyState('Firmen', 'title');
+  var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
+  var [showArticles , setShowArticles] = useStickyState(false, 'showArticles');
   var [showCompanyDeleteRequest, setShowCompanyDeleteRequest] = React.useState(false);
-  var [showArticles , setShowArticles ] = React.useState(false);
-  var [activeInventory , setActiveInventory] = React.useState(null);
-  var [activeCompany, setActiveCompany] = React.useState(null);
+  var [inventories , setInventories] = React.useState([]);
+  var [activeInventory , setActiveInventory] = useStickyState(null, 'activeInventory');
+  var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
-  const [inboxOpen, setInboxOpen] = React.useState(true);
+  const [leftPaneInventoryOpen, setLeftPaneInventoryOpen] = React.useState(true);
 
-  const handleInboxClick = () => {
-    setInboxOpen(!inboxOpen);
+  const handleLeftPaneInventoryClick = () => {
+    setLeftPaneInventoryOpen(!leftPaneInventoryOpen);
   };
 
   const toggleDrawer = (open) => (event) => {
@@ -51,6 +69,24 @@ function App() {
     }
     setDrawLeftMenu(open);
   };
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await fetch('/api/inventories');
+        const inventoriesJson = await response.json();
+        var is = [];
+        for (var companyJson in inventoriesJson) {
+          if (inventoriesJson.hasOwnProperty(companyJson)) {
+            is.push(inventoriesJson[companyJson]);
+          }
+        }
+        setInventories(is);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    loadData();
+  }, []);
 
   const renderLeftDrawer = () => {
     return(
@@ -61,9 +97,6 @@ function App() {
               variant = "temporary"
       >
       <Box sx={{width: 300}}>
-      <TextField id="createInventory.name"
-                 label="Outlined"
-                 variant="outlined" />
       <List
       sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
       component="nav"
@@ -74,69 +107,86 @@ function App() {
         </ListSubheader>
       }
     >
-      <ListItemButton>
+      <ListItemButton onClick={handleLeftPaneInventoryClick}>
         <ListItemIcon>
-          <SendIcon />
+          <InventoryIcon />
         </ListItemIcon>
-        <ListItemText primary="Sent mail" />
+        <ListItemText primary="Inventuren" />
+        {leftPaneInventoryOpen ? <ExpandLess /> : <ExpandMore />}
       </ListItemButton>
-      <ListItemButton>
-        <ListItemIcon>
-          <DraftsIcon />
-        </ListItemIcon>
-        <ListItemText primary="Drafts" />
-      </ListItemButton>
-      <ListItemButton onClick={handleInboxClick}>
-        <ListItemIcon>
-          <InboxIcon />
-        </ListItemIcon>
-        <ListItemText primary="Inbox" />
-        {inboxOpen ? <ExpandLess /> : <ExpandMore />}
-      </ListItemButton>
-      <Collapse in={inboxOpen} timeout="auto" unmountOnExit>
+      <Collapse in={leftPaneInventoryOpen} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
-          <ListItemButton sx={{ pl: 4 }}>
-            <ListItemIcon>
-              <StarBorder />
-            </ListItemIcon>
-            <ListItemText primary="Starred" />
-          </ListItemButton>
+          {inventories.map((inventory) => (
+            <ListItemButton sx={{ pl: 4 }}
+                            onClick={() => {
+                              setActiveInventory(inventory);
+                              setDrawLeftMenu(false);
+                              if (setShowArticles) {
+                                setTitle(activeCompany.name +' - '+ inventory.name);
+                              }
+                            }}>
+              <ListItemIcon>
+                <Inventory2OutlinedIcon />
+              </ListItemIcon>
+              <ListItemText primary={inventory.name} />
+            </ListItemButton>
+          ))}       
         </List>
       </Collapse>
     </List>
-      <Fab color="secondary"
-           aria-label="add"
-           style={{margin: 0,
-                   top: 30, bottom: 'auto',
-                   right: 'auto', left: 250,
-                   position: 'fixed'}}
-           onClick={() => {
-               const data = { name : document.getElementById("createInventory.name").value };
-               fetch('/api/inventory',{
-                     method: "POST",
-                     headers: { "Content-Type": "application/json" },
-                     body: JSON.stringify(data)}
-               ).then((response) => {
-                 toggleDrawer(true)
-               }).catch(() => {
-                 console.log('Could not create Article');
-                 toggleDrawer(true)
-               });
-               }
-             }
-      >
-      <InventoryIcon />
-      </Fab>
-      </Box>
-      </Drawer>
-      </React.Fragment>
+    <Zoom in={drawLeftMenu}
+          style={{ transitionDelay: drawLeftMenu ? '300ms' : '0ms' }}>
+    <Fab color="secondary"
+         size='medium'
+         aria-label="add"
+         style={{margin: 0,
+                 top: 'auto', bottom: 30,
+                 right: 'auto', left: 273,
+                 position: 'fixed'}}
+         onClick={() => {toggleDrawer(true); setCreateInventoryDialogOpen(true)}}
+    >
+    <InventoryIcon />
+    </Fab>
+    </Zoom>
+    </Box>
+    </Drawer>
+    </React.Fragment>
     );
+  }
+  const handleCreateInventoryDialogClose = () => setCreateInventoryDialogOpen(false);
+  const handleCreateInventoryDialogCreate = () => {
+     const data = { name : document.getElementById("createInventory.name").value };
+     fetch('/api/inventory',
+           { method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify(data)}).
+     then((response) => response.json()).
+     then((responseJson) => setActiveInventory(responseJson));
+     setCreateInventoryDialogOpen(false)
   }
   return (
     <>
     <TopBar name={title} onClick={toggleDrawer(true)}/>
     <div style={{marginBottom: '100px'}}></div>
 
+    <Dialog open={createInventoryDialogOpen} onClose={handleCreateInventoryDialogClose}>
+      <DialogTitle>Neue Inventur</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          margin="dense"
+          id="createInventory.name"
+          label="Name"
+          type="string"
+          fullWidth
+          variant="standard"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCreateInventoryDialogClose}>Abbrechen</Button>
+        <Button onClick={handleCreateInventoryDialogCreate}>Erstellen</Button>
+      </DialogActions>
+    </Dialog>
     {/* left menu*/}
     {renderLeftDrawer()}
     {/* end of left menu*/}
@@ -153,7 +203,7 @@ function App() {
           setShowCompanies(false);
           setShowArticles(true);
           setActiveCompany(company);
-          setTitle(company.name);
+          setTitle(company.name + ' - ' +(activeInventory !== null ? activeInventory.name : '<Keine Inventur ausgewählt>'));
         }}
       onDeleteCompany={
       (company) => {
@@ -176,7 +226,7 @@ function App() {
                 setShowCompanies(true);
                 setShowArticles(false);
                 setActiveCompany(null);
-                setTitle('Inventur');
+                setTitle('Firmen');
               }}>
             <ArrowBackIcon/>
           </Fab>

@@ -31,7 +31,7 @@ var upgrader = websocket.Upgrader{
 func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
   t, err := template.ParseFiles("public/index.html")
   if err != nil {
-    fmt.Println(err)
+    panic(err.Error())
   }
   t.Execute(w, nil)
 }
@@ -47,7 +47,6 @@ func (s *Server) sendPdf(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func (s *Server) returnAllArticles(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: returnAllArticles")
   // Execute the query
   rows, err := s.db.Query("SELECT id, name, purchasePrice, percentage, barcode FROM articles")
   if err != nil {
@@ -65,7 +64,6 @@ func (s *Server) returnAllArticles(w http.ResponseWriter, r *http.Request) {
             // and then print out the tag's Name attribute
     articles = append(articles, article)
   }
-  fmt.Println(articles)
   json.NewEncoder(w).Encode(articles)
 }
 //------------------------------------------------------------------------------
@@ -74,7 +72,6 @@ func (s *Server) returnSingleArticle(w http.ResponseWriter, r *http.Request) {
   articleId := vars["id"]
 
   q := fmt.Sprintf("SELECT id, name FROM articles WHERE id = %v", articleId)
-  fmt.Println(q)
 
   rows, err := s.db.Query(q)
   if err != nil {
@@ -98,8 +95,6 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
   var article Article 
   json.Unmarshal(reqBody, &article)
 
-  fmt.Println(article)
-
   // create new article in database
   dbErr := s.db.QueryRow(
     fmt.Sprintf("INSERT INTO articles (name, companyId, purchasePrice, percentage) VALUES ('%v', %v, %v, %v) RETURNING id",
@@ -118,13 +113,11 @@ func (s *Server) createNewArticle(w http.ResponseWriter, r *http.Request) {
   if marshalErr != nil {
     panic(marshalErr.Error()) // proper error handling instead of panic in your app
   }
-  fmt.Println(string(marshaledArticle))
   action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":%v}", string(marshaledArticle))
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
 func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: updateArticle")
   vars := mux.Vars(r)
 
   reqBody, _ := ioutil.ReadAll(r.Body)
@@ -137,7 +130,6 @@ func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
   }
 
   q := fmt.Sprintf("UPDATE articles SET name = '%v', purchasePrice = %v, percentage = %v WHERE id = %v", article.Name, article.PurchasePrice, article.Percentage, article.Id)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -148,7 +140,6 @@ func (s *Server) updateArticle(w http.ResponseWriter, r *http.Request) {
   if marshalErr != nil {
     panic(marshalErr.Error()) // proper error handling instead of panic in your app
   }
-  fmt.Println(string(marshaledArticle))
   action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":%v}", string(marshaledArticle))
   s.writeMessage([]byte(action))
 }
@@ -167,13 +158,11 @@ func (s *Server)deleteArticle(w http.ResponseWriter, r *http.Request) {
     panic(deleteArticlesErr.Error()) // proper error handling instead of panic in your app
   }
 
-
   action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", articleId)
   s.writeMessage([]byte(action))
 }
 //------------------------------------------------------------------------------
 func (s *Server) returnAllCompanies(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: returnAllCompanies")
   // Execute the query
   rows, err := s.db.Query("SELECT id, name FROM companies")
   if err != nil {
@@ -198,7 +187,6 @@ func (s *Server) returnArticlesOfCompany(w http.ResponseWriter, r *http.Request)
   companyId := vars["id"]
 
   q := fmt.Sprintf("SELECT id, name, purchasePrice, percentage, barcode FROM articles WHERE companyId = %v", companyId)
-  fmt.Println(q)
   rows, err := s.db.Query(q)
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
@@ -223,8 +211,6 @@ func (s *Server) returnSingleCompany(w http.ResponseWriter, r *http.Request) {
   companyId := vars["id"]
 
   q := fmt.Sprintf("SELECT id, name FROM companies WHERE id = %v", companyId)
-  fmt.Println(q)
-
   rows, err := s.db.Query(q)
   if err != nil {
     panic(err.Error()) // proper error handling instead of panic in your app
@@ -242,7 +228,6 @@ func (s *Server) returnSingleCompany(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: createNewCompany")
   // get the body of our POST request
   // unmarshal this into a new Company struct
   // append this to our Articles array.    
@@ -253,7 +238,6 @@ func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
   // our new Company
 
   q := fmt.Sprintf("INSERT INTO companies (Name) VALUES ('%v') RETURNING id", company.Name)
-  fmt.Println(q)
 
   id := 0
   dbErr := s.db.QueryRow(q).Scan(&id)
@@ -265,7 +249,6 @@ func (s *Server) createNewCompany(w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func (s *Server) updateCompany(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: updateCompany")
   vars := mux.Vars(r)
   id := vars["id"]
 
@@ -274,7 +257,6 @@ func (s *Server) updateCompany(w http.ResponseWriter, r *http.Request) {
   json.Unmarshal(reqBody, &company)
 
   q := fmt.Sprintf("UPDATE companies SET name = '%v' WHERE id = %v", company.Name, id)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -290,15 +272,22 @@ func (s *Server)deleteCompany(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   companyId := vars["id"]
   // delete all amounts of all articles of company
-  _, amountsDeleteErr := s.db.Query("DELETE amounts FROM articles JOIN amounts ON amounts.articleId = articles.id WHERE companyId = ?", companyId)
+  _, amountsDeleteErr := s.db.Query(
+    fmt.Sprintf(
+      "DELETE amounts FROM articles JOIN amounts ON amounts.articleId = articles.id WHERE companyId = %v",
+      companyId))
   if amountsDeleteErr != nil {
     panic(amountsDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-  _, articlesDeleteErr := s.db.Query("DELETE FROM articles WHERE companyId =%?", companyId)
+  _, articlesDeleteErr := s.db.Query(
+    fmt.Sprintf("DELETE FROM articles WHERE companyId =%v",
+    companyId))
   if articlesDeleteErr != nil {
     panic(articlesDeleteErr.Error()) // proper error handling instead of panic in your app
   }
-  _, companiesDeleteErr := s.db.Query("DELETE FROM companies WHERE id =?", companyId)
+  _, companiesDeleteErr := s.db.Query(
+    fmt.Sprintf("DELETE FROM companies WHERE id = %v",
+    companyId))
   if companiesDeleteErr != nil {
     panic(companiesDeleteErr.Error()) // proper error handling instead of panic in your app
   }
@@ -309,14 +298,11 @@ func (s *Server)deleteCompany(w http.ResponseWriter, r *http.Request) {
 // amount-related
 //------------------------------------------------------------------------------
 func (s *Server)updateAmount(w http.ResponseWriter, r *http.Request)  {
-  fmt.Println("Endpoint Hit: updateAmount")
-
   reqBody, _ := ioutil.ReadAll(r.Body)
   var amount Amount 
   json.Unmarshal(reqBody, &amount)
 
   q := fmt.Sprintf("UPDATE amounts SET amount = '%v' WHERE articleId = %v AND inventoryId = %v", amount.Amount, amount.ArticleId, amount.InventoryId)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -326,7 +312,6 @@ func (s *Server)updateAmount(w http.ResponseWriter, r *http.Request)  {
   if marshalErr != nil {
     panic(marshalErr.Error()) // proper error handling instead of panic in your app
   }
-  fmt.Println(string(marshaledAmount))
   action := fmt.Sprintf("{\"action\":\"updateAmount\", \"data\":%v}", string(marshaledAmount))
   s.writeMessage([]byte(action))
   
@@ -335,7 +320,6 @@ func (s *Server)updateAmount(w http.ResponseWriter, r *http.Request)  {
 // inventory-related
 //------------------------------------------------------------------------------
 func (s *Server)returnAllInventories(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: returnAllInventories")
   // Execute the query
   rows, err := s.db.Query("SELECT id, name FROM inventories")
   if err != nil {
@@ -360,7 +344,6 @@ func (s *Server)returnSingleInventory(w http.ResponseWriter, r *http.Request) {
   inventoryId := vars["id"]
 
   q := fmt.Sprintf("SELECT id, name FROM inventories WHERE id = %v", inventoryId)
-  fmt.Println(q)
 
   rows, err := s.db.Query(q)
   if err != nil {
@@ -384,7 +367,9 @@ func (s *Server) createNewInventory (w http.ResponseWriter, r *http.Request) {
   json.Unmarshal(reqBody, &inventory)
 
   
-  dbErr := s.db.QueryRow(fmt.Sprintf("INSERT INTO inventories (name) VALUES ('%v') RETURNING id", inventory.Name)).Scan(&inventory.Id)
+  dbErr := s.db.QueryRow(fmt.Sprintf(
+      "INSERT INTO inventories (name) VALUES ('%v') RETURNING id", 
+      inventory.Name)).Scan(&inventory.Id)
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
@@ -394,6 +379,7 @@ func (s *Server) createNewInventory (w http.ResponseWriter, r *http.Request) {
   if dbErr != nil {
     panic(dbErr.Error()) // proper error handling instead of panic in your app
   }
+  json.NewEncoder(w).Encode(inventory)
 
   action := fmt.Sprintf(
     "{\"action\":\"newInventory\", \"data\":{\"id\":%v, \"name\":\"%v\"}}",
@@ -402,7 +388,6 @@ func (s *Server) createNewInventory (w http.ResponseWriter, r *http.Request) {
 }
 //------------------------------------------------------------------------------
 func (s *Server)updateInventory(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("Endpoint Hit: updateInventory")
   vars := mux.Vars(r)
   id := vars["id"]
 
@@ -413,7 +398,6 @@ func (s *Server)updateInventory(w http.ResponseWriter, r *http.Request) {
   q := fmt.Sprintf(
     "UPDATE inventories SET name = '%v' WHERE id = %v",
     inventory.Name, id)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -451,7 +435,6 @@ func (s *Server)returnInventoryAmounts(w http.ResponseWriter, r *http.Request) {
   id := vars["id"]
 
   q := fmt.Sprintf("SELECT * FROM amounts WHERE inventoryId =%v", id)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -467,7 +450,6 @@ func (s *Server)returnInventoryAmountOfArticle(w http.ResponseWriter, r *http.Re
   q := fmt.Sprintf(
     "SELECT * FROM amounts WHERE inventoryId =%v AND articleId =%v ",
     inventoryId, articleId)
-  fmt.Println(q)
 
   _, err := s.db.Query(q)
   if err != nil {
@@ -490,12 +472,13 @@ func (s *Server)returnInventoryOfCompany(w http.ResponseWriter, r *http.Request)
   }
   var articlesWithAmount [] ArticleWithAmount
   for amountsPerArticle.Next() {
-    var articleWithAmount ArticleWithAmount
+    var article ArticleWithAmount
     // for each row, scan the result into our tag composite object
-    if err = amountsPerArticle.Scan(&articleWithAmount.Id, &articleWithAmount.Name, &articleWithAmount.PurchasePrice, &articleWithAmount.Percentage, &articleWithAmount.Barcode, &articleWithAmount.Amount); err != nil {
+    if err = amountsPerArticle.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.Amount); err != nil {
       panic(err.Error()) // proper error handling instead of panic in your app
     }
-    articlesWithAmount = append(articlesWithAmount, articleWithAmount)
+    article.SellingPrice = article.PurchasePrice * (article.Percentage / 100 + 1)
+    articlesWithAmount = append(articlesWithAmount, article)
   }
   json.NewEncoder(w).Encode(articlesWithAmount)
 }

@@ -41,7 +41,6 @@ export default function ArticlesTable(params) {
   var company = params.company;
   var inventory = params.inventory;
   var isOpen = params.open;
-  var [isLoading, setIsLoading] = React.useState(true);
   var [articles, setArticles] = React.useState([]);
   const [messageHistory, setMessageHistory] = useState([]);
   var loc = window.location, new_uri;
@@ -58,6 +57,7 @@ export default function ArticlesTable(params) {
   const websocketAddr = new_uri;
   const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
 
+  // websocket
   useEffect(() => {
     if (lastMessage !== null && company !== null) {
       let msg = JSON.parse(lastMessage.data);
@@ -82,33 +82,36 @@ export default function ArticlesTable(params) {
         let updatedAmount = msg.data;
         console.log(updatedAmount);
         setArticles(articles => articles.map((article, j) => {
-          if (updatedAmount.inventoryId === inventory && updatedAmount.articleId === article.id) {
+          if (updatedAmount.inventoryId === inventory.id && updatedAmount.articleId === article.id) {
             article.amount = updatedAmount.amount;
           }
           return article;
         }));
       }
     }
-  }, [company, lastMessage, setArticles]);
+  }, [company, lastMessage, inventory, setArticles]);
 
+  // initial get
   useEffect(()=> {
     if (company !== null) {
-      fetch(inventory ? '/api/company/'+ company.id +'/inventory/'+inventory : '/api/company/'+ company.id +'/articles')
-        .then((response)=> response.json())
+      fetch(inventory
+            ? '/api/company/' + company.id + '/inventory/' + inventory.id
+            : '/api/company/' + company.id + '/articles')
+        .then((response) => response.json())
         .then((articlesJson) => {
           var cs = [];
           for (var article in articlesJson) {
             if (articlesJson.hasOwnProperty(article)) {
+              console.log(articlesJson[article]);
               cs.push(articlesJson[article]);
             }
           }
-          setIsLoading(false);
           setArticles(cs);
         }).catch((error) => {
           console.error(error);
         });
     }
-  }, [company, setArticles]);
+  }, [company, inventory, setArticles]);
 
   const mutateRow = React.useCallback(
     (article) =>
@@ -153,7 +156,20 @@ export default function ArticlesTable(params) {
           setChangeArguments({ resolve, reject, newRow, oldRow });
 
         } else if (mutationAmount) {
-          setChangeArguments({ resolve, reject, newRow, oldRow });
+          if (inventory) {
+            const url = '/api/amount/';
+            const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory.id, amount:newRow.amount});
+            fetch(url, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: body
+            }).then((response) => {
+              setSnackbar({ children: 'Stückzahl geändert', severity: 'success' });
+              resolve(newRow);
+              setChangeArguments(null);
+            });
+          }
+
 
         } else {
           resolve(oldRow); // Nothing was changed
@@ -182,7 +198,7 @@ export default function ArticlesTable(params) {
 
       if (inventory) {
         const url = '/api/amount/';
-        const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory, amount:newRow.amount});
+        const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory.id, amount:newRow.amount});
         await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

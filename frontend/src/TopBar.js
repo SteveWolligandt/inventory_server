@@ -18,13 +18,9 @@ export default function TopBar(params) {
             aria-label="menu"
             sx={{ mr: 2 }}
             onClick={params.onClick}
-          >
-            <MenuIcon />
-          </IconButton>
+          ><MenuIcon /></IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {params.hasOwnProperty('name')
-              ? params.name
-              : "Inventur"}
+            {params.name}
           </Typography>
           {/*
           <Button color="inherit">Login</Button>
