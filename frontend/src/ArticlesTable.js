@@ -20,13 +20,13 @@ function computeMutationName(newRow, oldRow) {
 }
 function computeMutationPricing(newRow, oldRow) {
   if (newRow.purchasePrice !== oldRow.purchasePrice) {
-    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice}<b><br/>Neuer VK Preis: </b>{newRow.purchasePrice * (1 + newRow.percentage  /100)}</>);
+    return (<><b>Neuer EK Preis: </b>{newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage  /100)).toFixed(2).toLocaleString()} €</>);
   }
   if (newRow.percentage !== oldRow.percentage) {
-    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice}<b><br/>Neuer VK Preis: </b>{newRow.purchasePrice * (1 + newRow.percentage / 100)}</>);
+    return (<><b>Neuer EK Preis: </b>{newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()} €</>);
   }
   if (newRow.sellingPrice !== oldRow.sellingPrice) {
-    return (<>Neuer Preis<br/> <b>Neuer EK Preis: </b>{newRow.purchasePrice / (1 + newRow.percentage / 100)}<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice}</>);
+    return (<><b>Neuer EK Preis: </b>{(newRow.purchasePrice / (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice.toFixed(2).toLocaleString()} €</>);
   }
   return null;
 }
