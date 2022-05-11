@@ -449,6 +449,31 @@ func (s *Server)returnInventoryAmountOfArticle(w http.ResponseWriter, r *http.Re
   }
 }
 //------------------------------------------------------------------------------
+func (s *Server)returnInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
+  vars := mux.Vars(r)
+  inventoryId := vars["inventoryId"]
+  companyId := vars["companyId"]
+
+  q := fmt.Sprintf(
+    "SELECT articles.id, articles.name, articles.purchasePrice, articles.percentage, articles.barcode, amounts.amount FROM amounts JOIN articles ON amounts.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = amounts.inventoryId WHERE inventories.id = %v AND companies.id = %v",
+    inventoryId, companyId)
+
+  amountsPerArticle, err := s.db.Query(q)
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  var articlesWithAmount [] ArticleWithAmount
+  for amountsPerArticle.Next() {
+    var articleWithAmount ArticleWithAmount
+    // for each row, scan the result into our tag composite object
+    if err = amountsPerArticle.Scan(&articleWithAmount.Id, &articleWithAmount.Name, &articleWithAmount.PurchasePrice, &articleWithAmount.Percentage, &articleWithAmount.Barcode, &articleWithAmount.Amount); err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+    }
+    articlesWithAmount = append(articlesWithAmount, articleWithAmount)
+  }
+  json.NewEncoder(w).Encode(articlesWithAmount)
+}
+//------------------------------------------------------------------------------
 func (s* Server) handleRequests() {
   s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     http.ServeFile(w, r, "../frontend/build/index.html")
@@ -560,6 +585,11 @@ func (s* Server) handleRequests() {
   s.router.HandleFunc(
       "/api/inventory/{inventoryId}/amounts/{articleId}",
       s.returnInventoryAmountOfArticle).
+    Methods("GET")
+
+  s.router.HandleFunc(
+      "/api/company/{companyId}/inventory/{inventoryId}",
+      s.returnInventoryOfCompany).
     Methods("GET")
 }
 //------------------------------------------------------------------------------

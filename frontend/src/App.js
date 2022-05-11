@@ -1,4 +1,5 @@
 import CompaniesTable from './CompaniesTable.js';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import Fab from '@mui/material/Fab';
 import Box from '@mui/material/Box';
@@ -27,6 +28,7 @@ function App() {
   var [showCompanies, setShowCompanies] = React.useState(true);
   var [showCompanyDeleteRequest, setShowCompanyDeleteRequest] = React.useState(false);
   var [showArticles , setShowArticles ] = React.useState(false);
+  var [activeInventory , setActiveInventory] = React.useState(null);
   var [activeCompany, setActiveCompany] = React.useState(null);
   var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
 
@@ -34,54 +36,57 @@ function App() {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
     }
-
     setDrawLeftMenu(open);
   };
 
+  const renderLeftDrawer = () => {
+    return(
+      <React.Fragment key={'left'}>
+      <Drawer anchor  = {'left'}
+              open    = {drawLeftMenu}
+              onClose = {toggleDrawer(false)}
+              variant = "temporary"
+      >
+      <Box sx={{width: 300}}>
+      <TextField id="createInventory.name"
+                 label="Outlined"
+                 variant="outlined" />
+      <Fab color="secondary"
+           aria-label="add"
+           style={{margin: 0,
+                   top: 30, bottom: 'auto',
+                   right: 'auto', left: 250,
+                   position: 'fixed'}}
+           onClick={() => {
+               const data = { name : document.getElementById("createInventory.name").value };
+               fetch('/api/inventory',{
+                     method: "POST",
+                     headers: { "Content-Type": "application/json" },
+                     body: JSON.stringify(data)}
+               ).then((response) => {
+                 toggleDrawer(true)
+               }).catch(() => {
+                 console.log('Could not create Article');
+                 toggleDrawer(true)
+               });
+               }
+             }
+      >
+      <InventoryIcon />
+      </Fab>
+      </Box>
+      </Drawer>
+      </React.Fragment>
+    );
+  }
   return (
     <>
     <TopBar name={title} onClick={toggleDrawer(true)}/>
     <div style={{marginBottom: '100px'}}></div>
 
     {/* left menu*/}
-    <div>
-      <React.Fragment key={'left'}>
-        <Drawer
-          anchor={'left'}
-          open={drawLeftMenu}
-          onClose={toggleDrawer(false)}
-        >
-        <Box
-          sx={{ width: 250 }}
-          role="presentation"
-          onClick={toggleDrawer( false)}
-          onKeyDown={toggleDrawer(false)}
-        >
-        <TextField id="createInventory.name" label="Outlined" variant="outlined" />
-        <Button variant="contained" onClick={()=>{
-          const data = {
-            name : document.getElementById("createInventory.name").value,
-          };
-          fetch(
-            '/api/inventory',{
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)}
-          ).then((response) => {
-            toggleDrawer(false)
-          }).catch(() => {
-            console.log('Could not create Article');
-            toggleDrawer(false)
-          });
-        }}>Neue Inventur</Button>
-        </Box>
-            </Drawer>
-          </React.Fragment>
-        </div>
+    {renderLeftDrawer()}
     {/* end of left menu*/}
-
 
     <div style={{
       margin: '0 auto',
