@@ -17,6 +17,7 @@ CREATE TABLE articles (
   id int NOT NULL AUTO_INCREMENT,
   companyId int NOT NULL,
   name varchar(255) NOT NULL,
+  articleNumber varchar(255) NOT NULL,
   imagePath varchar(255),
   barcode int,
   purchasePrice float DEFAULT 0,
