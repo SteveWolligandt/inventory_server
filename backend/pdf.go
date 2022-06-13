@@ -1,15 +1,12 @@
 package main
 import (
   "fmt"
-  "database/sql"
-
-  //"github.com/johnfercher/maroto/pkg/color"
   "github.com/johnfercher/maroto/pkg/consts"
   "github.com/johnfercher/maroto/pkg/pdf"
   "github.com/johnfercher/maroto/pkg/props"
 )
 //------------------------------------------------------------------------------
-func buildPdf(db *sql.DB) (filename string) {
+func buildPdf(db *Database) (filename string) {
   m := pdf.NewMaroto(consts.Portrait, consts.A4)
   //m.SetBorder(true)
 
@@ -28,35 +25,20 @@ func buildPdf(db *sql.DB) (filename string) {
   })
 
 
-  companyRows, err := db.Query("SELECT * FROM companies")
-  if err != nil {
-    panic(err.Error()) // proper error handling instead of panic in your app
-  }
-  for companyRows.Next() {
+  companies := db.companies()
+  for _, company := range companies {
     m.Row(20, func(){})
-    //m.AddPage()
-    var company Company
-    // for each row, scan the result into our tag composite object
-    err = companyRows.Scan(&company.Id, &company.Name)
+    // m.AddPage()
+
     m.Row(10, func() {
       m.Text(company.Name, props.Text{
         Size: 20,
       })
     })
     m.Line(1)
-    q := fmt.Sprintf("SELECT id, name FROM articles WHERE companyId = %v",
-                     company.Id)
-    articleRows, err := db.Query(q)
-    if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-    }
-    for articleRows.Next() {
-      var article Article
-      // for each row, scan the result into our tag composite object
-      if err = articleRows.Scan(&article.Id, &article.Name); err != nil {
-        panic(err.Error()) // proper error handling instead of panic in your app
-      }
+    articles := db.articlesOfCompany(company.Id)
 
+    for _, article := range articles {
       m.Row(10, func() {
         m.ColSpace(1)
         m.Col(5, func() {
@@ -81,7 +63,7 @@ func buildPdf(db *sql.DB) (filename string) {
   m.SetBorder(false)
 
   filename = "/tmp/1234.pdf";
-  err = m.OutputFileAndClose(filename)
+  err := m.OutputFileAndClose(filename)
   if err != nil {
     fmt.Println("Could not save PDF:", err)
   }

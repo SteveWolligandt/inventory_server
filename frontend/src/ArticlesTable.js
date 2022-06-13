@@ -10,7 +10,7 @@ import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import useWebSocket from 'react-use-websocket';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 
 function computeMutationAmount(newRow, oldRow) {
   if (newRow.amount !== oldRow.amount) {
@@ -20,7 +20,13 @@ function computeMutationAmount(newRow, oldRow) {
 }
 function computeMutationName(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
-    return (<>Von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
+    return (<>Name von <i><b>{oldRow.name}</b></i> zu <i><b>{newRow.name}</b></i> ändern?</>);
+  }
+  return null;
+}
+function computeMutationArticleNumber(newRow, oldRow) {
+  if (newRow.articleNumber !== oldRow.articleNumber) {
+    return (<>Artikelnummer von <i><b>{oldRow.articleNumber}</b></i> zu <i><b>{newRow.articleNumber}</b></i> ändern?</>);
   }
   return null;
 }
@@ -42,7 +48,6 @@ export default function ArticlesTable(params) {
   var inventory = params.inventory;
   var isOpen = params.open;
   var [articles, setArticles] = React.useState([]);
-  const [messageHistory, setMessageHistory] = useState([]);
   var loc = window.location, new_uri;
   if (loc.protocol === 'https:') {
     new_uri = 'wss';
@@ -50,17 +55,19 @@ export default function ArticlesTable(params) {
     new_uri = 'ws';
   }
   new_uri += '://';
-  if (loc.host === 'localhost:3000') { new_uri += 'localhost:8080'; }
-  else { new_uri += loc.host; }
+  new_uri += loc.hostname;
+  new_uri += ':';
+  if (loc.port === '3000') { new_uri += '8080'; }
+  else { new_uri += loc.port; }
   new_uri += loc.pathname + 'ws';
 
   const websocketAddr = new_uri;
-  const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
+  const lastMessage = useWebSocket(websocketAddr).lastMessage;
 
   // websocket
   useEffect(() => {
     if (lastMessage !== null && company !== null) {
-      let msg = JSON.parse(lastMessage.data);
+      let msg    = JSON.parse(lastMessage.data);
       let action = msg.action;
       if (action === 'newArticle') {
         let newArticle = msg.data;
@@ -102,7 +109,6 @@ export default function ArticlesTable(params) {
           var cs = [];
           for (var article in articlesJson) {
             if (articlesJson.hasOwnProperty(article)) {
-              console.log(articlesJson[article]);
               cs.push(articlesJson[article]);
             }
           }
@@ -129,20 +135,18 @@ export default function ArticlesTable(params) {
   const noButtonRef = React.useRef(null);
   const [changeArguments, setChangeArguments] = React.useState(null);
   const [deleteArguments, setDeleteArguments] = React.useState(null);
-
-  const [snackbar, setSnackbar] = React.useState(null);
-
+  const [snackbar       , setSnackbar]        = React.useState(null);
   const handleCloseSnackbar = () => setSnackbar(null);
 
   const processRowUpdate = React.useCallback(
     (newRow, oldRow) =>
       new Promise((resolve, reject) => {
-        const mutationName = computeMutationName(newRow, oldRow);
-        const mutationPrice = computeMutationPricing(newRow, oldRow);
-        const mutationAmount = computeMutationAmount(newRow, oldRow);
-        if (mutationName) {
+        const mutationName          = computeMutationName(newRow, oldRow);
+        const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
+        const mutationPrice         = computeMutationPricing(newRow, oldRow);
+        const mutationAmount        = computeMutationAmount(newRow, oldRow);
+        if (mutationName || mutationArticleNumber) {
           setChangeArguments({ resolve, reject, newRow, oldRow });
-
         } else if (mutationPrice) {
           if (newRow.purchasePrice !== oldRow.purchasePrice) {
             newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
@@ -175,7 +179,7 @@ export default function ArticlesTable(params) {
           resolve(oldRow); // Nothing was changed
         }
       }),
-    [],
+    [inventory],
   );
 
   const handleChangeNo = () => {
@@ -249,8 +253,9 @@ export default function ArticlesTable(params) {
     }
 
     const { newRow, oldRow } = changeArguments;
-    const mutationName = computeMutationName(newRow, oldRow);
-    const mutationPrice = computeMutationPricing(newRow, oldRow);
+    const mutationName          = computeMutationName(newRow, oldRow);
+    const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
+    const mutationPrice         = computeMutationPricing(newRow, oldRow);
 
     return (
       <Dialog
@@ -261,6 +266,7 @@ export default function ArticlesTable(params) {
         <DialogTitle>Artikel wirklich ändern?</DialogTitle>
         <DialogContent dividers>
           {mutationName}
+          {mutationArticleNumber}
           {mutationPrice}
         </DialogContent>
         <DialogActions>
@@ -350,6 +356,7 @@ function columns(setDeleteArguments) {return [
       return `${valueFormatted} €`;
     },
    },
+  { field: 'articleNumber', flex: 1, align:'center', headerAlign:'center', headerName: 'Artikelnummer', width: 180, editable: true },
   { field: 'amount', type: 'number', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
   { field: 'delete',
     editable: false,
@@ -359,21 +366,21 @@ function columns(setDeleteArguments) {return [
     width: 60,
     sortable: false,
     renderCell: (params) => {
-      const onClick = (e) => {
-        e.stopPropagation(); // don't select this row after clicking
-
-        const api = params.api;
-        const thisRow = {};
-
-        api
-          .getAllColumns()
-          .filter((c) => c.field !== "__check__" && !!c)
-          .forEach(
-            (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-          );
-
-        return alert(JSON.stringify(thisRow, null, 4));
-      };
+      //const onClick = (e) => {
+      //  e.stopPropagation(); // don't select this row after clicking
+      //
+      //  const api = params.api;
+      //  const thisRow = {};
+      //
+      //  api
+      //    .getAllColumns()
+      //    .filter((c) => c.field !== "__check__" && !!c)
+      //    .forEach(
+      //      (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
+      //    );
+      //
+      //  return alert(JSON.stringify(thisRow, null, 4));
+      //};
 
       return <IconButton size="small" aria-label="deleteCompany" onClick={()=>{
                  setDeleteArguments(params.row); }}>

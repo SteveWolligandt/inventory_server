@@ -10,6 +10,7 @@ type Article struct {
   PurchasePrice  float32 `json:"purchasePrice"`
   Percentage     float32 `json:"percentage"`
   SellingPrice   float32 `json:"sellingPrice"`
+  ArticleNumber  string  `json:"articleNumber"`
 }
 //------------------------------------------------------------------------------
 // Article - Our struct for all articles
@@ -22,5 +23,6 @@ type ArticleWithAmount struct {
   PurchasePrice  float32 `json:"purchasePrice"`
   Percentage     float32 `json:"percentage"`
   SellingPrice   float32 `json:"sellingPrice"`
-  Amount         int     `json:"amount"`
+  ArticleNumber  string  `json:"articleNumber"`
+  Amount int `json:"amount"`
 }

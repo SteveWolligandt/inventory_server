@@ -54,7 +54,7 @@ function App() {
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles , setShowArticles] = useStickyState(false, 'showArticles');
   var [showCompanyDeleteRequest, setShowCompanyDeleteRequest] = React.useState(false);
-  var [inventories , setInventories] = React.useState([]);
+  var [inventories, setInventories] = React.useState([]);
   var [activeInventory , setActiveInventory] = useStickyState(null, 'activeInventory');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
@@ -95,19 +95,16 @@ function App() {
       <Drawer anchor  = {'left'}
               open    = {drawLeftMenu}
               onClose = {toggleDrawer(false)}
-              variant = "temporary"
-      >
+              variant = "temporary">
       <Box sx={{width: 300}}>
-      <List
-      sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
-      component="nav"
-      aria-labelledby="nested-list-subheader"
-      subheader={
-        <ListSubheader component="div" id="nested-list-subheader">
-          Nested List Items
-        </ListSubheader>
-      }
-    >
+      <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
+            component="nav"
+            aria-labelledby="nested-list-subheader"
+            subheader={
+              <ListSubheader component="div" id="nested-list-subheader">
+                Nested List Items
+              </ListSubheader>
+            }>
       <ListItemButton component="a" href="/pdf">
         <ListItemIcon>
           <PictureAsPdfIcon />
@@ -124,8 +121,9 @@ function App() {
       <Collapse in={leftPaneInventoryOpen} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
           {inventories.map((inventory) => (
-            <ListItemButton sx={{ pl: 4 }}
-                            onClick={() => {
+            <ListItemButton key     = {inventory.id}
+                            sx      = {{ pl: 4 }}
+                            onClick = {() => {
                               setActiveInventory(inventory);
                               setDrawLeftMenu(false);
                               if (setShowArticles) {
@@ -140,24 +138,23 @@ function App() {
           ))}       
         </List>
       </Collapse>
-    </List>
-    <Zoom in={drawLeftMenu}
-          style={{ transitionDelay: drawLeftMenu ? '300ms' : '0ms' }}>
-    <Fab color="secondary"
-         size='medium'
-         aria-label="add"
-         style={{margin: 0,
-                 top: 'auto', bottom: 30,
-                 right: 'auto', left: 273,
-                 position: 'fixed'}}
-         onClick={() => {toggleDrawer(true); setCreateInventoryDialogOpen(true)}}
-    >
-    <InventoryIcon />
-    </Fab>
-    </Zoom>
-    </Box>
-    </Drawer>
-    </React.Fragment>
+      </List>
+      <Zoom in={drawLeftMenu}
+            style={{ transitionDelay: drawLeftMenu ? '300ms' : '0ms' }}>
+      <Fab color="secondary"
+           size='medium'
+           aria-label="add"
+           style={{margin: 0,
+                   top: 'auto', bottom: 30,
+                   right: 'auto', left: 273,
+                   position: 'fixed'}}
+           onClick={() => {toggleDrawer(true); setCreateInventoryDialogOpen(true)}}>
+      <InventoryIcon />
+      </Fab>
+      </Zoom>
+      </Box>
+      </Drawer>
+      </React.Fragment>
     );
   }
   const handleCreateInventoryDialogClose = () => setCreateInventoryDialogOpen(false);

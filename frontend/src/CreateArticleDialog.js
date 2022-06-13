@@ -26,9 +26,8 @@ export default function CreateArticleDialog(params) {
       companyId : params.company.id,
       purchasePrice : parseFloat(document.getElementById("createArticle.purchasePrice").value),
       percentage : parseFloat(document.getElementById("createArticle.percentage").value),
+      articleNumber : document.getElementById("createArticle.articleNumber").value,
     };
-
-    console.log('create new article: ' + JSON.stringify(data));
 
     fetch(
       '/api/article',{
@@ -40,7 +39,6 @@ export default function CreateArticleDialog(params) {
     ).then((response) => {
       setDialogOpen(false);
     }).catch(() => {
-      console.log('Could not create Article');
       setDialogOpen(false);
     });
   };
@@ -99,6 +97,13 @@ export default function CreateArticleDialog(params) {
               var percentage = document.getElementById("createArticle.percentage").value;
                 document.getElementById("createArticle.purchasePrice").value = sellingPrice / (1 + percentage/100);
             }}
+          />
+        </FormControl>
+        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
+          <InputLabel htmlFor="createArticle.articleNumber">Artikel Nummer</InputLabel>
+          <Input
+            id="createArticle.articleNumber"
+            startAdornment={<InputAdornment position="start"><ArticleIcon /></InputAdornment>}
           />
         </FormControl>
         </DialogContent>
