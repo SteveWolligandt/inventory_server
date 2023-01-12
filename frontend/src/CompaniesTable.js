@@ -1,3 +1,4 @@
+import CreateCompanyDialog from './CreateCompanyDialog.js';
 import { DataGrid } from '@mui/x-data-grid';
 import Snackbar from '@mui/material/Snackbar';
 import Dialog from '@mui/material/Dialog';
@@ -21,7 +22,7 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function CompaniesTable(params) {
+export default function Companies(params) {
   var [isLoading, setIsLoading] = React.useState(true);
   var [companies, setCompanies] = React.useState([]);
   const [messageHistory, setMessageHistory] = useState([]);
@@ -227,7 +228,7 @@ export default function CompaniesTable(params) {
         {renderDeleteConfirmDialog()}
         <DataGrid
           rows={companies}
-          columns={columns(params.onOpenCompany, setDeleteArguments)}
+          columns={columns(params.onOpen, setDeleteArguments)}
           processRowUpdate={processRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />
@@ -236,6 +237,7 @@ export default function CompaniesTable(params) {
             <Alert {...snackbar} onClose={handleCloseSnackbar} />
           </Snackbar>
         )}
+      <CreateCompanyDialog open={params.open}/>
       </div>
     );
   } else {

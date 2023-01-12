@@ -1,4 +1,10 @@
-import React , { useState, useEffect } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import React from 'react';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -7,11 +13,9 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Collapse from '@mui/material/Collapse';
-import InboxIcon from '@mui/icons-material/Inbox';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import StarBorder from '@mui/icons-material/StarBorder';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import Fab from '@mui/material/Fab';
@@ -22,18 +26,28 @@ export default function InventoriesList(params) {
   var setActiveInventory = params.setActiveInventory;
   var setTitle = params.setTitle;
   var activeCompany = params.activeCompany;
-  var setActiveCompany = params.setActiveCompany;
   var setShowArticles = params.setShowArticles;
-  var setCreateInventoryDialogOpen = params.setCreateInventoryDialogOpen;
   var toggleDrawer = params.toggleDrawer;
   var drawInventoryListMenu = params.drawInventoryListMenu;
   var setDrawInventoryListMenu = params.setDrawInventoryListMenu;
+  var [createInventoryDialogOpen, setCreateInventoryDialogOpen] = React.useState(false);
 
   const [leftPaneInventoryOpen, setLeftPaneInventoryOpen] = React.useState(true);
   const handleLeftPaneInventoryClick = () => {
     setLeftPaneInventoryOpen(!leftPaneInventoryOpen);
   };
-  return(
+  const handleCreateInventoryDialogClose = () => setCreateInventoryDialogOpen(false);
+  const handleCreateInventoryDialogCreate = () => {
+     const data = { name : document.getElementById("createInventory.name").value };
+     fetch('/api/inventory',
+           { method: "POST",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify(data)})
+     .then((response) => response.json())
+     .then((responseJson) => setActiveInventory(responseJson));
+     setCreateInventoryDialogOpen(false)
+  }
+  return(<>
     <React.Fragment key={'left'}>
     <Drawer anchor  = {'left'}
             open    = {drawInventoryListMenu}
@@ -98,5 +112,24 @@ export default function InventoriesList(params) {
     </Box>
     </Drawer>
     </React.Fragment>
+
+    <Dialog open={createInventoryDialogOpen} onClose={handleCreateInventoryDialogClose}>
+      <DialogTitle>Neue Inventur</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          margin="dense"
+          id="createInventory.name"
+          label="Name"
+          type="string"
+          fullWidth
+          variant="standard"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCreateInventoryDialogClose}>Abbrechen</Button>
+        <Button onClick={handleCreateInventoryDialogCreate}>Erstellen</Button>
+      </DialogActions>
+    </Dialog></>
   );
 }

@@ -1,3 +1,4 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -5,11 +6,15 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Fab from '@mui/material/Fab';
 import IconButton from '@mui/material/IconButton';
 import Snackbar from '@mui/material/Snackbar';
+import Zoom from '@mui/material/Zoom';
 import {DataGrid} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
 import useWebSocket from 'react-use-websocket';
+
+import CreateArticleDialog from './CreateArticleDialog.js';
 
 function computeMutationAmount(newRow, oldRow) {
   if (newRow.amount !== oldRow.amount) {
@@ -59,7 +64,7 @@ function computeMutationPricing(newRow, oldRow) {
 return null;
 }
 
-export default function ArticlesTable(params) {
+export default function Articles(params) {
   var company = params.company;
   var inventory = params.inventory;
   var isOpen = params.open;
@@ -367,7 +372,7 @@ export default function ArticlesTable(params) {
 
   if (isOpen) {
     const style = {height : 500, width : '100%'};
-    return (
+    return (<>
       <div style={style}>
         {renderConfirmChangeDialog()}
         {renderConfirmDeleteDialog()}
@@ -384,11 +389,24 @@ export default function ArticlesTable(params) {
           </Snackbar>
         )}
       </div>
-    );
+      <CreateArticleDialog open={params.open} company={params.activeCompany}/>
+      <Zoom in={params.open}>
+        <Fab color='secondary'
+             aria-label="add"
+             style={{margin: '0 auto',
+                     top: 80,
+                     right: 'auto',
+                     bottom: 'auto',
+                     left: 10,
+                     position: 'fixed',
+                   }}
+             onClick={params.onOpen}>
+          <ArrowBackIcon/>
+        </Fab>
+      </Zoom>
+    </>);
   } else {
-          return (
-              <><
-              />);
+    return null;
   }
 }
 
