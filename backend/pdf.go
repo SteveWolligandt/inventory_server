@@ -1,71 +1,139 @@
 package main
+
 import (
-  "fmt"
-  "github.com/johnfercher/maroto/pkg/consts"
-  "github.com/johnfercher/maroto/pkg/pdf"
-  "github.com/johnfercher/maroto/pkg/props"
+	"fmt"
+	"github.com/johnfercher/maroto/pkg/consts"
+	"github.com/johnfercher/maroto/pkg/pdf"
+	"github.com/johnfercher/maroto/pkg/props"
 )
-//------------------------------------------------------------------------------
-func buildPdf(db *Database) (filename string) {
-  m := pdf.NewMaroto(consts.Portrait, consts.A4)
-  //m.SetBorder(true)
 
-  m.Row(60, func() {
-    _ = m.FileImage("assets/logo.jpg", props.Rect{
-            Center:  false,
-            Left:100,
-            Percent: 50,
-    })
-  })
+// ------------------------------------------------------------------------------
+func buildPdfHeader(m pdf.Maroto) {
+	m.Row(8, func() {
+		m.Col(2, func() {
+			m.Text("Firma", props.Text{
+				Style: consts.Bold,
+				Size:  10,
+				Top:   1,
+			})
+		})
+		m.Col(2, func() {
+			m.Text("Artikelname", props.Text{
+				Style: consts.Bold,
+				Size:  10,
+				Top:   1,
+			})
+		})
 
-  m.Row(30, func() {
-    m.Text("Inventur", props.Text{
-      Size: 30,
-    })
-  })
+		m.Col(2, func() {
+			m.Text("VK", props.Text{
+				Style: consts.Bold,
+				Size:  10,
+				Top:   1,
+				Align: consts.Right,
+			})
+		})
 
+		m.Col(2, func() {
+			m.Text("Stückzahl", props.Text{
+				Style: consts.Bold,
+				Size:  10,
+				Top:   1,
+				Align: consts.Right,
+			})
+		})
 
-  companies := db.companies()
-  for _, company := range companies {
-    m.Row(20, func(){})
-    // m.AddPage()
+		m.Col(2, func() {
+			m.Text("Gesamtpreis", props.Text{
+				Style: consts.Bold,
+				Size:  10,
+				Top:   1,
+				Align: consts.Right,
+			})
+		})
+	})
+}
 
-    m.Row(10, func() {
-      m.Text(company.Name, props.Text{
-        Size: 20,
-      })
-    })
-    m.Line(1)
-    articles := db.articlesOfCompany(company.Id)
+// -----------------------------------------------------------------------------
+func fillTable(m pdf.Maroto, db *Database, inventoryId int) float32 {
+	totalPrice := float32(0)
+	companies := db.Companies()
+	for _, company := range companies {
+		articles := db.InventoryOfCompany(company.Id, inventoryId)
+		for _, article := range articles {
+			m.Line(1)
+			m.Row(8, func() {
+				m.Col(2, func() {
+					m.Text(company.Name, props.Text{
+						Size: 10,
+						Top:  1,
+					})
+				})
 
-    for _, article := range articles {
-      m.Row(10, func() {
-        m.ColSpace(1)
-        m.Col(5, func() {
-          id := fmt.Sprintf("%v", article.Id)
-          m.Text(id, props.Text{
-            Size: 10,
-            Top: 3,
-          })
-        })
-        m.Col(6, func() {
-          m.Text(article.Name, props.Text{
-            Size: 15,
-            Top: 1,
-          })
-        })
-      })
-      m.Line(1)
-    }
-  }
+				m.Col(2, func() {
+					m.Text(article.Name, props.Text{
+						Size: 10,
+						Top:  1,
+					})
+				})
 
+				m.Col(2, func() {
+					m.Text(fmt.Sprintf("%.2f €", article.SellingPrice), props.Text{
+						Size:  10,
+						Top:   1,
+						Align: consts.Right,
+					})
+				})
 
-  m.SetBorder(false)
+				m.Col(2, func() {
+					m.Text(fmt.Sprintf("%v", article.Amount), props.Text{
+						Size:  10,
+						Top:   1,
+						Align: consts.Right,
+					})
+				})
 
-  filename = "/tmp/1234.pdf";
-  err := m.OutputFileAndClose(filename)
-  if err != nil {
-    fmt.Println("Could not save PDF:", err)
-  }
-  return
+				m.Col(2, func() {
+					m.Text(fmt.Sprintf("%.2f €", float32(article.Amount)*article.SellingPrice), props.Text{
+						Size:  10,
+						Top:   1,
+						Align: consts.Right,
+					})
+				})
+				totalPrice += float32(article.Amount) * article.SellingPrice
+			})
+		}
+	}
+	m.Line(1)
+	return totalPrice
+}
+
+// ------------------------------------------------------------------------------
+func createTotalPriceRow(m pdf.Maroto, totalPrice float32) {
+	m.Row(8, func() {
+		m.Col(10, func() {
+			m.Text(fmt.Sprintf("%.2f €", totalPrice), props.Text{
+				Size:  10,
+				Top:   1,
+				Align: consts.Right,
+			})
+		})
+	})
+}
+
+// ------------------------------------------------------------------------------
+func buildPdf(db *Database, inventoryId int) string {
+	m := pdf.NewMaroto(consts.Portrait, consts.A4)
+	buildPdfHeader(m)
+	totalPrice := fillTable(m, db, inventoryId)
+	createTotalPriceRow(m, totalPrice)
+
+	m.SetBorder(false)
+
+  filename := "/tmp/1234.pdf"
+	err := m.OutputFileAndClose(filename)
+	if err != nil {
+		fmt.Println("Could not save PDF:", err)
+	}
+	return filename
 }

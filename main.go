@@ -1,12 +1,11 @@
 package main
+
 import (
-  "fmt"
+	"fmt"
 )
-//------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------
 func main() {
-  fmt.Println("Starting...")
-  s := server.NewServer()
-  fmt.Println("Now running!")
-  
-  defer s.Close()
+	s := server.NewServer()
+	defer s.Close()
 }

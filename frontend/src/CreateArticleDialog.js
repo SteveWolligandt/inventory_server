@@ -24,8 +24,8 @@ export default function CreateArticleDialog(params) {
     const data = {
       name : document.getElementById("createArticle.name").value,
       companyId : params.company.id,
-      purchasePrice : parseFloat(document.getElementById("createArticle.purchasePrice").value),
-      percentage : parseFloat(document.getElementById("createArticle.percentage").value),
+      //purchasePrice : parseFloat(document.getElementById("createArticle.purchasePrice").value),
+      //percentage : parseFloat(document.getElementById("createArticle.percentage").value),
       articleNumber : document.getElementById("createArticle.articleNumber").value,
     };
 

@@ -6,6 +6,7 @@ import CreateCompanyDialog from './CreateCompanyDialog.js';
 import ArticlesTable from './ArticlesTable.js';
 import CreateArticleDialog from './CreateArticleDialog.js';
 import TopBar from './TopBar.js';
+import InventoriesList from './InventoriesList.js';
 
 // MUI Widgets
 import Dialog from '@mui/material/Dialog';
@@ -14,26 +15,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Fab from '@mui/material/Fab';
-import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import Drawer from '@mui/material/Drawer';
 import Zoom from '@mui/material/Zoom';
-import List from '@mui/material/List';
-import ListSubheader from '@mui/material/ListSubheader';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Collapse from '@mui/material/Collapse';
 
 // MUI Icons
-import InboxIcon from '@mui/icons-material/Inbox';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import StarBorder from '@mui/icons-material/StarBorder';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
 
 function useStickyState(defaultValue, key) {
   const [value, setValue] = React.useState(() => {
@@ -57,19 +43,15 @@ function App() {
   var [inventories, setInventories] = React.useState([]);
   var [activeInventory , setActiveInventory] = useStickyState(null, 'activeInventory');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
-  var [drawLeftMenu, setDrawLeftMenu] = React.useState(false);
-  const [leftPaneInventoryOpen, setLeftPaneInventoryOpen] = React.useState(true);
-
-  const handleLeftPaneInventoryClick = () => {
-    setLeftPaneInventoryOpen(!leftPaneInventoryOpen);
-  };
+  var [drawInventoryListMenu, setDrawInventoryListMenu] = React.useState(false);
 
   const toggleDrawer = (open) => (event) => {
     if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
       return;
     }
-    setDrawLeftMenu(open);
+    setDrawInventoryListMenu(open);
   };
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -89,74 +71,6 @@ function App() {
     loadData();
   }, []);
 
-  const renderLeftDrawer = () => {
-    return(
-      <React.Fragment key={'left'}>
-      <Drawer anchor  = {'left'}
-              open    = {drawLeftMenu}
-              onClose = {toggleDrawer(false)}
-              variant = "temporary">
-      <Box sx={{width: 300}}>
-      <List sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
-            component="nav"
-            aria-labelledby="nested-list-subheader"
-            subheader={
-              <ListSubheader component="div" id="nested-list-subheader">
-                Nested List Items
-              </ListSubheader>
-            }>
-      <ListItemButton component="a" href="/pdf">
-        <ListItemIcon>
-          <PictureAsPdfIcon />
-        </ListItemIcon>
-        <ListItemText primary="PDF" />
-      </ListItemButton>
-      <ListItemButton onClick={handleLeftPaneInventoryClick}>
-        <ListItemIcon>
-          <InventoryIcon />
-        </ListItemIcon>
-        <ListItemText primary="Inventuren" />
-        {leftPaneInventoryOpen ? <ExpandLess /> : <ExpandMore />}
-      </ListItemButton>
-      <Collapse in={leftPaneInventoryOpen} timeout="auto" unmountOnExit>
-        <List component="div" disablePadding>
-          {inventories.map((inventory) => (
-            <ListItemButton key     = {inventory.id}
-                            sx      = {{ pl: 4 }}
-                            onClick = {() => {
-                              setActiveInventory(inventory);
-                              setDrawLeftMenu(false);
-                              if (setShowArticles) {
-                                setTitle(activeCompany.name +' - '+ inventory.name);
-                              }
-                            }}>
-              <ListItemIcon>
-                <Inventory2OutlinedIcon />
-              </ListItemIcon>
-              <ListItemText primary={inventory.name} />
-            </ListItemButton>
-          ))}       
-        </List>
-      </Collapse>
-      </List>
-      <Zoom in={drawLeftMenu}
-            style={{ transitionDelay: drawLeftMenu ? '300ms' : '0ms' }}>
-      <Fab color="secondary"
-           size='medium'
-           aria-label="add"
-           style={{margin: 0,
-                   top: 'auto', bottom: 30,
-                   right: 'auto', left: 273,
-                   position: 'fixed'}}
-           onClick={() => {toggleDrawer(true); setCreateInventoryDialogOpen(true)}}>
-      <InventoryIcon />
-      </Fab>
-      </Zoom>
-      </Box>
-      </Drawer>
-      </React.Fragment>
-    );
-  }
   const handleCreateInventoryDialogClose = () => setCreateInventoryDialogOpen(false);
   const handleCreateInventoryDialogCreate = () => {
      const data = { name : document.getElementById("createInventory.name").value };
@@ -191,9 +105,18 @@ function App() {
         <Button onClick={handleCreateInventoryDialogCreate}>Erstellen</Button>
       </DialogActions>
     </Dialog>
-    {/* left menu*/}
-    {renderLeftDrawer()}
-    {/* end of left menu*/}
+    <InventoriesList 
+      inventories = {inventories}
+      setActiveInventory = {setActiveInventory}
+      setTitle = {setTitle}
+      activeCompany = {activeCompany}
+      setActiveCompany = {setActiveCompany}
+      setShowArticles = {setShowArticles}
+      setCreateInventoryDialogOpen = {setCreateInventoryDialogOpen}
+      toggleDrawer = {toggleDrawer}
+      drawInventoryListMenu = {drawInventoryListMenu}
+      setDrawInventoryListMenu = {setDrawInventoryListMenu}
+    />
 
     <div style={{
       margin: '0 auto',

@@ -1,16 +1,15 @@
-import { DataGrid } from '@mui/x-data-grid';
-import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
-import Snackbar from '@mui/material/Snackbar';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
+import {DataGrid} from '@mui/x-data-grid';
+import React, {useEffect} from 'react';
 import useWebSocket from 'react-use-websocket';
-
-import React, { useEffect } from 'react';
 
 function computeMutationAmount(newRow, oldRow) {
   if (newRow.amount !== oldRow.amount) {
@@ -30,17 +29,34 @@ function computeMutationArticleNumber(newRow, oldRow) {
   }
   return null;
 }
-function computeMutationPricing(newRow, oldRow) {
-  if (newRow.purchasePrice !== oldRow.purchasePrice) {
-    return (<><b>Neuer EK Preis: </b>{newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage  /100)).toFixed(2).toLocaleString()} €</>);
-  }
-  if (newRow.percentage !== oldRow.percentage) {
-    return (<><b>Neuer EK Preis: </b>{newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()} €</>);
-  }
-  if (newRow.sellingPrice !== oldRow.sellingPrice) {
-    return (<><b>Neuer EK Preis: </b>{(newRow.purchasePrice / (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice.toFixed(2).toLocaleString()} €</>);
+function computeMutationNotes(newRow, oldRow) {
+  if (newRow.notes !== oldRow.notes) {
+    return (<>Notizen von <i><b>{oldRow.notes}</b></i> zu <i><b>{newRow.notes}</b></i> ändern?</>);
   }
   return null;
+}
+function computeMutationPricing(newRow, oldRow) {
+  if (newRow.purchasePrice !== oldRow.purchasePrice) {
+    return (<><b>Neuer EK Preis: </b>{
+      newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage  /100)).toFixed(2).toLocaleString()
+  }
+  €</>);
+  }
+  if (newRow.percentage !== oldRow.percentage) {
+    return (<><b>Neuer EK Preis: </b> {
+    newRow.purchasePrice.toFixed(2).toLocaleString()
+  } €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()
+}
+€</>);
+  }
+  if (newRow.sellingPrice !== oldRow.sellingPrice) {
+    return (<><b>Neuer EK Preis: </b> {
+  (newRow.purchasePrice / (1 + newRow.percentage / 100))
+      .toFixed(2)
+      .toLocaleString()
+} €<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice.toFixed(2).toLocaleString()} €</>);
+}
+return null;
 }
 
 export default function ArticlesTable(params) {
@@ -57,8 +73,11 @@ export default function ArticlesTable(params) {
   new_uri += '://';
   new_uri += loc.hostname;
   new_uri += ':';
-  if (loc.port === '3000') { new_uri += '8080'; }
-  else { new_uri += loc.port; }
+  if (loc.port === '3000') {
+    new_uri += '8080';
+  } else {
+    new_uri += loc.port;
+  }
   new_uri += loc.pathname + 'ws';
 
   const websocketAddr = new_uri;
@@ -67,15 +86,17 @@ export default function ArticlesTable(params) {
   // websocket
   useEffect(() => {
     if (lastMessage !== null && company !== null) {
-      let msg    = JSON.parse(lastMessage.data);
+      let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
       if (action === 'newArticle') {
         let newArticle = msg.data;
-        setArticles(articles => {if (newArticle.companyId === company.id) {
-                                   return articles.concat(newArticle);
-                                 } else {
-                                   return articles;
-                                 }});
+        setArticles(articles => {
+          if (newArticle.companyId === company.id) {
+            return articles.concat(newArticle);
+          } else {
+            return articles;
+          }
+        });
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
         console.log(updatedArticle);
@@ -84,158 +105,197 @@ export default function ArticlesTable(params) {
         }));
       } else if (action === 'deleteArticle') {
         let deletedArticle = msg.data;
-        setArticles(articles => articles.filter(article => article.id !== deletedArticle.id));
-      } else if (action === 'updateAmount') {
-        let updatedAmount = msg.data;
-        console.log(updatedAmount);
+        setArticles(articles => articles.filter(article => article.id !==
+                                                           deletedArticle.id));
+      } else if (action === 'updateInventoryData') {
+        let updatedInventoryData = msg.data;
+        console.log(updatedInventoryData);
         setArticles(articles => articles.map((article, j) => {
-          if (updatedAmount.inventoryId === inventory.id && updatedAmount.articleId === article.id) {
-            article.amount = updatedAmount.amount;
+          if (updatedInventoryData.inventoryId === inventory.id &&
+              updatedInventoryData.articleId === article.id) {
+            article.amount = updatedInventoryData.amount;
+            article.purchasePrice = updatedInventoryData.purchasePrice;
+            article.percentage = updatedInventoryData.percentage;
+            article.sellingPrice = updatedInventoryData.sellingPrice;
+            article.notes = updatedInventoryData.notes;
           }
           return article;
         }));
       }
     }
-  }, [company, lastMessage, inventory, setArticles]);
+  }, [ company, lastMessage, inventory, setArticles ]);
 
   // initial get
-  useEffect(()=> {
+  useEffect(() => {
     if (company !== null) {
       fetch(inventory
-            ? '/api/company/' + company.id + '/inventory/' + inventory.id
-            : '/api/company/' + company.id + '/articles')
-        .then((response) => response.json())
-        .then((articlesJson) => {
-          var cs = [];
-          for (var article in articlesJson) {
-            if (articlesJson.hasOwnProperty(article)) {
-              cs.push(articlesJson[article]);
+                ? '/api/company/' + company.id + '/inventory/' + inventory.id
+                : '/api/company/' + company.id + '/articles')
+          .then((response) => response.json())
+          .then((articlesJson) => {
+            var cs = [];
+            console.log(articlesJson);
+            for (var article in articlesJson) {
+              if (articlesJson.hasOwnProperty(article)) {
+                cs.push(articlesJson[article]);
+              }
+                console.log(articlesJson[article]);
             }
-          }
-          setArticles(cs);
-        }).catch((error) => {
-          console.error(error);
-        });
+            setArticles(cs);
+          })
+          .catch((error) => { console.error(error); });
     }
-  }, [company, inventory, setArticles]);
+  }, [ company, inventory, setArticles ]);
 
   const mutateRow = React.useCallback(
-    (article) =>
-      new Promise((resolve, reject) =>
-        setTimeout(() => {
-          if (article.name?.trim() === '') {
-            reject();
-          } else {
-            resolve(article);
-          }
-        }, 200),
-      ),
-    [],
+      (article) => new Promise(
+          (resolve, reject) => setTimeout(
+              () => {
+                if (article.name?.trim() === '') {
+                  reject();
+                } else {
+                  resolve(article);
+                }
+              },
+              200),
+          ),
+      [],
   );
   const noButtonRef = React.useRef(null);
   const [changeArguments, setChangeArguments] = React.useState(null);
   const [deleteArguments, setDeleteArguments] = React.useState(null);
-  const [snackbar       , setSnackbar]        = React.useState(null);
+  const [snackbar, setSnackbar] = React.useState(null);
   const handleCloseSnackbar = () => setSnackbar(null);
 
   const processRowUpdate = React.useCallback(
-    (newRow, oldRow) =>
-      new Promise((resolve, reject) => {
-        const mutationName          = computeMutationName(newRow, oldRow);
-        const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
-        const mutationPrice         = computeMutationPricing(newRow, oldRow);
-        const mutationAmount        = computeMutationAmount(newRow, oldRow);
-        if (mutationName || mutationArticleNumber) {
-          setChangeArguments({ resolve, reject, newRow, oldRow });
-        } else if (mutationPrice) {
+      (newRow, oldRow) => new Promise((resolve, reject) => {
+        const mutationName = computeMutationName(newRow, oldRow);
+        const mutationArticleNumber =
+            computeMutationArticleNumber(newRow, oldRow);
+        const mutationPrice =
+            computeMutationPricing(newRow, oldRow);
+        const mutationAmount =
+            computeMutationAmount(newRow, oldRow);
+        const mutationNotes =
+            computeMutationNotes(newRow, oldRow);
+        if (mutationPrice) {
           if (newRow.purchasePrice !== oldRow.purchasePrice) {
-            newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
+            newRow.sellingPrice =
+                newRow.purchasePrice * (1 + newRow.percentage / 100);
           }
           if (newRow.percentage !== oldRow.percentage) {
-            newRow.sellingPrice = newRow.purchasePrice * (1 + newRow.percentage / 100);
+            newRow.sellingPrice =
+                newRow.purchasePrice * (1 + newRow.percentage / 100);
           }
           if (newRow.sellingPrice !== oldRow.sellingPrice) {
-            newRow.purchasePrice = newRow.sellingPrice / (1 + newRow.percentage / 100);
+            newRow.purchasePrice =
+                newRow.sellingPrice / (1 + newRow.percentage / 100);
           }
-          setChangeArguments({ resolve, reject, newRow, oldRow });
+        }
+        if (mutationName || mutationArticleNumber) {
+          setChangeArguments({resolve, reject, newRow, oldRow});
 
-        } else if (mutationAmount) {
+        } else if (mutationAmount || mutationPrice || mutationNotes) {
           if (inventory) {
-            const url = '/api/amount/';
-            const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory.id, amount:newRow.amount});
+            const url = '/api/inventorydata/';
+            const body = JSON.stringify({
+              articleId : newRow.id,
+              inventoryId : inventory.id,
+              amount : newRow.amount,
+              purchasePrice : newRow.purchasePrice,
+              percentage : newRow.percentage,
+              sellingPrice : newRow.sellingPrice,
+              notes : newRow.notes,
+            });
+            console.log(body)
             fetch(url, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: body
+              method : 'PUT',
+              headers : {'Content-Type' : 'application/json'},
+              body : body
             }).then((response) => {
-              setSnackbar({ children: 'Stückzahl geändert', severity: 'success' });
+              setSnackbar(
+                  {children : 'Stückzahl geändert', severity : 'success'});
               resolve(newRow);
               setChangeArguments(null);
             });
           }
-
-
         } else {
           resolve(oldRow); // Nothing was changed
         }
       }),
-    [inventory],
+      [ inventory ],
   );
 
   const handleChangeNo = () => {
-    const { oldRow, resolve } = changeArguments;
-    resolve(oldRow); // Resolve with the old row to not update the internal state
+    const {oldRow, resolve} = changeArguments;
+    resolve(
+        oldRow); // Resolve with the old row to not update the internal state
     setChangeArguments(null);
   };
 
   const handleChangeYes = async () => {
-    const { newRow, oldRow, reject, resolve } = changeArguments;
+    const {newRow, oldRow, reject, resolve} = changeArguments;
 
     try {
       const url = '/api/article/' + newRow.id;
-      const body = JSON.stringify(newRow);
+        const body = JSON.stringify({
+          articleId : newRow.id,
+          name : newRow.name,
+          articleNumber : newRow.articleNumber,
+        });
       await fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: body
+        method : 'PUT',
+        headers : {'Content-Type' : 'application/json'},
+        body : body
       });
 
       if (inventory) {
-        const url = '/api/amount/';
-        const body = JSON.stringify({articleId:newRow.id, inventoryId:inventory.id, amount:newRow.amount});
+        const url = '/api/inventorydata/';
+        const body = JSON.stringify({
+          articleId : newRow.id,
+          inventoryId : inventory.id,
+          amount : newRow.amount,
+          purchasePrice : newRow.purchasePrice,
+          percentage : newRow.percentage,
+          notes : newRow.notes,
+        });
         await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: body
+          method : 'PUT',
+          headers : {'Content-Type' : 'application/json'},
+          body : body
         });
       }
 
       const response = await mutateRow(newRow);
-      setSnackbar({ children: 'Artikel in Datenbank geändert', severity: 'success' });
+      setSnackbar(
+          {children : 'Artikel in Datenbank geändert', severity : 'success'});
       resolve(response);
       setChangeArguments(null);
     } catch (error) {
-      setSnackbar({ children: "Name darf nicht leer sein!", severity: 'error' });
+      setSnackbar(
+          {children : "Name darf nicht leer sein!", severity : 'error'});
       reject(oldRow);
       setChangeArguments(null);
     }
   };
 
-  const handleDeleteNo = () => {
-    setDeleteArguments(null);
-  };
+  const handleDeleteNo = () => { setDeleteArguments(null); };
 
   const handleDeleteYes = async () => {
     try {
       const url = '/api/article/' + deleteArguments.id;
       await fetch(url, {
-        method: 'DELETE',
+        method : 'DELETE',
       });
 
-      setSnackbar({ children: 'Artikel in Datenbank gelöscht', severity: 'success' });
+      setSnackbar(
+          {children : 'Artikel in Datenbank gelöscht', severity : 'success'});
       setDeleteArguments(null);
     } catch (error) {
-      setSnackbar({ children: "Artikel konnte nicht gelöscht werden!", severity: 'error' });
+      setSnackbar({
+        children : "Artikel konnte nicht gelöscht werden!",
+        severity : 'error'
+      });
       setDeleteArguments(null);
     }
   };
@@ -252,31 +312,34 @@ export default function ArticlesTable(params) {
       return null;
     }
 
-    const { newRow, oldRow } = changeArguments;
-    const mutationName          = computeMutationName(newRow, oldRow);
-    const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
-    const mutationPrice         = computeMutationPricing(newRow, oldRow);
+    const {newRow, oldRow} = changeArguments;
+    const mutationName =
+        computeMutationName(newRow, oldRow);
+    const mutationArticleNumber =
+        computeMutationArticleNumber(newRow, oldRow);
+    const mutationPrice =
+        computeMutationPricing(newRow, oldRow);
+    const mutationNotes =
+        computeMutationNotes(newRow, oldRow);
 
     return (
-      <Dialog
-        maxWidth="xs"
-        TransitionProps={{ onEntered: handleEntered }}
-        open={!!changeArguments}
-      >
-        <DialogTitle>Artikel wirklich ändern?</DialogTitle>
+      <Dialog maxWidth = "xs"
+              TransitionProps = {
+                { onEntered: handleEntered }
+              } open = {!!changeArguments}>
+      <DialogTitle>Artikel wirklich ändern? </DialogTitle>
         <DialogContent dividers>
           {mutationName}
           {mutationArticleNumber}
           {mutationPrice}
+          {mutationNotes}
         </DialogContent>
         <DialogActions>
-          <Button ref={noButtonRef} onClick={handleChangeNo}>
-            Nein
-          </Button>
+        <Button ref = {noButtonRef} onClick = {handleChangeNo}>Nein<
+            /Button>
           <Button onClick={handleChangeYes}>Ja</Button>
         </DialogActions>
-      </Dialog>
-    );
+      </Dialog>);
   };
   const renderConfirmDeleteDialog = () => {
     if (!deleteArguments) {
@@ -285,26 +348,25 @@ export default function ArticlesTable(params) {
 
     return (
       <Dialog
-        maxWidth="xs"
-        TransitionProps={{ onEntered: handleEntered }}
-        open={!!deleteArguments}
-      >
-        <DialogTitle>Artikel wirklich löschen?</DialogTitle>
+    maxWidth = "xs"
+    TransitionProps =
+    {
+      { onEntered: handleEntered }
+    } open = {!!deleteArguments} > <DialogTitle>Artikel wirklich löschen
+        ? </DialogTitle>
         <DialogContent dividers>
-          Artikel <i><b>{deleteArguments.name}</b></i> wirlich löschen?
-        </DialogContent>
-        <DialogActions>
-          <Button ref={noButtonRef} onClick={handleDeleteNo}>
-            Nein
-          </Button>
+          Artikel <i><b>{deleteArguments.name}</b>
+        </i> wirlich löschen?
+        </DialogContent><DialogActions>
+        <Button ref = {noButtonRef} onClick = {handleDeleteNo}>Nein<
+            /Button>
           <Button onClick={handleDeleteYes}>Ja</Button>
         </DialogActions>
-      </Dialog>
-    );
+      </Dialog>);
   };
 
   if (isOpen) {
-    const style = {height: 500, width: '100%'};
+    const style = {height : 500, width : '100%'};
     return (
       <div style={style}>
         {renderConfirmChangeDialog()}
@@ -313,7 +375,8 @@ export default function ArticlesTable(params) {
           rows={articles}
           columns={columns(setDeleteArguments)}
           processRowUpdate={processRowUpdate}
-          experimentalFeatures={{ newEditingApi: true }}
+          experimentalFeatures={
+      { newEditingApi: true }}
         />
         {!!snackbar && (
           <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
@@ -323,70 +386,97 @@ export default function ArticlesTable(params) {
       </div>
     );
   } else {
-    return (<></>);
+          return (
+              <><
+              />);
   }
 }
 
-function columns(setDeleteArguments) {return [
-  { field: 'name', flex: 1, align:'center', headerAlign:'center', headerName: 'Name', width: 180, editable: true },
-  { field: 'purchasePrice', type: 'number', headerAlign:'center', headerName: 'Einkaufspreis', width: 180, editable: true, valueFormatter: (params) => {
-      if (params.value == null) {
-        return '';
-      }
-
-      const valueFormatted = params.value.toFixed(2).toLocaleString();
-      return `${valueFormatted} €`;
+function columns(setDeleteArguments) {
+  return [
+    { field: 'name',
+      flex: 1,
+      align:'center',
+      headerAlign:'center',
+      headerName: 'Name',
+      width: 180,
+      editable: true },
+    { field: 'purchasePrice',
+      type: 'number',
+      headerAlign:'center',
+      headerName: 'Einkaufspreis',
+      width: 180,
+      editable: true,
+      valueFormatter: (params) => {
+        if (params.value == null) {
+          return '';
+        }
+        const valueFormatted = params.value.toFixed(2).toLocaleString();
+        return `${valueFormatted} €`;
+      },
     },
-  },
-  { field: 'percentage', type: 'number', headerAlign:'center', headerName: '%', width: 100, editable: true, valueFormatter: (params) => {
-      if (params.value == null) {
-        return '';
-      }
-
-      const valueFormatted = Number(params.value).toLocaleString();
-      return `${valueFormatted} %`;
+    { field: 'percentage',
+      type: 'number',
+      headerAlign:'center',
+      headerName: '%',
+      width: 100,
+      editable: true,
+      valueFormatter: (params) => {
+        if (params.value == null) {
+          return '';
+        }
+        const valueFormatted = Number(params.value).toLocaleString();
+        return `${valueFormatted} %`;
+      },
     },
-   },
-  { field: 'sellingPrice', type: 'number', headerAlign:'center', headerName: 'Verkaufspreis', width: 180, editable: true, valueFormatter: (params) => {
-      if (params.value == null) {
-        return '';
-      }
+    { field: 'sellingPrice',
+      type: 'number',
+      headerAlign:'center',
+      headerName: 'Verkaufspreis',
+      width: 180,
+      editable: true,
+      valueFormatter: (params) => {
+        if (params.value == null) {
+          return '';
+        }
 
-      const valueFormatted = params.value.toFixed(2).toLocaleString();
-      return `${valueFormatted} €`;
+        const valueFormatted = params.value.toFixed(2).toLocaleString();
+        return `${valueFormatted} €`;
+      },
     },
-   },
-  { field: 'articleNumber', flex: 1, align:'center', headerAlign:'center', headerName: 'Artikelnummer', width: 180, editable: true },
-  { field: 'amount', type: 'number', headerAlign:'center', headerName: 'Stückzahl', width: 180, editable: true },
-  { field: 'delete',
-    editable: false,
-    type: 'action',
-    headerName: '',
-    align: 'center',
-    width: 60,
-    sortable: false,
-    renderCell: (params) => {
-      //const onClick = (e) => {
-      //  e.stopPropagation(); // don't select this row after clicking
-      //
-      //  const api = params.api;
-      //  const thisRow = {};
-      //
-      //  api
-      //    .getAllColumns()
-      //    .filter((c) => c.field !== "__check__" && !!c)
-      //    .forEach(
-      //      (c) => (thisRow[c.field] = params.getValue(params.id, c.field))
-      //    );
-      //
-      //  return alert(JSON.stringify(thisRow, null, 4));
-      //};
-
-      return <IconButton size="small" aria-label="deleteCompany" onClick={()=>{
-                 setDeleteArguments(params.row); }}>
-               <DeleteIcon fontSize="small" />
-             </IconButton>;
-    }
-  },
-];
+    { field: 'articleNumber',
+      flex: 1,
+      align:'center',
+      headerAlign:'center',
+      headerName: 'Artikelnummer',
+      width: 180,
+      editable: true },
+    { field: 'amount',
+      type: 'number',
+      headerAlign:'center',
+      headerName: 'Stückzahl',
+      width: 180,
+      editable: true },
+    { field: 'notes',
+      headerAlign:'center',
+      headerName: 'Notizen',
+      width: 100,
+      sortable: false,
+      editable: true },
+    { field: 'delete',
+      editable: false,
+      type: 'action',
+      headerName: '',
+      align: 'center',
+      width: 60,
+      sortable: false,
+      renderCell: (params) => {
+        return <IconButton size="small"
+                           aria-label="deleteCompany"
+                           onClick={() => { setDeleteArguments(params.row); }}>
+                 <DeleteIcon fontSize = "small" />
+               </IconButton>;
+      }
+    },
+  ];
 }
