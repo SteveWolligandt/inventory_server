@@ -78,7 +78,7 @@ function App() {
     <TopBar name = {title} onClick =
          { toggleDrawer(true) } />
     <div style={{marginBottom: '100px'}}/>
-    <LoginScreen open={showLoginScreen} />
+    <LoginScreen open={showLoginScreen} setOpen={setShowLoginScreen} />
     <InventoriesList 
       inventories = {inventories}
       setActiveInventory = {setActiveInventory}
@@ -90,8 +90,7 @@ function App() {
       drawInventoryListMenu = {drawInventoryListMenu}
       setDrawInventoryListMenu = {setDrawInventoryListMenu}
     />
-    <div style ={{margin: '0 auto', maxWidth: '1000px'}} />
-    <Companies open = {showCompanies}
+    <Companies open = {!showLoginScreen && showCompanies}
                onOpen = {onOpenCompany}/>
     <Articles open      = {showArticles}
               company   = {activeCompany}

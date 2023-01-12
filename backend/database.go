@@ -60,6 +60,34 @@ func (db *Database) Article(id int) *Article {
 }
 
 // -----------------------------------------------------------------------------
+func (db *Database) User(name string) User {
+	q := fmt.Sprintf("SELECT hashedPassword FROM users WHERE name = '%s'", name)
+	var user User
+	err := db.db.QueryRow(q).Scan(&user.HashedPassword)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	return user
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) CreateUser(name string, password string) User {
+	var user User
+	hashedPassword, hashErr := HashPassword(password)
+  fmt.Println(hashedPassword)
+	user.Name = name
+	user.HashedPassword = hashedPassword
+	if hashErr != nil {
+		panic(hashErr.Error()) // proper error handling instead of panic in your app
+	}
+	// create new article in database
+	db.db.QueryRow(
+		fmt.Sprintf("INSERT INTO users (name, hashedPassword) VALUES ('%v','%v')",
+			name, hashedPassword))
+	return user
+}
+
+// -----------------------------------------------------------------------------
 func (db *Database) CreateArticle(name string, companyId int, articleNumber string) Article {
 	var article Article
 	// create new article in database
@@ -366,7 +394,7 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) []Article
 	q := fmt.Sprintf(
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
 		inventoryId, companyId)
-    fmt.Println(q)
+	fmt.Println(q)
 
 	inventoryDataPerArticle, err := db.db.Query(q)
 	if err != nil {
@@ -432,7 +460,7 @@ func (db *Database) UsersTableCreated() bool {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() {
-	_, err := db.db.Query("CREATE TABLE users (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, salt varchar(255) NOT NULL, primary key (id))")
+	_, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
 	if err != nil {
 		panic(err.Error())
 	}

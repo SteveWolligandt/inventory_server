@@ -373,6 +373,7 @@ export default function Articles(params) {
   if (isOpen) {
     const style = {height : 500, width : '100%'};
     return (<>
+      <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
       <div style={style}>
         {renderConfirmChangeDialog()}
         {renderConfirmDeleteDialog()}
@@ -388,6 +389,7 @@ export default function Articles(params) {
             <Alert {...snackbar} onClose={handleCloseSnackbar} />
           </Snackbar>
         )}
+      </div>
       </div>
       <CreateArticleDialog open={params.open} company={params.activeCompany}/>
       <Zoom in={params.open}>

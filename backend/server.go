@@ -209,7 +209,7 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var inventoryData InventoryData
 	json.Unmarshal(reqBody, &inventoryData)
-  fmt.Println(inventoryData)
+	fmt.Println(inventoryData)
 
 	s.db.UpdateInventoryData(inventoryData)
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
@@ -218,7 +218,7 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	}
 	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
 
-  fmt.Println(action)
+	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -331,8 +331,45 @@ func (s *Server) InventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	articles := s.db.InventoryOfCompany(inventoryId, companyId)
-  fmt.Println(articles)
+	fmt.Println(articles)
 	json.NewEncoder(w).Encode(articles)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+
+	type UserPW struct {
+		Name     string `json:"name"`
+		Password string `json:"password"`
+	}
+	var userClear UserPW
+	json.Unmarshal(reqBody, &userClear)
+
+	s.db.CreateUser(userClear.Name, userClear.Password)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
+	type UserPW struct {
+		Name     string `json:"username"`
+		Password string `json:"password"`
+	}
+	var userClear UserPW
+	type Response struct {
+		Success bool `json:"success"`
+	}
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBody, &userClear)
+	userHashed := s.db.User(userClear.Name)
+  fmt.Println(userHashed)
+  fmt.Println(userClear)
+	success := VerifyPassword(userHashed.HashedPassword, userClear.Password)
+
+	w.Header().Set("Content-Type", "application/json")
+	var res = Response{Success: success}
+	resstring, _ := json.Marshal(res)
+	w.Write(resstring)
 }
 
 // ------------------------------------------------------------------------------
@@ -455,6 +492,14 @@ func (s *Server) handleRequests() {
 		"/api/company/{companyId}/inventory/{inventoryId}",
 		s.InventoryOfCompany).
 		Methods("GET")
+
+	s.router.HandleFunc(
+		"/api/user", s.CreateUser).
+		Methods("POST")
+
+	s.router.HandleFunc(
+		"/api/login", s.Login).
+		Methods("POST")
 }
 
 // ------------------------------------------------------------------------------

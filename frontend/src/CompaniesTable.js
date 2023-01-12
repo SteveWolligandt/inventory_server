@@ -223,6 +223,7 @@ export default function Companies(params) {
   if (params.open) {
     const style = {height: 500, width: '100%'};
     return (
+      <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
       <div style={style}>
         {renderChangeConfirmDialog()}
         {renderDeleteConfirmDialog()}
@@ -238,6 +239,7 @@ export default function Companies(params) {
           </Snackbar>
         )}
       <CreateCompanyDialog open={params.open}/>
+      </div>
       </div>
     );
   } else {
@@ -301,7 +303,8 @@ function columns(handleOpenCompany, setDeleteArguments) {
         };
 
         return <IconButton size="small" aria-label="gotoCompany" onClick={()=>{
-                     handleOpenCompany(params.row);}
+                     handleOpenCompany(params.row);
+          console.log("selected company: " + params.row);}
                    }>
                  <ArrowForwardIosIcon fontSize="small" />
                </IconButton>;
