@@ -99,19 +99,19 @@ export default function Articles({open, company, inventory, onBack}) {
             return articles;
           }
         });
+
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
-        console.log(updatedArticle);
         setArticles(articles => articles.map((article, j) => {
           return updatedArticle.id === article.id ? updatedArticle : article;
         }));
+
       } else if (action === 'deleteArticle') {
         let deletedArticle = msg.data;
         setArticles(articles => articles.filter(article => article.id !==
                                                            deletedArticle.id));
       } else if (action === 'updateInventoryData') {
         let updatedInventoryData = msg.data;
-        console.log(updatedInventoryData);
         setArticles(articles => articles.map((article, j) => {
           if (updatedInventoryData.inventoryId === inventory.id &&
               updatedInventoryData.articleId === article.id) {
@@ -130,7 +130,6 @@ export default function Articles({open, company, inventory, onBack}) {
 
   // initial get
   const initialGet = () => {
-    console.log(company);
     if (company !== null) {
       fetch(inventory
                 ? '/api/company/' + company.id + '/inventory/' + inventory.id
@@ -138,12 +137,10 @@ export default function Articles({open, company, inventory, onBack}) {
           .then((response) => response.json())
           .then((articlesJson) => {
             var cs = [];
-            console.log(articlesJson);
             for (var article in articlesJson) {
               if (articlesJson.hasOwnProperty(article)) {
                 cs.push(articlesJson[article]);
               }
-                console.log(articlesJson[article]);
             }
             setArticles(cs);
           })
@@ -212,7 +209,6 @@ export default function Articles({open, company, inventory, onBack}) {
               sellingPrice : newRow.sellingPrice,
               notes : newRow.notes,
             });
-            console.log(body)
             fetch(url, {
               method : 'PUT',
               headers : {'Content-Type' : 'application/json'},
