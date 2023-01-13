@@ -1,6 +1,7 @@
 import './App.css';
 
-import React, {useEffect, useState} from 'react';
+import React from 'react';
+import useStickyState from './useStickyState.js';
 
 import Articles from './ArticlesTable.js';
 import Companies from './CompaniesTable.js';
@@ -8,27 +9,17 @@ import InventoriesList from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
 import TopBar from './TopBar.js';
 
-function useStickyState(defaultValue, key) {
-  const [value, setValue] = React.useState(() => {
-    const stickyValue = window.localStorage.getItem(key);
-    return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
-  });
-  React.useEffect(
-      () => { window.localStorage.setItem(key, JSON.stringify(value)); },
-      [ key, value ]);
-  return [ value, setValue ];
-}
 
 function App() {
   var [showLoginScreen, setShowLoginScreen] = React.useState(true)
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
+  var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
 
   var [title, setTitle] = useStickyState('Firmen', 'title');
   var [inventories, setInventories] = React.useState([]);
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
-  var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [drawInventoryListMenu, setDrawInventoryListMenu] = React.useState(false);
 
   const toggleDrawer = (open) => (event) => {
@@ -39,7 +30,7 @@ function App() {
     setDrawInventoryListMenu(open);
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     async function loadData() {
       try {
         const response = await fetch('/api/inventories');
@@ -57,17 +48,9 @@ function App() {
     }
     loadData();
   }, []);
+  React.useEffect(() => {console.log(activeCompany)}, [activeCompany]);
 
-  var onOpenCompany = (company) => {
-    setShowCompanies(false);
-    setShowArticles(true);
-    setActiveCompany(company);
-    setTitle(company.name + ' - ' +
-             (activeInventory !== null ? activeInventory.name
-                                       : '<Keine Inventur ausgewählt>'));
-  };
-
-  var onOpenArticle = () => {
+  var onArticleBackButtonClick = () => {
     setShowCompanies(true);
     setShowArticles(false);
     setActiveCompany(null);
@@ -84,18 +67,26 @@ function App() {
       setActiveInventory = {setActiveInventory}
       setTitle = {setTitle}
       activeCompany = {activeCompany}
-      setActiveCompany = {setActiveCompany}
       setShowArticles = {setShowArticles}
       toggleDrawer = {toggleDrawer}
       drawInventoryListMenu = {drawInventoryListMenu}
       setDrawInventoryListMenu = {setDrawInventoryListMenu}
     />
     <Companies open = {!showLoginScreen && showCompanies}
-               onOpen = {onOpenCompany}/>
-    <Articles open      = {showArticles}
+               activeCompany = {activeCompany}
+               onCompanySelected = {(company) => {
+                 setActiveCompany(company);
+                 setShowCompanies(false);
+                 setShowArticles(true);
+                 setTitle(
+                   company.name + ' - ' + (activeInventory !== null
+                     ? activeInventory.name
+                     : '<Keine Inventur ausgewählt>'));
+               }}/>
+    <Articles open      = {!showLoginScreen && showArticles}
               company   = {activeCompany}
               inventory = {activeInventory}
-              onOpen    = {onOpenArticle} />
+              onBack    = {onArticleBackButtonClick} />
   </>);
 }
 export default App;

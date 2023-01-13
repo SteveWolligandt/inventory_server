@@ -64,10 +64,7 @@ function computeMutationPricing(newRow, oldRow) {
 return null;
 }
 
-export default function Articles(params) {
-  var company = params.company;
-  var inventory = params.inventory;
-  var isOpen = params.open;
+export default function Articles({open, company, inventory, onBack}) {
   var [articles, setArticles] = React.useState([]);
   var loc = window.location, new_uri;
   if (loc.protocol === 'https:') {
@@ -89,7 +86,7 @@ export default function Articles(params) {
   const lastMessage = useWebSocket(websocketAddr).lastMessage;
 
   // websocket
-  useEffect(() => {
+  const handleWebSocket = () => {
     if (lastMessage !== null && company !== null) {
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
@@ -128,10 +125,12 @@ export default function Articles(params) {
         }));
       }
     }
-  }, [ company, lastMessage, inventory, setArticles ]);
+  }
+  useEffect(handleWebSocket, [company, lastMessage, inventory, setArticles]);
 
   // initial get
-  useEffect(() => {
+  const initialGet = () => {
+    console.log(company);
     if (company !== null) {
       fetch(inventory
                 ? '/api/company/' + company.id + '/inventory/' + inventory.id
@@ -150,7 +149,8 @@ export default function Articles(params) {
           })
           .catch((error) => { console.error(error); });
     }
-  }, [ company, inventory, setArticles ]);
+  }
+  useEffect(initialGet, [company, inventory, setArticles ]);
 
   const mutateRow = React.useCallback(
       (article) => new Promise(
@@ -370,7 +370,7 @@ export default function Articles(params) {
       </Dialog>);
   };
 
-  if (isOpen) {
+  if (open) {
     const style = {height : 500, width : '100%'};
     return (<>
       <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
@@ -391,8 +391,8 @@ export default function Articles(params) {
         )}
       </div>
       </div>
-      <CreateArticleDialog open={params.open} company={params.activeCompany}/>
-      <Zoom in={params.open}>
+      <CreateArticleDialog open={open} company={company}/>
+      <Zoom in={open}>
         <Fab color='secondary'
              aria-label="add"
              style={{margin: '0 auto',
@@ -402,7 +402,7 @@ export default function Articles(params) {
                      left: 10,
                      position: 'fixed',
                    }}
-             onClick={params.onOpen}>
+             onClick={onBack}>
           <ArrowBackIcon/>
         </Fab>
       </Zoom>

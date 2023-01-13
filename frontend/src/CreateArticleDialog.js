@@ -64,42 +64,6 @@ export default function CreateArticleDialog(params) {
           />
         </FormControl>
         <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-          <InputLabel htmlFor="createArticle.purchasePrice">Einkaufspreis</InputLabel>
-          <Input
-            id="createArticle.purchasePrice"
-            startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
-            onChange={()=>{
-              var purchasePrice = document.getElementById("createArticle.purchasePrice").value;
-              var percentage = document.getElementById("createArticle.percentage").value;
-                document.getElementById("createArticle.sellingPrice").value = purchasePrice * (1 + percentage/100);
-            }}
-          />
-        </FormControl>
-        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-          <InputLabel htmlFor="createArticle.percentage">Prozent</InputLabel>
-          <Input
-            id="createArticle.percentage"
-            startAdornment={<InputAdornment position="start"><PercentIcon /></InputAdornment>}
-            onChange={()=>{
-              var purchasePrice = document.getElementById("createArticle.purchasePrice").value;
-              var percentage = document.getElementById("createArticle.percentage").value;
-                document.getElementById("createArticle.sellingPrice").value = purchasePrice * (1 + percentage/100);
-            }}
-          />
-        </FormControl>
-        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-          <InputLabel htmlFor="createArticle.sellingPrice">Verkaufspreis</InputLabel>
-          <Input
-            id="createArticle.sellingPrice"
-            startAdornment={<InputAdornment position="start"><EuroIcon /></InputAdornment>}
-            onChange={()=>{
-              var sellingPrice = document.getElementById("createArticle.sellingPrice").value;
-              var percentage = document.getElementById("createArticle.percentage").value;
-                document.getElementById("createArticle.purchasePrice").value = sellingPrice / (1 + percentage/100);
-            }}
-          />
-        </FormControl>
-        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
           <InputLabel htmlFor="createArticle.articleNumber">Artikel Nummer</InputLabel>
           <Input
             id="createArticle.articleNumber"
