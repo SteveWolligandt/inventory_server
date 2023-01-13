@@ -1,3 +1,4 @@
+import websocketAddr from './websocketAddress.js';
 import useStickyState from './useStickyState.js';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import { DataGrid } from '@mui/x-data-grid';
@@ -25,6 +26,7 @@ function computeMutation(newRow, oldRow) {
 export default function Companies({open, onCompanySelected, activeCompany, setActiveCompany}) {
   var [companies, setCompanies] = React.useState([]);
   const [messageHistory, setMessageHistory] = React.useState([]);
+
   var loc = window.location, new_uri;
   if (loc.protocol === 'https:') {
     new_uri = 'wss';
@@ -32,19 +34,26 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
     new_uri = 'ws';
   }
   new_uri += '://';
-  if (loc.host === 'localhost:3000') { new_uri += 'localhost:8080'; }
-  else { new_uri += loc.host; }
+  new_uri += loc.hostname;
+  new_uri += ':';
+  if (loc.port === '3000') {
+    new_uri += '8080';
+  } else {
+    new_uri += loc.port;
+  }
   new_uri += loc.pathname + 'ws';
 
-  const websocketAddr = new_uri;
-  const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr);
+  const lastMessage = useWebSocket(websocketAddr()).lastMessage;
 
-  React.useEffect(() => {
+  const handleWebsocket = () => {
+    console.log('WEBSOCKET');
     if (lastMessage !== null) {
+      console.log(lastMessage);
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
+      console.log(action);
       if (action === 'newCompany') {
-        let newCompany = msg.data;
+        let newCompany = JSON.parse(msg.data);
         setCompanies(companies => companies.concat(newCompany));
       } else if (action === 'updateCompany') {
         let updatedCompany = msg.data;
@@ -56,7 +65,8 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
         setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
       }
     }
-  }, [lastMessage, setCompanies]);
+  };
+  React.useEffect(handleWebsocket, [lastMessage, setCompanies]);
 
   React.useEffect(() => {
     async function loadData() {
@@ -111,6 +121,7 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
       }),
     [],
   );
+  if (!open) {return null;}
 
   const handleChangeNo = () => {
     const { oldRow, resolve } = changeArguments;

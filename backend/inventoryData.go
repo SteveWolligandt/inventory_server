@@ -11,3 +11,10 @@ type InventoryData struct {
 	Notes         string  `json:"notes"`
 	Amount        int     `json:"amount"`
 }
+
+func SellingPriceFromPurchasePriceAndPercentage(purchasePrice float32, percentage float32) float32 {
+  return purchasePrice
+}
+func PurchasePriceFromSellingPriceAndPercentage(sellingPrice float32, percentage float32) float32 {
+  return sellingPrice
+}

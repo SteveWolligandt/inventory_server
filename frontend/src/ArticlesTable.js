@@ -1,3 +1,4 @@
+import websocketAddr from './websocketAddress.js';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Alert from '@mui/material/Alert';
@@ -64,42 +65,29 @@ function computeMutationPricing(newRow, oldRow) {
 return null;
 }
 
-export default function Articles({open, company, inventory, onBack}) {
+export default function Articles({open, activeCompany, activeInventory, onBack}) {
   var [articles, setArticles] = React.useState([]);
-  var loc = window.location, new_uri;
-  if (loc.protocol === 'https:') {
-    new_uri = 'wss';
-  } else {
-    new_uri = 'ws';
-  }
-  new_uri += '://';
-  new_uri += loc.hostname;
-  new_uri += ':';
-  if (loc.port === '3000') {
-    new_uri += '8080';
-  } else {
-    new_uri += loc.port;
-  }
-  new_uri += loc.pathname + 'ws';
-
-  const websocketAddr = new_uri;
-  const lastMessage = useWebSocket(websocketAddr).lastMessage;
+  const lastMessage = useWebSocket(websocketAddr()).lastMessage;
 
   // websocket
   const handleWebSocket = () => {
-    if (lastMessage !== null && company !== null) {
+    if (lastMessage !== null && activeCompany !== null) {
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
       if (action === 'newArticle') {
         let newArticle = msg.data;
-        setArticles(articles => {
-          if (newArticle.companyId === company.id) {
-            return articles.concat(newArticle);
-          } else {
-            return articles;
-          }
-        });
-
+        if (newArticle.companyId === activeCompany.id) {
+          const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
+                      newArticle.id;
+          fetch(url).then((response) => response.json()).then((inventoryData) =>{
+            newArticle.purchasePrice = inventoryData.purchasePrice;
+            newArticle.percentage = inventoryData.percentage;
+            newArticle.sellingPrice = inventoryData.sellingPrice;
+            newArticle.notes = inventoryData.notes;
+            newArticle.amount = inventoryData.amount;
+            setArticles(articles => articles.concat(newArticle));
+          });
+        }
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
         setArticles(articles => articles.map((article, j) => {
@@ -113,7 +101,7 @@ export default function Articles({open, company, inventory, onBack}) {
       } else if (action === 'updateInventoryData') {
         let updatedInventoryData = msg.data;
         setArticles(articles => articles.map((article, j) => {
-          if (updatedInventoryData.inventoryId === inventory.id &&
+          if (updatedInventoryData.inventoryId === activeInventory.id &&
               updatedInventoryData.articleId === article.id) {
             article.amount = updatedInventoryData.amount;
             article.purchasePrice = updatedInventoryData.purchasePrice;
@@ -125,15 +113,15 @@ export default function Articles({open, company, inventory, onBack}) {
         }));
       }
     }
-  }
-  useEffect(handleWebSocket, [company, lastMessage, inventory, setArticles]);
+  };
+  useEffect(handleWebSocket, [activeCompany, lastMessage, activeInventory, setArticles]);
 
   // initial get
   const initialGet = () => {
-    if (company !== null) {
-      fetch(inventory
-                ? '/api/company/' + company.id + '/inventory/' + inventory.id
-                : '/api/company/' + company.id + '/articles')
+    if (activeCompany !== null) {
+      fetch(activeInventory
+                ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
+                : '/api/company/' + activeCompany.id + '/articles')
           .then((response) => response.json())
           .then((articlesJson) => {
             var cs = [];
@@ -147,7 +135,7 @@ export default function Articles({open, company, inventory, onBack}) {
           .catch((error) => { console.error(error); });
     }
   }
-  useEffect(initialGet, [company, inventory, setArticles ]);
+  useEffect(initialGet, [activeCompany, activeInventory, setArticles ]);
 
   const mutateRow = React.useCallback(
       (article) => new Promise(
@@ -198,11 +186,11 @@ export default function Articles({open, company, inventory, onBack}) {
           setChangeArguments({resolve, reject, newRow, oldRow});
 
         } else if (mutationAmount || mutationPrice || mutationNotes) {
-          if (inventory) {
+          if (activeInventory) {
             const url = '/api/inventorydata/';
             const body = JSON.stringify({
               articleId : newRow.id,
-              inventoryId : inventory.id,
+              inventoryId : activeInventory.id,
               amount : newRow.amount,
               purchasePrice : newRow.purchasePrice,
               percentage : newRow.percentage,
@@ -224,7 +212,7 @@ export default function Articles({open, company, inventory, onBack}) {
           resolve(oldRow); // Nothing was changed
         }
       }),
-      [ inventory ],
+      [ activeInventory ],
   );
 
   const handleChangeNo = () => {
@@ -250,11 +238,11 @@ export default function Articles({open, company, inventory, onBack}) {
         body : body
       });
 
-      if (inventory) {
+      if (activeInventory) {
         const url = '/api/inventorydata/';
         const body = JSON.stringify({
           articleId : newRow.id,
-          inventoryId : inventory.id,
+          inventoryId : activeInventory.id,
           amount : newRow.amount,
           purchasePrice : newRow.purchasePrice,
           percentage : newRow.percentage,
@@ -387,7 +375,7 @@ export default function Articles({open, company, inventory, onBack}) {
         )}
       </div>
       </div>
-      <CreateArticleDialog open={open} company={company}/>
+      <CreateArticleDialog open={open} activeCompany={activeCompany}/>
       <Zoom in={open}>
         <Fab color='secondary'
              aria-label="add"

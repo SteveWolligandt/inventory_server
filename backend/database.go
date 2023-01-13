@@ -363,16 +363,18 @@ func (db *Database) InventoryData(id int) []InventoryData {
 
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) InventoryData {
+	var data InventoryData
+  data.ArticleId = articleId
+  data.InventoryId = inventoryId
 	q := fmt.Sprintf(
-		"SELECT * FROM inventoryData WHERE inventoryId =%v AND articleId =%v ",
+		"SELECT amount, purchasePrice, percentage, notes FROM inventoryData WHERE inventoryId=%v AND articleId=%v",
 		inventoryId, articleId)
-
-	var inventoryDataOfArticle InventoryData
-	err := db.db.QueryRow(q).Scan(&inventoryDataOfArticle.ArticleId, &inventoryDataOfArticle.InventoryId, &inventoryDataOfArticle.Amount)
+	err := db.db.QueryRow(q).Scan(&data.Amount, &data.PurchasePrice, &data.Percentage, &data.Notes)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
-	return inventoryDataOfArticle
+  data.SellingPrice = SellingPriceFromPurchasePriceAndPercentage(data.PurchasePrice, data.Percentage)
+	return data
 }
 
 // ------------------------------------------------------------------------------

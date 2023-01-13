@@ -163,8 +163,13 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	var company Company
 	json.Unmarshal(reqBody, &company)
 
-	s.db.CreateCompany(company.Name)
-	action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":{\"id\":%v, \"name\":\"%v\"}}", company.Id, company.Name)
+	company = s.db.CreateCompany(company.Name)
+	marshaledCompany, marshalErr := json.Marshal(company)
+	if marshalErr != nil {
+		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+	}
+	action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":%v}", string(marshaledCompany))
+  fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -362,8 +367,6 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &userClear)
 	userHashed := s.db.User(userClear.Name)
-  fmt.Println(userHashed)
-  fmt.Println(userClear)
 	success := VerifyPassword(userHashed.HashedPassword, userClear.Password)
 
 	w.Header().Set("Content-Type", "application/json")

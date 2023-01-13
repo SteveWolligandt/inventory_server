@@ -15,7 +15,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
 
-export default function CreateArticleDialog(params) {
+export default function CreateArticleDialog({open, activeCompany}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleClickOpen = () => { setDialogOpen(true); };
@@ -23,9 +23,7 @@ export default function CreateArticleDialog(params) {
   const handleCreate    = () => {
     const data = {
       name : document.getElementById("createArticle.name").value,
-      companyId : params.company.id,
-      //purchasePrice : parseFloat(document.getElementById("createArticle.purchasePrice").value),
-      //percentage : parseFloat(document.getElementById("createArticle.percentage").value),
+      companyId : activeCompany.id,
       articleNumber : document.getElementById("createArticle.articleNumber").value,
     };
 
@@ -76,7 +74,7 @@ export default function CreateArticleDialog(params) {
           <Button onClick={handleCreate}>Erstellen</Button>
         </DialogActions>
       </Dialog>
-      <Zoom in={params.open}>
+      <Zoom in={open}>
         <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
           <ArticleIcon />
         </Fab>
