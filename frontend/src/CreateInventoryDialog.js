@@ -12,8 +12,14 @@ import BusinessIcon from '@mui/icons-material/Business';
 export default function CreateInventoryDialog({open, setOpen, setActiveInventory, userToken, setSnackbar}) {
   const handleClose           = () => { setOpen(false); };
   const handleCreateInventory = () => {
+    const name = document.getElementById("createInventory.name").value;
+    if (name === '') {
+      setSnackbar(
+          {children :'Name darf nicht leer sein', severity : 'error'});
+      return;
+    }
     const data = {
-      name : document.getElementById("createInventory.name").value,
+      name : name,
       token:userToken
     };
     console.log(data);

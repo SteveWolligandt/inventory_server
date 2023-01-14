@@ -136,7 +136,8 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           }
         )
         if (response.status == 401) {
-          setSnackbar('Kein Zugriff');
+          setSnackbar(
+              {children :'Kein Zugriff', severity : 'error'});
           return;
         }
         const articlesJson = await response.json();
@@ -148,8 +149,8 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
               }
               setArticles(cs);
       } catch (error) {
-        setSnackbar('Da lief was schief');
-        console.error(error); 
+        setSnackbar(
+            {children :'Da lief was schief: ' + error, severity : 'error'});
       }
     }
     load();
@@ -221,7 +222,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
               body : body
             }).then((response) => {
               setSnackbar(
-                  {children : 'Stückzahl geändert', severity : 'success'});
+                  {children : 'Inventurdaten geändert', severity : 'success'});
               resolve(newRow);
               setChangeArguments(null);
             });
@@ -277,12 +278,11 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
 
       const response = await mutateRow(newRow);
       setSnackbar(
-          {children : 'Artikel in Datenbank geändert', severity : 'success'});
+          {children : 'Artikel geändert', severity : 'success'});
       resolve(response);
       setChangeArguments(null);
     } catch (error) {
-      setSnackbar(
-          {children : "Name darf nicht leer sein!", severity : 'error'});
+      setSnackbar({children : error, severity : 'error'});
       reject(oldRow);
       setChangeArguments(null);
     }
@@ -392,7 +392,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
         />
       </div>
       </div>
-      <CreateArticleDialog open={open} userToken={userToken} activeCompany={activeCompany}/>
+      <CreateArticleDialog open={open} userToken={userToken} activeCompany={activeCompany} setSnackbar={setSnackbar}/>
       <Zoom in={open}>
         <Fab color='secondary'
              aria-label="add"

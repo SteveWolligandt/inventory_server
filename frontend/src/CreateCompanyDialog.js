@@ -9,14 +9,20 @@ import Fab from '@mui/material/Fab';
 import Zoom from '@mui/material/Zoom';
 import BusinessIcon from '@mui/icons-material/Business';
 
-export default function CreateCompanyDialog({open, userToken}) {
+export default function CreateCompanyDialog({open, userToken, setSnackbar}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleClickOpen = () => { setDialogOpen(true); };
   const handleClose     = () => { setDialogOpen(false); };
   const handleCreate    = () => {
+    const name = document.getElementById("createCompany.name").value
+    if (name === '') {
+      setSnackbar(
+          {children :'Name darf nicht leer sein', severity : 'error'});
+      return;
+    }
     const data = {
-      name : document.getElementById("createCompany.name").value,
+      name : name,
       token:userToken
     };
 

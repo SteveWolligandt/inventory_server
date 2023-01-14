@@ -15,16 +15,28 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
 
-export default function CreateArticleDialog({open, activeCompany, userToken}) {
+export default function CreateArticleDialog({open, activeCompany, userToken, setSnackbar}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleClickOpen = () => { setDialogOpen(true); };
   const handleClose     = () => { setDialogOpen(false); };
   const handleCreate    = () => {
+    const name = document.getElementById("createArticle.name").value;
+    const articleNumber = document.getElementById("createArticle.articleNumber").value;
+    if (name === '') {
+      setSnackbar(
+          {children :'Name darf nicht leer sein', severity : 'error'});
+      return;
+    }
+    if (articleNumber === '') {
+      setSnackbar(
+          {children :'Artikelnummber darf nicht leer sein', severity : 'error'});
+      return;
+    }
     const data = {
-      name : document.getElementById("createArticle.name").value,
+      name : name,
       companyId : activeCompany.id,
-      articleNumber : document.getElementById("createArticle.articleNumber").value,
+      articleNumber : articleNumber,
       token:userToken
     };
 

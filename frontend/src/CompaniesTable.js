@@ -224,7 +224,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     </div>
     {renderChangeConfirmDialog()}
     {renderDeleteConfirmDialog()}
-    <CreateCompanyDialog open={open} userToken={userToken}/>
+    <CreateCompanyDialog open={open} userToken={userToken} setSnackbar={setSnackbar}/>
     </>
   );
 }
