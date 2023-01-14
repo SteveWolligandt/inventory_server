@@ -58,8 +58,8 @@ function App() {
 
     setActiveCompany(null);
   };
-  const onLogout = ()=>setUserToken(null);
-  const onFullPrices = ()=>setShowFullPrices(true);
+  const onLogout = () => setUserToken(null);
+  const onFullPrices = () => setShowFullPrices(true);
   return (<>
     <TopBar setUserToken={setUserToken}
             name = {title}
@@ -73,7 +73,7 @@ function App() {
     <Inventories
       setSnackbar = {setSnackbar}
       userToken = {userToken}
-      open = {(userToken != null) && (showInventories || !activeInventory)}
+      open = {userToken != null && (showInventories || !activeInventory)}
       setOpen = {setShowInventories}
       activeInventory = {activeInventory}
       setActiveInventory = {setActiveInventory}
@@ -81,7 +81,7 @@ function App() {
         setActiveInventory(inventory);
       }}
     />
-    <Companies open              = {(userToken != null)&& !showFullPrices && showCompanies}
+    <Companies open              = {userToken != null && !showFullPrices && showCompanies}
                activeCompany     = {activeCompany}
                userToken             = {userToken}
                setSnackbar = {setSnackbar}
@@ -90,13 +90,13 @@ function App() {
                  setShowCompanies(false);
                  setShowArticles(true);
                }}/>
-    <Articles open            = {(userToken != null) && !showFullPrices && showArticles}
+    <Articles open            = {userToken != null && !showFullPrices && showArticles}
               userToken       = {userToken}
               activeCompany   = {activeCompany}
               activeInventory = {activeInventory}
               setSnackbar     = {setSnackbar}
               onBack          = {onArticleBackButtonClick} />
-    <FullPrice open={(userToken != null) && showFullPrices}
+    <FullPrice open={userToken != null && showFullPrices}
                onBack = {()=>{setShowFullPrices(false);console.log('dsadsadsa');}}
                userToken={userToken}
                setSnackbar={setSnackbar}

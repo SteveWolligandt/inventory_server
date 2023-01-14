@@ -52,8 +52,6 @@ func (s *Server) CheckAuthorizedFromRequest(w *http.ResponseWriter, r *http.Requ
 // ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorized(w *http.ResponseWriter, token string) bool {
 	isValid, _ := s.db.UserOfToken(token)
-	fmt.Println("IsValid = ", isValid)
-	fmt.Println("token = ", token)
 	if !isValid {
 		(*w).WriteHeader(http.StatusUnauthorized)
 		(*w).Header().Set("Content-Type", "application/json")
@@ -237,7 +235,6 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	company := s.db.CreateCompany(companyWithToken.Name)
-	fmt.Println(company)
 	marshaledCompany, marshalErr := json.Marshal(company)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
