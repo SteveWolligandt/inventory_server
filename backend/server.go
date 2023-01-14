@@ -113,10 +113,10 @@ func (s *Server) Article(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	// extract article from json response
 	reqBody, _ := ioutil.ReadAll(r.Body)
-  type ArticleWithToken struct {
-    Article
-    Token string `json:"token"`
-  }
+	type ArticleWithToken struct {
+		Article
+		Token string `json:"token"`
+	}
 	var articleWithToken ArticleWithToken
 	json.Unmarshal(reqBody, &articleWithToken)
 	if !s.CheckAuthorized(&w, articleWithToken.Token) {
@@ -124,7 +124,7 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create new article in database
-  article := s.db.CreateArticle(articleWithToken.Name, articleWithToken.CompanyId, articleWithToken.ArticleNumber)
+	article := s.db.CreateArticle(articleWithToken.Name, articleWithToken.CompanyId, articleWithToken.ArticleNumber)
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -136,10 +136,10 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-  type ArticleWithToken struct {
-    Article
-    Token string `json:"token"`
-  }
+	type ArticleWithToken struct {
+		Article
+		Token string `json:"token"`
+	}
 	var articleWithToken ArticleWithToken
 	json.Unmarshal(reqBody, &articleWithToken)
 	if !s.CheckAuthorized(&w, articleWithToken.Token) {
@@ -224,20 +224,20 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	// unmarshal this into a new Company struct
 	// append this to our Articles array.
 	reqBody, _ := ioutil.ReadAll(r.Body)
-  type CompanyWithToken struct {
-    Id   int `json:"id"`
-    Name string `json:"name"`
-    ImagePath string `json:"-"`
-    Token string `json:"token"`
-  }
+	type CompanyWithToken struct {
+		Id        int    `json:"id"`
+		Name      string `json:"name"`
+		ImagePath string `json:"-"`
+		Token     string `json:"token"`
+	}
 	var companyWithToken CompanyWithToken
 	json.Unmarshal(reqBody, &companyWithToken)
 	if !s.CheckAuthorized(&w, companyWithToken.Token) {
 		return
 	}
 
-  company := s.db.CreateCompany(companyWithToken.Name)
-  fmt.Println(company)
+	company := s.db.CreateCompany(companyWithToken.Name)
+	fmt.Println(company)
 	marshaledCompany, marshalErr := json.Marshal(company)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -291,17 +291,17 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-  type InventoryDataWithToken struct {
-    InventoryData
-    Token string `json:"token"`
-  }
+	type InventoryDataWithToken struct {
+		InventoryData
+		Token string `json:"token"`
+	}
 	var inventoryDataWithToken InventoryDataWithToken
 	json.Unmarshal(reqBody, &inventoryDataWithToken)
 	if !s.CheckAuthorized(&w, inventoryDataWithToken.Token) {
 		return
 	}
 
-  s.db.UpdateInventoryData(inventoryDataWithToken.InventoryData)
+	s.db.UpdateInventoryData(inventoryDataWithToken.InventoryData)
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryDataWithToken.InventoryData)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -351,7 +351,7 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  inventory := s.db.CreateInventory(inventoryWithToken.Name)
+	inventory := s.db.CreateInventory(inventoryWithToken.Name)
 	json.NewEncoder(w).Encode(inventory)
 
 	action := fmt.Sprintf(
@@ -447,6 +447,79 @@ func (s *Server) InventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 
 	articles := s.db.InventoryOfCompany(inventoryId, companyId)
 	json.NewEncoder(w).Encode(articles)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) InventoryPrice(w http.ResponseWriter, r *http.Request) {
+	//if !s.CheckAuthorizedFromRequest(&w, r) {
+	//	return
+	//}
+	type CompanyPrice struct {
+		Name  string  `json:"name"`
+		Price float32 `json:"price"`
+	}
+	type Return struct {
+		CompanyPrices []CompanyPrice `json:"companies"`
+		Price         float32        `json:"price"`
+	}
+	var ret Return
+	vars := mux.Vars(r)
+
+	idStr := vars["id"]
+	id, idErr := strconv.Atoi(idStr)
+	if idErr != nil {
+		panic(idErr.Error())
+	}
+
+	var fullPrice float32
+	companies := s.db.Companies()
+
+	for _, company := range companies {
+		var fullPriceCompany float32
+		articles := s.db.InventoryOfCompany(id, company.Id)
+		for _, article := range articles {
+			fullPriceCompany += float32(article.Amount) * article.PurchasePrice
+		}
+
+		ret.CompanyPrices = append(ret.CompanyPrices, CompanyPrice{Name: company.Name, Price: fullPriceCompany})
+		fullPrice += fullPriceCompany
+	}
+
+	ret.Price = fullPrice
+	json.NewEncoder(w).Encode(ret)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) InventoryPriceOfCompany(w http.ResponseWriter, r *http.Request) {
+	//if !s.CheckAuthorizedFromRequest(&w, r) {
+	//	return
+	//}
+	vars := mux.Vars(r)
+
+	companyIdStr := vars["companyId"]
+	companyId, companyErr := strconv.Atoi(companyIdStr)
+	if companyErr != nil {
+		panic(companyErr.Error())
+	}
+
+	inventoryIdStr := vars["inventoryId"]
+	inventoryId, inventoryErr := strconv.Atoi(inventoryIdStr)
+	if inventoryErr != nil {
+		panic(inventoryErr.Error())
+	}
+
+	var fullPrice float32
+	articles := s.db.InventoryOfCompany(inventoryId, companyId)
+	for _, article := range articles {
+		fullPrice += float32(article.Amount) * article.PurchasePrice
+	}
+
+	type Return struct {
+		Name  string  `json:"name"`
+		Price float32 `json:"price"`
+	}
+	ret := Return{Name: "foo", Price: fullPrice}
+	json.NewEncoder(w).Encode(ret)
 }
 
 // ------------------------------------------------------------------------------
@@ -589,6 +662,16 @@ func (s *Server) HandleRequests() {
 		Methods("POST")
 
 	s.router.HandleFunc(
+		"/api/company/{companyId}/inventory/{inventoryId}",
+		s.InventoryOfCompany).
+		Methods("POST")
+
+	s.router.HandleFunc(
+		"/api/company/{companyId}/inventory-price/{inventoryId}",
+		s.InventoryPriceOfCompany).
+		Methods("POST")
+
+	s.router.HandleFunc(
 		"/api/article/{id}",
 		s.UpdateArticle).
 		Methods("PUT")
@@ -636,13 +719,13 @@ func (s *Server) HandleRequests() {
 		Methods("POST")
 
 	s.router.HandleFunc(
-		"/api/inventory/{inventoryId}/inventorydata/{articleId}",
-		s.InventoryDataOfArticle).
+		"/api/inventory/{id}/price",
+		s.InventoryPrice).
 		Methods("POST")
 
 	s.router.HandleFunc(
-		"/api/company/{companyId}/inventory/{inventoryId}",
-		s.InventoryOfCompany).
+		"/api/inventory/{inventoryId}/inventorydata/{articleId}",
+		s.InventoryDataOfArticle).
 		Methods("POST")
 
 	s.router.HandleFunc(
