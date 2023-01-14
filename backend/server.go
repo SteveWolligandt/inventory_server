@@ -455,6 +455,7 @@ func (s *Server) InventoryPrice(w http.ResponseWriter, r *http.Request) {
 	//	return
 	//}
 	type CompanyPrice struct {
+		Id    int     `json:"id"`
 		Name  string  `json:"name"`
 		Price float32 `json:"price"`
 	}
@@ -481,7 +482,7 @@ func (s *Server) InventoryPrice(w http.ResponseWriter, r *http.Request) {
 			fullPriceCompany += float32(article.Amount) * article.PurchasePrice
 		}
 
-		ret.CompanyPrices = append(ret.CompanyPrices, CompanyPrice{Name: company.Name, Price: fullPriceCompany})
+		ret.CompanyPrices = append(ret.CompanyPrices, CompanyPrice{Id: company.Id, Name: company.Name, Price: fullPriceCompany})
 		fullPrice += fullPriceCompany
 	}
 
