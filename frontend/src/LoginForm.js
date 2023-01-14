@@ -8,7 +8,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 
-export default function LoginForm(params) {
+export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm}) {
   const [snackbar, setSnackbar] = React.useState(null);
   const handleLogin = () => {
     if (document.getElementById("login.username").value === '') {
@@ -36,7 +36,7 @@ export default function LoginForm(params) {
     .then((data) => {
       if (data.success) {
         setSnackbar({children : 'Erfolgreich angemeldet', severity : 'success'});
-        params.onLogin();
+        onLogin(data.token);
       } else {
         setSnackbar({children : 'Fehler bei der Anmeldung', severity : 'error'});
       }
@@ -45,13 +45,13 @@ export default function LoginForm(params) {
     });
   };
   const handleOpenRegister = () => {
-    params.setOpen(false);
-    params.setShowRegisterForm(true);
+    setOpen(false);
+    setShowRegisterForm(true);
   };
   const handleCloseSnackbar = () => setSnackbar(null);
 
   return (<>
-    <Dialog open={params.open}>
+    <Dialog open={open}>
       <DialogTitle>Login</DialogTitle>
       <DialogContent>
         <TextField

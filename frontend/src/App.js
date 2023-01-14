@@ -11,82 +11,76 @@ import TopBar from './TopBar.js';
 
 
 function App() {
-  var [showLoginScreen, setShowLoginScreen] = React.useState(true)
-  var [showInventories, setShowInventories] = useStickyState(true, 'showInventories');
+  var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
 
+  var [userToken, setUserToken] = useStickyState(null, 'userToken');
   var [title, setTitle] = useStickyState('Firmen', 'title');
-  var [inventories, setInventories] = React.useState([]);
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
 
 
-  React.useEffect(() => {
-    async function loadData() {
-      try {
-        const response = await fetch('/api/inventories');
-        const inventoriesJson = await response.json();
-        var is = [];
-        for (var companyJson in inventoriesJson) {
-          if (inventoriesJson.hasOwnProperty(companyJson)) {
-            is.push(inventoriesJson[companyJson]);
-          }
-        }
-        setInventories(is);
-      } catch (error) {
-        console.error(error);
-      }
+  React.useEffect(()=>{
+    if (userToken == null) {
+      return;
     }
-    loadData();
-  }, []);
-  React.useEffect(() => {console.log(activeCompany)}, [activeCompany]);
+    fetch('/api/tokenvalid', {
+      method : "POST",
+      headers : {"Content-Type" : "application/json"},
+      body : JSON.stringify({token : userToken})
+    })
+    .then((response) => response.json())
+    .then((response) => {if(!response.success) {setUserToken(null);}})
+    console.log('user token');
+  }, [userToken, setUserToken]);
+
+  const handleTitleBar = () => {
+    if (activeInventory == null) {
+      setTitle('Keine Inventur ausgewählt');
+    } else if (activeCompany != null) {
+      setTitle(activeInventory.name + ' - ' + activeCompany.name);
+    } else {
+      setTitle(activeInventory.name + ' - Firmenauswahl');
+    }
+  };
+  React.useEffect(handleTitleBar, [activeInventory, activeCompany, setTitle]);
 
   var onArticleBackButtonClick = () => {
-    setShowInventories(false);
     setShowCompanies(true);
     setShowArticles(false);
 
     setActiveCompany(null);
-    setTitle('Firmen');
   };
 
   return (<>
-    <TopBar name = {title} onClick =
-    {() => { setShowInventories(true);setShowCompanies(false);setShowArticles(false); }} />
+    <TopBar setUserToken={setUserToken}
+            name = {title}
+            onClick = {() => { setShowInventories(true); }} />
     <div style={{marginBottom: '100px'}}/>
-    <LoginScreen open={showLoginScreen} setOpen={setShowLoginScreen} />
+    <LoginScreen open    = {userToken == null}
+                 onLogin = {(token) => setUserToken(token)}/>
     <Inventories
-      open = {!showLoginScreen && showInventories}
-               activeInventory = {activeInventory}
-               onInventorySelected = {(inventory) => {
-                 setActiveInventory(inventory);
-                 setShowInventories(false);
-                 setShowCompanies(true);
-                 setShowArticles(false);
-                 setTitle(
-                   activeInventory !== null
-                     ? activeInventory.name
-                     : '<Keine Inventur ausgewählt>');
-               }}
+      open = {(userToken != null) && (showInventories || !activeInventory)}
+      setOpen = {setShowInventories}
+      activeInventory = {activeInventory}
+      setActiveInventory = {setActiveInventory}
+      onInventorySelected = {(inventory) => {
+        setActiveInventory(inventory);
+      }}
     />
-    <Companies open = {!showLoginScreen && showCompanies}
-               activeCompany = {activeCompany}
+    <Companies open              = {(userToken != null) && showCompanies}
+               activeCompany     = {activeCompany}
                onCompanySelected = {(company) => {
                  setActiveCompany(company);
-                 setShowInventories(false);
                  setShowCompanies(false);
                  setShowArticles(true);
-                 setTitle(
-                   company.name + ' - ' + (activeInventory !== null
-                     ? activeInventory.name
-                     : '<Keine Inventur ausgewählt>'));
                }}/>
-    <Articles open      = {!showLoginScreen && showArticles}
+    <Articles open            = {(userToken != null) && showArticles}
               activeCompany   = {activeCompany}
               activeInventory = {activeInventory}
-              onBack    = {onArticleBackButtonClick} />
+              onBack          = {onArticleBackButtonClick} />
   </>);
 }
 export default App;

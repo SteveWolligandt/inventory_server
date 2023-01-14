@@ -11,6 +11,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 // -----------------------------------------------------------------------------
@@ -74,7 +76,6 @@ func (db *Database) User(name string) User {
 func (db *Database) CreateUser(name string, password string) User {
 	var user User
 	hashedPassword, hashErr := HashPassword(password)
-  fmt.Println(hashedPassword)
 	user.Name = name
 	user.HashedPassword = hashedPassword
 	if hashErr != nil {
@@ -306,7 +307,7 @@ func (db *Database) CreateInventory(name string) Inventory {
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
 	}
 
-	// create new amount for new articles in database
+	// create new inventory data for present articles in database
 	_, dbErr = db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT id as articleId, ? as inventoryId FROM articles", inventory.Id)
 	if dbErr != nil {
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
@@ -364,8 +365,8 @@ func (db *Database) InventoryData(id int) []InventoryData {
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) InventoryData {
 	var data InventoryData
-  data.ArticleId = articleId
-  data.InventoryId = inventoryId
+	data.ArticleId = articleId
+	data.InventoryId = inventoryId
 	q := fmt.Sprintf(
 		"SELECT amount, purchasePrice, percentage, notes FROM inventoryData WHERE inventoryId=%v AND articleId=%v",
 		inventoryId, articleId)
@@ -373,7 +374,7 @@ func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) Inven
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
-  data.SellingPrice = SellingPriceFromPurchasePriceAndPercentage(data.PurchasePrice, data.Percentage)
+	data.SellingPrice = SellingPriceFromPurchasePriceAndPercentage(data.PurchasePrice, data.Percentage)
 	return data
 }
 
@@ -396,7 +397,6 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) []Article
 	q := fmt.Sprintf(
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
 		inventoryId, companyId)
-	fmt.Println(q)
 
 	inventoryDataPerArticle, err := db.db.Query(q)
 	if err != nil {
@@ -438,6 +438,9 @@ func (db *Database) Initialize() {
 	if !db.UsersTableCreated() {
 		db.CreateUsersTable()
 	}
+	if !db.UserTokensTableCreated() {
+		db.CreateUserTokensTable()
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -469,6 +472,20 @@ func (db *Database) CreateUsersTable() {
 }
 
 // ------------------------------------------------------------------------------
+func (db *Database) UserTokensTableCreated() bool {
+	_, err := db.db.Query("SELECT COUNT(*) as count FROM userTokens")
+	return err == nil
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) CreateUserTokensTable() {
+	_, err := db.db.Query("CREATE TABLE userTokens (userName varchar(255) NOT NULL, token varchar(255) NOT NULL, FOREIGN KEY (userName) REFERENCES users(name))")
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+// ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
 	_, err := db.db.Query("SELECT COUNT(*) as count FROM inventories")
 	return err == nil
@@ -476,7 +493,7 @@ func (db *Database) InventoriesTableCreated() bool {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoriesTable() {
-	_, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT,name varchar(255) NOT NULL,primary key (id))")
+	_, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY (id))")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -508,6 +525,35 @@ func (db *Database) CreateArticlesTable() {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) CreateUserToken(userName string) string {
+	const tokenLength = 128
+	const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, tokenLength)
+  rand.Seed(time.Now().UnixNano())
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	var token = string(b)
+	q := fmt.Sprintf("INSERT INTO userTokens (userName, token) VALUES ('%v','%v')",
+		userName, token)
+	fmt.Println(q)
+	db.db.QueryRow(q)
+	return token
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) UserOfToken(token string) (bool, string) {
+	var user string
+	q := fmt.Sprintf("SELECT userName FROM userTokens WHERE token='%s'", token)
+	err := db.db.QueryRow(q).Scan(&user)
+  isValid := err == nil
+  fmt.Println(q)
+  fmt.Println(user)
+  fmt.Println(isValid)
+	return isValid, user
 }
 
 // ------------------------------------------------------------------------------

@@ -46,14 +46,11 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
 
   const handleWebsocket = () => {
-    console.log('WEBSOCKET');
     if (lastMessage !== null) {
-      console.log(lastMessage);
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
-      console.log(action);
       if (action === 'newCompany') {
-        let newCompany = JSON.parse(msg.data);
+        let newCompany = msg.data;
         setCompanies(companies => companies.concat(newCompany));
       } else if (action === 'updateCompany') {
         let updatedCompany = msg.data;

@@ -169,7 +169,7 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
 	}
 	action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":%v}", string(marshaledCompany))
-  fmt.Println(action)
+	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -253,12 +253,13 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 	var inventory Inventory
 	json.Unmarshal(reqBody, &inventory)
 
-	s.db.CreateInventory(inventory.Name)
+	inventory = s.db.CreateInventory(inventory.Name)
 	json.NewEncoder(w).Encode(inventory)
 
 	action := fmt.Sprintf(
 		"{\"action\":\"newInventory\", \"data\":{\"id\":%v, \"name\":\"%v\"}}",
 		inventory.Id, inventory.Name)
+	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -361,22 +362,64 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	var userClear UserPW
-	type Response struct {
-		Success bool `json:"success"`
-	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &userClear)
 	userHashed := s.db.User(userClear.Name)
 	success := VerifyPassword(userHashed.HashedPassword, userClear.Password)
 
-	w.Header().Set("Content-Type", "application/json")
-	var res = Response{Success: success}
-	resstring, _ := json.Marshal(res)
-	w.Write(resstring)
+  if success {
+    type Response struct {
+      Success bool   `json:"success"`
+      Token   string `json:"token"`
+    }
+    var token = s.db.CreateUserToken(userClear.Name)
+    w.Header().Set("Content-Type", "application/json")
+    var res = Response{Success: success, Token: token}
+    resstring, _ := json.Marshal(res)
+    w.Write(resstring)
+  } else {
+    type Response struct {
+      Success bool   `json:"success"`
+    }
+    w.Header().Set("Content-Type", "application/json")
+    var res = Response{Success: success}
+    resstring, _ := json.Marshal(res)
+    w.Write(resstring)
+  }
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) handleRequests() {
+func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
+	type ReqBody struct {
+		Token string `json:"token"`
+	}
+	var reqBody ReqBody
+	reqBodyString, _ := ioutil.ReadAll(r.Body)
+	json.Unmarshal(reqBodyString, &reqBody)
+	isValid, user := s.db.UserOfToken(reqBody.Token)
+	fmt.Println("Token ", reqBody.Token)
+
+	w.Header().Set("Content-Type", "application/json")
+	if isValid {
+		type ResponseValid struct {
+			Success bool   `json:"success"`
+			User    string `json:"user"`
+		}
+		var res = ResponseValid{Success: isValid, User: user}
+		resstring, _ := json.Marshal(res)
+		w.Write(resstring)
+	} else {
+		type ResponseInvalid struct {
+			Success bool `json:"success"`
+		}
+		var res = ResponseInvalid{Success: isValid}
+		resstring, _ := json.Marshal(res)
+		w.Write(resstring)
+	}
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) HandleRequests() {
 	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "../frontend/build/index.html")
 	})
@@ -503,6 +546,10 @@ func (s *Server) handleRequests() {
 	s.router.HandleFunc(
 		"/api/login", s.Login).
 		Methods("POST")
+
+	s.router.HandleFunc(
+		"/api/tokenvalid", s.TokenValid).
+		Methods("POST")
 }
 
 // ------------------------------------------------------------------------------
@@ -550,7 +597,7 @@ func NewServer() *Server {
 	fmt.Println("Creating Router... done!")
 	s.clients = make(map[*websocket.Conn]bool)
 	fmt.Println("Creating REST API...")
-	s.handleRequests()
+	s.HandleRequests()
 	fmt.Println("Creating REST API... done!")
 	fmt.Println("Creating Server... done!")
 	return s
