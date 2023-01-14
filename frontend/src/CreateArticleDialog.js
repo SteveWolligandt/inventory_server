@@ -15,7 +15,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
 
-export default function CreateArticleDialog({open, activeCompany}) {
+export default function CreateArticleDialog({open, activeCompany, userToken}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleClickOpen = () => { setDialogOpen(true); };
@@ -25,6 +25,7 @@ export default function CreateArticleDialog({open, activeCompany}) {
       name : document.getElementById("createArticle.name").value,
       companyId : activeCompany.id,
       articleNumber : document.getElementById("createArticle.articleNumber").value,
+      token:userToken
     };
 
     fetch(

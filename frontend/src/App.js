@@ -8,9 +8,13 @@ import Companies from './CompaniesTable.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
 import TopBar from './TopBar.js';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 
 function App() {
+  const [snackbar, setSnackbar] = React.useState(null);
+  const handleCloseSnackbar = () => setSnackbar(null);
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
@@ -33,7 +37,6 @@ function App() {
     })
     .then((response) => response.json())
     .then((response) => {if(!response.success) {setUserToken(null);}})
-    console.log('user token');
   }, [userToken, setUserToken]);
 
   const handleTitleBar = () => {
@@ -60,8 +63,11 @@ function App() {
             onClick = {() => { setShowInventories(true); }} />
     <div style={{marginBottom: '100px'}}/>
     <LoginScreen open    = {userToken == null}
-                 onLogin = {(token) => setUserToken(token)}/>
+                 onLogin = {(token) => setUserToken(token)}
+                 setSnackbar = {setSnackbar}/>
     <Inventories
+      setSnackbar = {setSnackbar}
+      userToken = {userToken}
       open = {(userToken != null) && (showInventories || !activeInventory)}
       setOpen = {setShowInventories}
       activeInventory = {activeInventory}
@@ -72,15 +78,24 @@ function App() {
     />
     <Companies open              = {(userToken != null) && showCompanies}
                activeCompany     = {activeCompany}
+               userToken             = {userToken}
+               setSnackbar = {setSnackbar}
                onCompanySelected = {(company) => {
                  setActiveCompany(company);
                  setShowCompanies(false);
                  setShowArticles(true);
                }}/>
     <Articles open            = {(userToken != null) && showArticles}
+              userToken       = {userToken}
               activeCompany   = {activeCompany}
               activeInventory = {activeInventory}
+              setSnackbar     = {setSnackbar}
               onBack          = {onArticleBackButtonClick} />
+    {!!snackbar && (
+      <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
+        <Alert {...snackbar} onClose={handleCloseSnackbar} />
+      </Snackbar>
+    )}
   </>);
 }
 export default App;

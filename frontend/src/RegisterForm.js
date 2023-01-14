@@ -4,12 +4,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import * as React from 'react';
 
-export default function RegisterForm(params) {
-  const [snackbar, setSnackbar] = React.useState(null);
+export default function RegisterForm({open, setOpen, setShowLoginForm, setSnackbar}) {
   const handleRegister = () => { 
     if (document.getElementById("register.username").value === '') {
       setSnackbar(
@@ -39,21 +37,21 @@ export default function RegisterForm(params) {
       },
       body: JSON.stringify(data)}
     ).then((response) => {
-      params.setOpen(false);
-      params.setShowLoginForm(true);
+      setOpen(false);
+      setShowLoginForm(true);
       setSnackbar({children : 'Benutzer wurde erstellt', severity : 'success'});
     }).catch(() => {
       setSnackbar({children : 'Etwas ist schiefgelaufen', severity : 'error'});
     });
   };
   const handleOpenLogin = () => {
-    params.setOpen(false);
-    params.setShowLoginForm(true);
+    setOpen(false);
+    setShowLoginForm(true);
   };
   const handleCloseSnackbar = () => setSnackbar(null);
 
   return (<>
-    <Dialog open={params.open}>
+    <Dialog open={open}>
       <DialogTitle>Neuer Benutzer</DialogTitle>
       <DialogContent>
         <TextField
@@ -78,10 +76,5 @@ export default function RegisterForm(params) {
         <Button variant='contained' onClick={handleRegister}>Erstelle neuen Benutzer</Button>
       </DialogActions>
     </Dialog>
-    {!!snackbar && (
-      <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
-        <Alert {...snackbar} onClose={handleCloseSnackbar} />
-      </Snackbar>
-    )}
   </>);
 }

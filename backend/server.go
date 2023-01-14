@@ -39,7 +39,40 @@ func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) pdf(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CheckAuthorizedFromRequest(w *http.ResponseWriter, r *http.Request) bool {
+	type ReqBody struct {
+		Token string `json:"token"`
+	}
+	reqBodyString, _ := ioutil.ReadAll(r.Body)
+	var reqBody ReqBody
+	json.Unmarshal(reqBodyString, &reqBody)
+	return s.CheckAuthorized(w, reqBody.Token)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) CheckAuthorized(w *http.ResponseWriter, token string) bool {
+	isValid, _ := s.db.UserOfToken(token)
+	fmt.Println("IsValid = ", isValid)
+	fmt.Println("token = ", token)
+	if !isValid {
+		(*w).WriteHeader(http.StatusUnauthorized)
+		(*w).Header().Set("Content-Type", "application/json")
+		resp := make(map[string]string)
+		resp["message"] = "Unauthorized"
+		jsonResp, err := json.Marshal(resp)
+		if err != nil {
+			log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+		}
+		(*w).Write(jsonResp)
+	}
+	return isValid
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) Pdf(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
@@ -54,12 +87,18 @@ func (s *Server) pdf(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Articles(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	articles := s.db.Articles()
 	json.NewEncoder(w).Encode(articles)
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) Article(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	articleIdStr := vars["id"]
 	articleId, err := strconv.Atoi(articleIdStr)
@@ -74,11 +113,18 @@ func (s *Server) Article(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	// extract article from json response
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
+  type ArticleWithToken struct {
+    Article
+    Token string `json:"token"`
+  }
+	var articleWithToken ArticleWithToken
+	json.Unmarshal(reqBody, &articleWithToken)
+	if !s.CheckAuthorized(&w, articleWithToken.Token) {
+		return
+	}
 
 	// create new article in database
-	article = s.db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber)
+  article := s.db.CreateArticle(articleWithToken.Name, articleWithToken.CompanyId, articleWithToken.ArticleNumber)
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -89,19 +135,26 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+  type ArticleWithToken struct {
+    Article
+    Token string `json:"token"`
+  }
+	var articleWithToken ArticleWithToken
+	json.Unmarshal(reqBody, &articleWithToken)
+	if !s.CheckAuthorized(&w, articleWithToken.Token) {
+		return
+	}
 	vars := mux.Vars(r)
 
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
 	var strConvErr error
-	article.Id, strConvErr = strconv.Atoi(vars["id"])
+	articleWithToken.Id, strConvErr = strconv.Atoi(vars["id"])
 	if strConvErr != nil {
 		panic(strConvErr.Error())
 	}
 
-	s.db.UpdateArticle(article)
-	marshaledArticle, marshalErr := json.Marshal(article)
+	s.db.UpdateArticle(articleWithToken.Article)
+	marshaledArticle, marshalErr := json.Marshal(articleWithToken.Article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -111,6 +164,9 @@ func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	articleIdStr := vars["id"]
 	articleId, err := strconv.Atoi(articleIdStr)
@@ -124,13 +180,18 @@ func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Companies(w http.ResponseWriter, r *http.Request) {
-	// Execute the query
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	companies := s.db.Companies()
 	json.NewEncoder(w).Encode(companies)
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) ArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["id"]
 	companyId, err := strconv.Atoi(companyIdStr)
@@ -143,6 +204,9 @@ func (s *Server) ArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Company(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["id"]
 	companyId, err := strconv.Atoi(companyIdStr)
@@ -160,21 +224,33 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	// unmarshal this into a new Company struct
 	// append this to our Articles array.
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var company Company
-	json.Unmarshal(reqBody, &company)
+  type CompanyWithToken struct {
+    Id   int `json:"id"`
+    Name string `json:"name"`
+    ImagePath string `json:"-"`
+    Token string `json:"token"`
+  }
+	var companyWithToken CompanyWithToken
+	json.Unmarshal(reqBody, &companyWithToken)
+	if !s.CheckAuthorized(&w, companyWithToken.Token) {
+		return
+	}
 
-	company = s.db.CreateCompany(company.Name)
+  company := s.db.CreateCompany(companyWithToken.Name)
+  fmt.Println(company)
 	marshaledCompany, marshalErr := json.Marshal(company)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
 	}
 	action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":%v}", string(marshaledCompany))
-	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 
 	reqBody, _ := ioutil.ReadAll(r.Body)
@@ -196,6 +272,9 @@ func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
 // server-related
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["id"]
 	companyId, err := strconv.Atoi(companyIdStr)
@@ -212,18 +291,23 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var inventoryData InventoryData
-	json.Unmarshal(reqBody, &inventoryData)
-	fmt.Println(inventoryData)
+  type InventoryDataWithToken struct {
+    InventoryData
+    Token string `json:"token"`
+  }
+	var inventoryDataWithToken InventoryDataWithToken
+	json.Unmarshal(reqBody, &inventoryDataWithToken)
+	if !s.CheckAuthorized(&w, inventoryDataWithToken.Token) {
+		return
+	}
 
-	s.db.UpdateInventoryData(inventoryData)
-	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
+  s.db.UpdateInventoryData(inventoryDataWithToken.InventoryData)
+	marshaledInventoryData, marshalErr := json.Marshal(inventoryDataWithToken.InventoryData)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
 	}
 	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
 
-	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -231,12 +315,18 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 // inventory-related
 // ------------------------------------------------------------------------------
 func (s *Server) Inventories(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	inventories := s.db.Inventories()
 	json.NewEncoder(w).Encode(inventories)
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) SingleInventory(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
@@ -250,21 +340,31 @@ func (s *Server) SingleInventory(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var inventory Inventory
-	json.Unmarshal(reqBody, &inventory)
+	type InventoryWithToken struct {
+		Id    int    `json:"id"`
+		Name  string `json:"name"`
+		Token string `json:"token"`
+	}
+	var inventoryWithToken InventoryWithToken
+	json.Unmarshal(reqBody, &inventoryWithToken)
+	if !s.CheckAuthorized(&w, inventoryWithToken.Token) {
+		return
+	}
 
-	inventory = s.db.CreateInventory(inventory.Name)
+  inventory := s.db.CreateInventory(inventoryWithToken.Name)
 	json.NewEncoder(w).Encode(inventory)
 
 	action := fmt.Sprintf(
 		"{\"action\":\"newInventory\", \"data\":{\"id\":%v, \"name\":\"%v\"}}",
 		inventory.Id, inventory.Name)
-	fmt.Println(action)
 	s.SendToWebSockets([]byte(action))
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 	var err error
@@ -287,6 +387,9 @@ func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
@@ -303,6 +406,9 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) InventoryDataOfArticle(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["inventoryId"]
 	inventoryId, inventoryErr := strconv.Atoi(inventoryIdStr)
@@ -322,6 +428,9 @@ func (s *Server) InventoryDataOfArticle(w http.ResponseWriter, r *http.Request) 
 
 // ------------------------------------------------------------------------------
 func (s *Server) InventoryOfCompany(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedFromRequest(&w, r) {
+		return
+	}
 	vars := mux.Vars(r)
 
 	companyIdStr := vars["companyId"]
@@ -337,7 +446,6 @@ func (s *Server) InventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	articles := s.db.InventoryOfCompany(inventoryId, companyId)
-	fmt.Println(articles)
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -367,25 +475,25 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	userHashed := s.db.User(userClear.Name)
 	success := VerifyPassword(userHashed.HashedPassword, userClear.Password)
 
-  if success {
-    type Response struct {
-      Success bool   `json:"success"`
-      Token   string `json:"token"`
-    }
-    var token = s.db.CreateUserToken(userClear.Name)
-    w.Header().Set("Content-Type", "application/json")
-    var res = Response{Success: success, Token: token}
-    resstring, _ := json.Marshal(res)
-    w.Write(resstring)
-  } else {
-    type Response struct {
-      Success bool   `json:"success"`
-    }
-    w.Header().Set("Content-Type", "application/json")
-    var res = Response{Success: success}
-    resstring, _ := json.Marshal(res)
-    w.Write(resstring)
-  }
+	if success {
+		type Response struct {
+			Success bool   `json:"success"`
+			Token   string `json:"token"`
+		}
+		var token = s.db.CreateUserToken(userClear.Name)
+		w.Header().Set("Content-Type", "application/json")
+		var res = Response{Success: success, Token: token}
+		resstring, _ := json.Marshal(res)
+		w.Write(resstring)
+	} else {
+		type Response struct {
+			Success bool `json:"success"`
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var res = Response{Success: success}
+		resstring, _ := json.Marshal(res)
+		w.Write(resstring)
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -397,7 +505,6 @@ func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
 	reqBodyString, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBodyString, &reqBody)
 	isValid, user := s.db.UserOfToken(reqBody.Token)
-	fmt.Println("Token ", reqBody.Token)
 
 	w.Header().Set("Content-Type", "application/json")
 	if isValid {
@@ -432,19 +539,18 @@ func (s *Server) HandleRequests() {
 				http.Dir("../frontend/build/static"))))
 
 	// websockets
-	s.router.HandleFunc("/ws", s.handleWebsocket)
+	s.router.HandleFunc("/ws", s.HandleWebsocket)
 
 	// pdf
 	s.router.HandleFunc(
-		"/pdf/{id}",
-		s.pdf).
-		Methods("GET")
+		"/pdf/{id}", s.Pdf).
+		Methods("POST")
 
 	// company-related
 	s.router.HandleFunc(
 		"/api/companies",
 		s.Companies).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/company",
@@ -454,7 +560,7 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/company/{id}",
 		s.Company).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/company/{id}",
@@ -470,7 +576,7 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/articles",
 		s.Articles).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/article",
@@ -480,7 +586,7 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/company/{id}/articles",
 		s.ArticlesOfCompany).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/article/{id}",
@@ -495,7 +601,7 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/article/{id}",
 		s.Article).
-		Methods("GET")
+		Methods("POST")
 
 	// inventoryData-related
 	s.router.HandleFunc(
@@ -507,7 +613,7 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/inventories",
 		s.Inventories).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/inventory",
@@ -527,17 +633,17 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/inventory/{id}",
 		s.SingleInventory).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/inventory/{inventoryId}/inventorydata/{articleId}",
 		s.InventoryDataOfArticle).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/company/{companyId}/inventory/{inventoryId}",
 		s.InventoryOfCompany).
-		Methods("GET")
+		Methods("POST")
 
 	s.router.HandleFunc(
 		"/api/user", s.CreateUser).
@@ -553,7 +659,8 @@ func (s *Server) HandleRequests() {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) handleWebsocket(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
+	//if !s.CheckAuthorizedFromRequest(&w, r) { return }
 	connection, _ := upgrader.Upgrade(w, r, nil)
 
 	s.clients[connection] = true // Save the connection using it as a key

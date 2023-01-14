@@ -1,14 +1,11 @@
 import websocketAddr from './websocketAddress.js';
-import useStickyState from './useStickyState.js';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import { DataGrid } from '@mui/x-data-grid';
-import Snackbar from '@mui/material/Snackbar';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -23,28 +20,10 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({open, onCompanySelected, activeCompany, setActiveCompany}) {
+export default function Companies({open, onCompanySelected, userToken, setSnackbar}) {
   var [companies, setCompanies] = React.useState([]);
-  const [messageHistory, setMessageHistory] = React.useState([]);
-
-  var loc = window.location, new_uri;
-  if (loc.protocol === 'https:') {
-    new_uri = 'wss';
-  } else {
-    new_uri = 'ws';
-  }
-  new_uri += '://';
-  new_uri += loc.hostname;
-  new_uri += ':';
-  if (loc.port === '3000') {
-    new_uri += '8080';
-  } else {
-    new_uri += loc.port;
-  }
-  new_uri += loc.pathname + 'ws';
-
+  
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
-
   const handleWebsocket = () => {
     if (lastMessage !== null) {
       let msg = JSON.parse(lastMessage.data);
@@ -66,9 +45,14 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
   React.useEffect(handleWebsocket, [lastMessage, setCompanies]);
 
   React.useEffect(() => {
-    async function loadData() {
+    if (userToken == null) {console.log('fdsfdas');return;}
+    const loadData = async() => {
       try {
-        const response = await fetch('/api/companies');
+        const response = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({token:userToken})
+        })
         const companiesJson = await response.json();
         var cs = [];
         for (var company in companiesJson) {
@@ -78,9 +62,10 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
         }
         setCompanies(cs);
       } catch (error) {
+        console.error('fooooo');
         console.error(error);
       }
-    }
+    };
     loadData();
   }, []);
 
@@ -100,10 +85,6 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
   const noButtonRef = React.useRef(null);
   const [changeArguments, setChangeArguments] = React.useState(null);
   const [deleteArguments, setDeleteArguments] = React.useState(null);
-
-  const [snackbar, setSnackbar] = React.useState(null);
-
-  const handleCloseSnackbar = () => setSnackbar(null);
 
   const processRowUpdate = React.useCallback(
     (newRow, oldRow) =>
@@ -131,7 +112,7 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
 
     try {
       const url = '/api/company/' + newRow.id;
-      const body = JSON.stringify({name:newRow.name});
+      const body = JSON.stringify({name:newRow.name, token:userToken});
       await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -158,6 +139,8 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
       const url = '/api/company/' + deleteArguments.id;
       await fetch(url, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({token:userToken})
       });
 
       setSnackbar({ children: 'Firma in Datenbank gelöscht', severity: 'success' });
@@ -226,31 +209,24 @@ export default function Companies({open, onCompanySelected, activeCompany, setAc
     );
   };
 
-  if (open) {
-    const style = {height: 500, width: '100%'};
-    return (
-      <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-      <div style={style}>
-        {renderChangeConfirmDialog()}
-        {renderDeleteConfirmDialog()}
-        <DataGrid
-          rows={companies}
-          columns={columns(onCompanySelected, setDeleteArguments)}
-          processRowUpdate={processRowUpdate}
-          experimentalFeatures={{ newEditingApi: true }}
-        />
-        {!!snackbar && (
-          <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
-            <Alert {...snackbar} onClose={handleCloseSnackbar} />
-          </Snackbar>
-        )}
-      <CreateCompanyDialog open={open}/>
-      </div>
-      </div>
-    );
-  } else {
-    return (<></>);
-  }
+  if (!open) { return null; }
+  const style = {height: 500, width: '100%'};
+  return (<>
+    <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
+    <div style={style}>
+    <DataGrid
+      rows={companies}
+      columns={columns(onCompanySelected, setDeleteArguments)}
+      processRowUpdate={processRowUpdate}
+      experimentalFeatures={{ newEditingApi: true }}
+    />
+    </div>
+    </div>
+    {renderChangeConfirmDialog()}
+    {renderDeleteConfirmDialog()}
+    <CreateCompanyDialog open={open} userToken={userToken}/>
+    </>
+  );
 }
 
 function columns(onCompanySelected, setDeleteArguments) {

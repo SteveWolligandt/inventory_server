@@ -1,6 +1,5 @@
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
-import Snackbar from '@mui/material/Snackbar';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -8,8 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 
-export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm}) {
-  const [snackbar, setSnackbar] = React.useState(null);
+export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, setSnackbar}) {
   const handleLogin = () => {
     if (document.getElementById("login.username").value === '') {
       setSnackbar(
@@ -70,10 +68,5 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm})
         <Button variant='contained' onClick={handleLogin}>Login</Button>
       </DialogActions>
     </Dialog>
-    {!!snackbar && (
-      <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
-        <Alert {...snackbar} onClose={handleCloseSnackbar} />
-      </Snackbar>
-    )}
   </>);
 }

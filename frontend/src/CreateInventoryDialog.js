@@ -9,12 +9,14 @@ import Fab from '@mui/material/Fab';
 import Zoom from '@mui/material/Zoom';
 import BusinessIcon from '@mui/icons-material/Business';
 
-export default function CreateInventoryDialog({open, setOpen, setActiveInventory}) {
+export default function CreateInventoryDialog({open, setOpen, setActiveInventory, userToken, setSnackbar}) {
   const handleClose           = () => { setOpen(false); };
   const handleCreateInventory = () => {
     const data = {
       name : document.getElementById("createInventory.name").value,
+      token:userToken
     };
+    console.log(data);
 
     fetch(
       '/api/inventory',{
@@ -24,9 +26,12 @@ export default function CreateInventoryDialog({open, setOpen, setActiveInventory
       },
       body: JSON.stringify(data)}
     ).then((response) => {
+      if (response.status == 401) {
+      setSnackbar({ children: 'Konnte keine neue Inventur erstellen. Kein Zugriff', severity: 'error' });
+      }
       setOpen(false);
     }).catch(() => {
-      console.log('Could not create Inventory');
+      setSnackbar({ children: 'Konnte keine neue Inventur erstellen', severity: 'error' });
       setOpen(false);
     });
   };

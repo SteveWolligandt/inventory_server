@@ -9,7 +9,7 @@ import Fab from '@mui/material/Fab';
 import Zoom from '@mui/material/Zoom';
 import BusinessIcon from '@mui/icons-material/Business';
 
-export default function CreateCompanyDialog(params) {
+export default function CreateCompanyDialog({open, userToken}) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleClickOpen = () => { setDialogOpen(true); };
@@ -17,6 +17,7 @@ export default function CreateCompanyDialog(params) {
   const handleCreate    = () => {
     const data = {
       name : document.getElementById("createCompany.name").value,
+      token:userToken
     };
 
     fetch(
@@ -62,7 +63,7 @@ export default function CreateCompanyDialog(params) {
             <Button onClick={handleCreate}>Erstellen</Button>
           </DialogActions>
         </Dialog>
-        <Zoom in={params.open}>
+        <Zoom in={open}>
           <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
             <BusinessIcon />
           </Fab>

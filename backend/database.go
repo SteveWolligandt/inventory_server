@@ -539,7 +539,6 @@ func (db *Database) CreateUserToken(userName string) string {
 	var token = string(b)
 	q := fmt.Sprintf("INSERT INTO userTokens (userName, token) VALUES ('%v','%v')",
 		userName, token)
-	fmt.Println(q)
 	db.db.QueryRow(q)
 	return token
 }
@@ -550,9 +549,6 @@ func (db *Database) UserOfToken(token string) (bool, string) {
 	q := fmt.Sprintf("SELECT userName FROM userTokens WHERE token='%s'", token)
 	err := db.db.QueryRow(q).Scan(&user)
   isValid := err == nil
-  fmt.Println(q)
-  fmt.Println(user)
-  fmt.Println(isValid)
 	return isValid, user
 }
 

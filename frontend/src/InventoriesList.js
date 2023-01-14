@@ -22,7 +22,8 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Inventories({open, setOpen, onInventorySelected, activeInventory, setActiveInventory}) {
+export default function Inventories(
+  {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setSnackbar}) {
   var [inventories, setInventories] = React.useState([]);
   var [createOpen, setCreateOpen] = React.useState(false);
 
@@ -31,7 +32,6 @@ export default function Inventories({open, setOpen, onInventorySelected, activeI
   const handleWebsocket = () => {
     if (lastMessage !== null) {
       let msg = JSON.parse(lastMessage.data);
-      console.log(msg);
       if (msg.action === 'newInventory') {
         let newInventory = msg.data;
         setInventories(inventories => inventories.concat(newInventory));
@@ -47,11 +47,19 @@ export default function Inventories({open, setOpen, onInventorySelected, activeI
     }
   };
   React.useEffect(handleWebsocket, [lastMessage, setInventories]);
-
   React.useEffect(() => {
+    if (userToken == null) {return;}
     async function loadData() {
       try {
-        const response = await fetch('/api/inventories');
+        const response = await fetch('/api/inventories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({token:userToken})
+        });
+        if (response.status === 401) {
+          setSnackbar({ children: 'Unauthorized', severity: 'error' });
+          return;
+        }
         const inventoriesJson = await response.json();
         var cs = [];
         for (var inventory in inventoriesJson) {
@@ -71,7 +79,6 @@ export default function Inventories({open, setOpen, onInventorySelected, activeI
   const handleListItemClick = (inventory) => {
     setActiveInventory(inventory);
     setOpen(false);
-    console.log();
   };
   const handleClose = () => {
   };
@@ -109,7 +116,9 @@ export default function Inventories({open, setOpen, onInventorySelected, activeI
     </Dialog>
     <CreateInventoryDialog open={createOpen}
                            setOpen={setCreateOpen}
-                           setActiveInventory={setActiveInventory}/>
+                           setSnackbar={setSnackbar}
+                           setActiveInventory={setActiveInventory}
+                           userToken={userToken}/>
     </>
   );
 }

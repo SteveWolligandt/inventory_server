@@ -9,7 +9,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Fab from '@mui/material/Fab';
 import IconButton from '@mui/material/IconButton';
-import Snackbar from '@mui/material/Snackbar';
 import Zoom from '@mui/material/Zoom';
 import {DataGrid} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
@@ -65,7 +64,7 @@ function computeMutationPricing(newRow, oldRow) {
 return null;
 }
 
-export default function Articles({open, activeCompany, activeInventory, onBack}) {
+export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar}) {
   var [articles, setArticles] = React.useState([]);
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
 
@@ -79,7 +78,11 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
         if (newArticle.companyId === activeCompany.id) {
           const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
                       newArticle.id;
-          fetch(url).then((response) => response.json()).then((inventoryData) =>{
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({token:userToken})
+          }).then((response) => response.json()).then((inventoryData) =>{
             newArticle.purchasePrice = inventoryData.purchasePrice;
             newArticle.percentage = inventoryData.percentage;
             newArticle.sellingPrice = inventoryData.sellingPrice;
@@ -118,22 +121,39 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
 
   // initial get
   const initialGet = () => {
-    if (activeCompany !== null) {
-      fetch(activeInventory
-                ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
-                : '/api/company/' + activeCompany.id + '/articles')
-          .then((response) => response.json())
-          .then((articlesJson) => {
-            var cs = [];
-            for (var article in articlesJson) {
-              if (articlesJson.hasOwnProperty(article)) {
-                cs.push(articlesJson[article]);
+    if (userToken == null) {return;}
+    const load = async () => {
+      if (userToken == null) {return;}
+      if (activeInventory == null) {return;}
+      if (activeCompany == null) {return;}
+      try {
+        const response = await fetch(activeInventory
+                  ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
+                  : '/api/company/' + activeCompany.id + '/articles',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({token:userToken})
+          }
+        )
+        if (response.status == 401) {
+          setSnackbar('Kein Zugriff');
+          return;
+        }
+        const articlesJson = await response.json();
+              var cs = [];
+              for (var article in articlesJson) {
+                if (articlesJson.hasOwnProperty(article)) {
+                  cs.push(articlesJson[article]);
+                }
               }
-            }
-            setArticles(cs);
-          })
-          .catch((error) => { console.error(error); });
+              setArticles(cs);
+      } catch (error) {
+        setSnackbar('Da lief was schief');
+        console.error(error); 
+      }
     }
+    load();
   }
   useEffect(initialGet, [activeCompany, activeInventory, setArticles ]);
 
@@ -154,8 +174,6 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
   const noButtonRef = React.useRef(null);
   const [changeArguments, setChangeArguments] = React.useState(null);
   const [deleteArguments, setDeleteArguments] = React.useState(null);
-  const [snackbar, setSnackbar] = React.useState(null);
-  const handleCloseSnackbar = () => setSnackbar(null);
 
   const processRowUpdate = React.useCallback(
       (newRow, oldRow) => new Promise((resolve, reject) => {
@@ -196,6 +214,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
               percentage : newRow.percentage,
               sellingPrice : newRow.sellingPrice,
               notes : newRow.notes,
+              token:userToken
             });
             fetch(url, {
               method : 'PUT',
@@ -231,6 +250,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
           articleId : newRow.id,
           name : newRow.name,
           articleNumber : newRow.articleNumber,
+          token:userToken
         });
       await fetch(url, {
         method : 'PUT',
@@ -247,6 +267,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
           purchasePrice : newRow.purchasePrice,
           percentage : newRow.percentage,
           notes : newRow.notes,
+          token:userToken
         });
         await fetch(url, {
           method : 'PUT',
@@ -274,8 +295,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
     try {
       const url = '/api/article/' + deleteArguments.id;
       await fetch(url, {
-        method : 'DELETE',
-      });
+        method : 'DELETE', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({token:userToken})
+        });
 
       setSnackbar(
           {children : 'Artikel in Datenbank gelöscht', severity : 'success'});
@@ -368,14 +391,9 @@ export default function Articles({open, activeCompany, activeInventory, onBack})
           experimentalFeatures={
       { newEditingApi: true }}
         />
-        {!!snackbar && (
-          <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
-            <Alert {...snackbar} onClose={handleCloseSnackbar} />
-          </Snackbar>
-        )}
       </div>
       </div>
-      <CreateArticleDialog open={open} activeCompany={activeCompany}/>
+      <CreateArticleDialog open={open} userToken={userToken} activeCompany={activeCompany}/>
       <Zoom in={open}>
         <Fab color='secondary'
              aria-label="add"
