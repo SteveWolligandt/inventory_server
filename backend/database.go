@@ -443,9 +443,11 @@ func (db *Database) Initialize() {
 		db.CreateUsersTable()
 	}
   var count int
-  err := db.db.QueryRow("SELECT COUNT(count) as count FROM users").Scan(&count)
-
-	if err == nil && count == 0 {
+  err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
+	fmt.Println("count: ", count)
+	if err != nil{
+		panic(err)
+	} else if count == 0 {
 		db.CreateAdminUser()
 	}
 	if !db.UserTokensTableCreated() {
@@ -592,7 +594,7 @@ func (db *Database) UserOfToken(token string) (bool, User) {
 func NewDatabase() *Database {
 	fmt.Println("Creating Database...")
 	dbPack := new(Database)
-	db, dbErr := sql.Open("mysql", "inventory:@tcp(127.0.0.1:3306)/inventory")
+	db, dbErr := sql.Open("mysql", "inventory:@tcp(localhost:3306)/inventory")
 	if dbErr != nil {
 		panic(dbErr.Error())
 	}
