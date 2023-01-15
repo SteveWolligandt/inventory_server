@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
+  "bufio"
+  "os"
 )
 
 // -----------------------------------------------------------------------------
@@ -63,9 +65,9 @@ func (db *Database) Article(id int) *Article {
 
 // -----------------------------------------------------------------------------
 func (db *Database) User(name string) User {
-	q := fmt.Sprintf("SELECT hashedPassword FROM users WHERE name = '%s'", name)
-	var user User
-	err := db.db.QueryRow(q).Scan(&user.HashedPassword)
+  user := User{Name:name}
+	q := fmt.Sprintf("SELECT hashedPassword, isAdmin FROM users WHERE name = '%s'", name)
+	err := db.db.QueryRow(q).Scan(&user.HashedPassword, &user.IsAdmin)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -73,18 +75,20 @@ func (db *Database) User(name string) User {
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) CreateUser(name string, password string) User {
-	var user User
+func (db *Database) CreateUser(name string, password string, isAdmin bool) User {
 	hashedPassword, hashErr := HashPassword(password)
-	user.Name = name
-	user.HashedPassword = hashedPassword
 	if hashErr != nil {
 		panic(hashErr.Error()) // proper error handling instead of panic in your app
 	}
+  user := User{Name:name, HashedPassword:hashedPassword, IsAdmin:isAdmin}
 	// create new article in database
-	db.db.QueryRow(
-		fmt.Sprintf("INSERT INTO users (name, hashedPassword) VALUES ('%v','%v')",
-			name, hashedPassword))
+  q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
+			name, hashedPassword, isAdmin)
+  fmt.Println(q)
+  _, err := db.db.Query(q)
+  if err != nil {
+    panic(err)
+  }
 	return user
 }
 
@@ -374,7 +378,7 @@ func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) Inven
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
-	data.SellingPrice = SellingPriceFromPurchasePriceAndPercentage(data.PurchasePrice, data.Percentage)
+	data.ComputeSellingPrice()
 	return data
 }
 
@@ -410,7 +414,7 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) []Article
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
-		article.SellingPrice = article.PurchasePrice * (article.Percentage/100 + 1)
+		article.ComputeSellingPrice()
 		articles = append(articles, article)
 	}
 	return articles
@@ -438,6 +442,12 @@ func (db *Database) Initialize() {
 	if !db.UsersTableCreated() {
 		db.CreateUsersTable()
 	}
+  var count int
+  err := db.db.QueryRow("SELECT COUNT(count) as count FROM users").Scan(&count)
+
+	if err == nil && count == 0 {
+		db.CreateAdminUser()
+	}
 	if !db.UserTokensTableCreated() {
 		db.CreateUserTokensTable()
 	}
@@ -464,8 +474,34 @@ func (db *Database) UsersTableCreated() bool {
 }
 
 // ------------------------------------------------------------------------------
+func (db *Database) CreateAdminUser() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("---------------------")
+	fmt.Println("Create Admin Account")
+	fmt.Println("---------------------")
+
+  fmt.Print("name of admin account -> ")
+  name , _ := reader.ReadString('\n')
+  name = name[:len(name)-len("\n")] // remove \n
+  passwordsMatch := false
+  for ok := true; ok; ok = !passwordsMatch {
+    fmt.Print("password -> ")
+    pw1 , _ := reader.ReadString('\n')
+    fmt.Print("confirm password -> ")
+    pw2 , _ := reader.ReadString('\n')
+    passwordsMatch = pw1 == pw2
+    if !passwordsMatch {
+      fmt.Println("Passwords do not match. Try again.")
+    } else {
+      pw1 = pw1[:len(pw1)-len("\n")] // remove \n
+      db.CreateUser(name, pw1, true)
+      fmt.Printf("User %v created\n", name)
+    }
+  }
+}
+// ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() {
-	_, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
+	_, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -532,7 +568,7 @@ func (db *Database) CreateUserToken(userName string) string {
 	const tokenLength = 128
 	const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, tokenLength)
-  rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
@@ -544,12 +580,12 @@ func (db *Database) CreateUserToken(userName string) string {
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) UserOfToken(token string) (bool, string) {
-	var user string
+func (db *Database) UserOfToken(token string) (bool, User) {
+	var userName string
 	q := fmt.Sprintf("SELECT userName FROM userTokens WHERE token='%s'", token)
-	err := db.db.QueryRow(q).Scan(&user)
-  isValid := err == nil
-	return isValid, user
+	err := db.db.QueryRow(q).Scan(&userName)
+	isValid := err == nil
+	return isValid, db.User(userName)
 }
 
 // ------------------------------------------------------------------------------

@@ -12,9 +12,10 @@ type InventoryData struct {
 	Amount        int     `json:"amount"`
 }
 
-func SellingPriceFromPurchasePriceAndPercentage(purchasePrice float32, percentage float32) float32 {
-  return purchasePrice
+func (i *InventoryData) ComputeSellingPrice() {
+	i.SellingPrice = i.PurchasePrice * (1 - i.Percentage)
 }
-func PurchasePriceFromSellingPriceAndPercentage(sellingPrice float32, percentage float32) float32 {
-  return sellingPrice
+
+func (i *InventoryData) ComputePurchasePrice() {
+	i.PurchasePrice = i.SellingPrice / (1 - i.Percentage)
 }

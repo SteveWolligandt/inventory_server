@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-  
-  "net"
+
 	"log"
+	"net"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -36,10 +36,10 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
 		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
 		if err != nil {
-			fmt.Printf("%s\nFalling back to Letsencrypt\n", err)
+			//fmt.Printf("%s\nFalling back to Letsencrypt\n", err)
 			return certManager.GetCertificate(hello)
 		}
-		fmt.Println("Loaded selfsigned certificate.")
+		//fmt.Println("Loaded selfsigned certificate.")
 		return &certificate, err
 	}
 }
@@ -79,20 +79,35 @@ func (s *Server) CheckAuthorizedFromRequest(w *http.ResponseWriter, r *http.Requ
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) CheckAuthorized(w *http.ResponseWriter, token string) bool {
-	isValid, _ := s.db.UserOfToken(token)
-	if !isValid {
-		(*w).WriteHeader(http.StatusUnauthorized)
-		(*w).Header().Set("Content-Type", "application/json")
-		resp := make(map[string]string)
-		resp["message"] = "Unauthorized"
-		jsonResp, err := json.Marshal(resp)
-		if err != nil {
-			log.Fatalf("Error happened in JSON marshal. Err: %s", err)
-		}
-		(*w).Write(jsonResp)
+func WriteUnauthorizedToResponse(w *http.ResponseWriter) {
+	(*w).WriteHeader(http.StatusUnauthorized)
+	(*w).Header().Set("Content-Type", "application/json")
+	resp := make(map[string]string)
+	resp["message"] = "Unauthorized"
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
 	}
-	return isValid
+	(*w).Write(jsonResp)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) CheckAuthorizedAdmin(w *http.ResponseWriter, token string) bool {
+	isValid, user := s.db.UserOfToken(token)
+	authorized := isValid && user.IsAdmin
+	if !authorized {
+		WriteUnauthorizedToResponse(w)
+	}
+	return authorized
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) CheckAuthorized(w *http.ResponseWriter, token string) bool {
+	isAuthorized, _ := s.db.UserOfToken(token)
+	if !isAuthorized {
+		WriteUnauthorizedToResponse(w)
+	}
+	return isAuthorized
 }
 
 // ------------------------------------------------------------------------------
@@ -556,11 +571,15 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	type UserPW struct {
 		Name     string `json:"name"`
 		Password string `json:"password"`
+		Token    string `json:"token"`
 	}
 	var userClear UserPW
 	json.Unmarshal(reqBody, &userClear)
+	if !s.CheckAuthorizedAdmin(&w, userClear.Token) {
+		return
+	}
 
-	s.db.CreateUser(userClear.Name, userClear.Password)
+	s.db.CreateUser(userClear.Name, userClear.Password, false)
 }
 
 // ------------------------------------------------------------------------------
@@ -611,8 +630,9 @@ func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
 		type ResponseValid struct {
 			Success bool   `json:"success"`
 			User    string `json:"user"`
+			IsAdmin bool   `json:"isAdmin"`
 		}
-		var res = ResponseValid{Success: isValid, User: user}
+		var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
 		resstring, _ := json.Marshal(res)
 		w.Write(resstring)
 	} else {
@@ -829,7 +849,6 @@ func (s *Server) Start() {
 		Handler:   s.router,
 		TLSConfig: tlsConfig,
 	}
-	//go http.ListenAndServe(":80", s.router)
 	go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
 	fmt.Println("Server listening on", server.Addr)
 	if err := server.ListenAndServeTLS("", ""); err != nil {

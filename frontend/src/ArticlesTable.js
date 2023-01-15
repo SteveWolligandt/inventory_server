@@ -42,25 +42,25 @@ function computeMutationNotes(newRow, oldRow) {
 function computeMutationPricing(newRow, oldRow) {
   if (newRow.purchasePrice !== oldRow.purchasePrice) {
     return (<><b>Neuer EK Preis: </b>{
-      newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage  /100)).toFixed(2).toLocaleString()
-  }
-  €</>);
+          newRow.purchasePrice.toFixed(2).toLocaleString()} €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage  /100)).toFixed(2).toLocaleString()
+      }
+      €</>);
   }
   if (newRow.percentage !== oldRow.percentage) {
     return (<><b>Neuer EK Preis: </b> {
-    newRow.purchasePrice.toFixed(2).toLocaleString()
-  } €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()
-}
-€</>);
+        newRow.purchasePrice.toFixed(2).toLocaleString()
+      } €<b><br/>Neuer VK Preis: </b>{(newRow.purchasePrice * (1 + newRow.percentage / 100)).toFixed(2).toLocaleString()
+    }
+    €</>);
   }
   if (newRow.sellingPrice !== oldRow.sellingPrice) {
     return (<><b>Neuer EK Preis: </b> {
-  (newRow.purchasePrice / (1 + newRow.percentage / 100))
-      .toFixed(2)
-      .toLocaleString()
-} €<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice.toFixed(2).toLocaleString()} €</>);
-}
-return null;
+             (newRow.purchasePrice / (1 + newRow.percentage / 100))
+              .toFixed(2)
+              .toLocaleString()
+      } €<b><br/>Neuer VK Preis: </b>{newRow.sellingPrice.toFixed(2).toLocaleString()} €</>);
+  }
+  return null;
 }
 
 export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar}) {
@@ -189,15 +189,13 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
         if (mutationPrice) {
           if (newRow.purchasePrice !== oldRow.purchasePrice) {
             newRow.sellingPrice =
-                newRow.purchasePrice * (1 + newRow.percentage / 100);
+                newRow.purchasePrice / (1 - newRow.percentage / 100);
           }
-          if (newRow.percentage !== oldRow.percentage) {
-            newRow.sellingPrice =
-                newRow.purchasePrice * (1 + newRow.percentage / 100);
-          }
-          if (newRow.sellingPrice !== oldRow.sellingPrice) {
+          if (newRow.percentage   !== oldRow.percentage ||
+              newRow.sellingPrice !== oldRow.sellingPrice) {
             newRow.purchasePrice =
-                newRow.sellingPrice / (1 + newRow.percentage / 100);
+                newRow.sellingPrice * (1 - newRow.percentage / 100);
+            console.log(newRow.sellingPrice + ' * (1 - ' + newRow.percentage + ' / 100 = ' + newRow.purchasePrice);
           }
         }
         if (mutationName || mutationArticleNumber) {

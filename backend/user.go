@@ -9,6 +9,7 @@ import (
 type User struct {
 	Name           string `json:"name"`
 	HashedPassword string `json:"hashedPassword"`
+	IsAdmin        bool   `json:"isAdmin"`
 }
 
 // ------------------------------------------------------------------------------

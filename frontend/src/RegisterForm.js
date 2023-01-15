@@ -37,6 +37,10 @@ export default function RegisterForm({open, setOpen, setShowLoginForm, setSnackb
       },
       body: JSON.stringify(data)}
     ).then((response) => {
+      if (response.Status == 401) {
+        setSnackbar({children : 'Keine Berechtigung', severity : 'error'});
+        return;
+      }
       setOpen(false);
       setShowLoginForm(true);
       setSnackbar({children : 'Benutzer wurde erstellt', severity : 'success'});
