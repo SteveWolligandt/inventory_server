@@ -1,23 +1,26 @@
 package main
 
 import (
-	"path/filepath"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
-	"flag"
 	"io/ioutil"
+  
+  "net"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-  "golang.org/x/crypto/acme/autocert"
+	"golang.org/x/crypto/acme/autocert"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
 var (
 	domain string
 )
@@ -40,6 +43,7 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 		return &certificate, err
 	}
 }
+
 // ------------------------------------------------------------------------------
 type Server struct {
 	db      *Database
@@ -790,11 +794,29 @@ func (s *Server) SendToWebSockets(message []byte) {
 	}
 }
 
+func redirectHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" && r.Method != "HEAD" {
+		http.Error(w, "Use HTTPS", http.StatusBadRequest)
+		return
+	}
+	target := "https://" + stripPort(r.Host) + r.URL.RequestURI()
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// ------------------------------------------------------------------------------
+func stripPort(hostport string) string {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return hostport
+	}
+	return net.JoinHostPort(host, "443")
+}
+
 // ------------------------------------------------------------------------------
 func (s *Server) Start() {
-  fmt.Println("TLS domain", domain)
+	fmt.Println("TLS domain", domain)
 
-  certManager := autocert.Manager{
+	certManager := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: autocert.HostWhitelist(domain),
 		Cache:      autocert.DirCache("certs"),
@@ -807,8 +829,9 @@ func (s *Server) Start() {
 		Handler:   s.router,
 		TLSConfig: tlsConfig,
 	}
-	go http.ListenAndServe(":80", s.router)
-  fmt.Println("Server listening on", server.Addr)
+	//go http.ListenAndServe(":80", s.router)
+	go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
+	fmt.Println("Server listening on", server.Addr)
 	if err := server.ListenAndServeTLS("", ""); err != nil {
 		fmt.Println(err)
 	}
@@ -821,7 +844,7 @@ func (s *Server) Close() {
 
 // ------------------------------------------------------------------------------
 func NewServer() *Server {
-  flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
+	flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
 	flag.Parse()
 
 	fmt.Println("Creating Server...")
