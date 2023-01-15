@@ -15,4 +15,6 @@ require (
 	github.com/jung-kurt/gofpdf v1.16.2 // indirect
 	github.com/ruudk/golang-pdf417 v0.0.0-20181029194003-1af4ab5afa58 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 )

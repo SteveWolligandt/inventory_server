@@ -1,9 +1,12 @@
 package main
 
 import (
+	"path/filepath"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"flag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -11,10 +14,32 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+  "golang.org/x/crypto/acme/autocert"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+var (
+	domain string
+)
 
+func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		dirCache, ok := certManager.Cache.(autocert.DirCache)
+		if !ok {
+			dirCache = "certs"
+		}
+
+		keyFile := filepath.Join(string(dirCache), hello.ServerName+".key")
+		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
+		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
+		if err != nil {
+			fmt.Printf("%s\nFalling back to Letsencrypt\n", err)
+			return certManager.GetCertificate(hello)
+		}
+		fmt.Println("Loaded selfsigned certificate.")
+		return &certificate, err
+	}
+}
 // ------------------------------------------------------------------------------
 type Server struct {
 	db      *Database
@@ -767,7 +792,26 @@ func (s *Server) SendToWebSockets(message []byte) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Start() {
-	log.Fatal(http.ListenAndServe(":8080", s.router))
+  fmt.Println("TLS domain", domain)
+
+  certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(domain),
+		Cache:      autocert.DirCache("certs"),
+	}
+
+	tlsConfig := certManager.TLSConfig()
+	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
+	server := http.Server{
+		Addr:      ":443",
+		Handler:   s.router,
+		TLSConfig: tlsConfig,
+	}
+	go http.ListenAndServe(":80", s.router)
+  fmt.Println("Server listening on", server.Addr)
+	if err := server.ListenAndServeTLS("", ""); err != nil {
+		fmt.Println(err)
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -777,11 +821,15 @@ func (s *Server) Close() {
 
 // ------------------------------------------------------------------------------
 func NewServer() *Server {
+  flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
+	flag.Parse()
+
 	fmt.Println("Creating Server...")
 	s := new(Server)
 	s.db = NewDatabase()
 	fmt.Println("Creating Router...")
 	s.router = mux.NewRouter().StrictSlash(true)
+
 	fmt.Println("Creating Router... done!")
 	s.clients = make(map[*websocket.Conn]bool)
 	fmt.Println("Creating REST API...")
