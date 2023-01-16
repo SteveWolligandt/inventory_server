@@ -15,11 +15,10 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
 
-export default function CreateArticleDialog({open, activeCompany, userToken, setSnackbar}) {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setSnackbar}) {
 
-  const handleClickOpen = () => { setDialogOpen(true); };
-  const handleClose     = () => { setDialogOpen(false); };
+  const handleClickOpen = () => { setOpen(true); };
+  const handleClose     = () => { setOpen(false); };
   const handleCreate    = () => {
     const name = document.getElementById("createArticle.name").value;
     const articleNumber = document.getElementById("createArticle.articleNumber").value;
@@ -48,9 +47,9 @@ export default function CreateArticleDialog({open, activeCompany, userToken, set
       },
       body: JSON.stringify(data)}
     ).then((response) => {
-      setDialogOpen(false);
+      setOpen(false);
     }).catch(() => {
-      setDialogOpen(false);
+      setOpen(false);
     });
   };
 
@@ -64,7 +63,7 @@ export default function CreateArticleDialog({open, activeCompany, userToken, set
   };
   return (
     <div>
-      <Dialog open={dialogOpen} onClose={handleClose}>
+      <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Neuer Artikel</DialogTitle>
         <DialogContent>
         <FormControl fullWidth sx={{ m: 1 }} variant="standard">

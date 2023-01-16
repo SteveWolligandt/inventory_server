@@ -70,10 +70,12 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     loadData();
   };
   React.useEffect(loadCompanies, [open, userToken]);
-  React.useEffect(()=>{
+  React.useEffect(() => {
     if (open) {
       setTopBarContext(() =>() => (
-        <Button onClick={()=>setCreateDialogOpen(true)}>
+        <Button
+          color="inherit"
+          onClick={()=>setCreateDialogOpen(true)}>
           Neue Firma
         </Button>
       ));

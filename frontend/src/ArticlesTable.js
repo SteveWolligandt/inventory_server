@@ -63,9 +63,10 @@ function computeMutationPricing(newRow, oldRow) {
   return null;
 }
 
-export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar}) {
+export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar, setTopBarContext}) {
   var [articles, setArticles] = React.useState([]);
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
+  const [dialogOpen, setDialogOpen] = React.useState(false);
 
   // websocket
   const handleWebSocket = () => {
@@ -157,6 +158,19 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     load();
   }
   useEffect(initialGet, [open, userToken, activeCompany, activeInventory, setSnackbar]);
+
+
+  React.useEffect(() => {
+    if (open) {
+      setTopBarContext(() => () => (
+        <Button
+          color="inherit"
+          onClick={()=>setDialogOpen(true)}>
+          Neuer Artikel
+        </Button>
+      ));
+    }
+  },[open, setTopBarContext])
 
   const mutateRow = React.useCallback(
       (article) => new Promise(
@@ -375,41 +389,38 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       </Dialog>);
   };
 
-  if (open) {
-    const style = {height : 500, width : '100%'};
-    return (<>
-      <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-      <div style={style}>
-        {renderConfirmChangeDialog()}
-        {renderConfirmDeleteDialog()}
-        <DataGrid
-          rows={articles}
-          columns={columns(setDeleteArguments)}
-          processRowUpdate={processRowUpdate}
-          experimentalFeatures={
-      { newEditingApi: true }}
-        />
-      </div>
-      </div>
-      <CreateArticleDialog open={open} userToken={userToken} activeCompany={activeCompany} setSnackbar={setSnackbar}/>
-      <Zoom in={open}>
-        <Fab color='secondary'
-             aria-label="add"
-             style={{margin: '0 auto',
-                     top: 80,
-                     right: 'auto',
-                     bottom: 'auto',
-                     left: 10,
-                     position: 'fixed',
-                   }}
-             onClick={onBack}>
-          <ArrowBackIcon/>
-        </Fab>
-      </Zoom>
-    </>);
-  } else {
-    return null;
-  }
+  if (!open) { return null; }
+  const style = {height : 500, width : '100%'};
+  return (<>
+    <div style ={{margin: '0 auto'}} >
+    <div style={style}>
+      {renderConfirmChangeDialog()}
+      {renderConfirmDeleteDialog()}
+      <DataGrid
+        rows={articles}
+        columns={columns(setDeleteArguments)}
+        processRowUpdate={processRowUpdate}
+        experimentalFeatures={
+    { newEditingApi: true }}
+      />
+    </div>
+    </div>
+    <CreateArticleDialog open={dialogOpen} setOpen={setDialogOpen} userToken={userToken} activeCompany={activeCompany} setSnackbar={setSnackbar}/>
+    <Zoom in={open}>
+      <Fab color='secondary'
+           aria-label="add"
+           style={{margin: '0 auto',
+                   top: 80,
+                   right: 'auto',
+                   bottom: 'auto',
+                   left: 10,
+                   position: 'fixed',
+                 }}
+           onClick={onBack}>
+        <ArrowBackIcon/>
+      </Fab>
+    </Zoom>
+  </>);
 }
 
 function columns(setDeleteArguments) {
@@ -419,13 +430,13 @@ function columns(setDeleteArguments) {
       align:'center',
       headerAlign:'center',
       headerName: 'Name',
-      width: 180,
+      width: 1000,
       editable: true },
     { field: 'purchasePrice',
       type: 'number',
       headerAlign:'center',
-      headerName: 'Einkaufspreis',
-      width: 180,
+      headerName: 'EK',
+      width: 80,
       editable: true,
       valueFormatter: (params) => {
         if (params.value == null) {
@@ -452,8 +463,8 @@ function columns(setDeleteArguments) {
     { field: 'sellingPrice',
       type: 'number',
       headerAlign:'center',
-      headerName: 'Verkaufspreis',
-      width: 180,
+      headerName: 'VK',
+      width: 80,
       editable: true,
       valueFormatter: (params) => {
         if (params.value == null) {
@@ -469,13 +480,13 @@ function columns(setDeleteArguments) {
       align:'center',
       headerAlign:'center',
       headerName: 'Artikelnummer',
-      width: 180,
+      width: 10,
       editable: true },
     { field: 'amount',
       type: 'number',
       headerAlign:'center',
       headerName: 'Stückzahl',
-      width: 180,
+      width: 80,
       editable: true },
     { field: 'notes',
       headerAlign:'center',

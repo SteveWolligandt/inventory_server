@@ -99,7 +99,8 @@ function App() {
       activeCompany   = {activeCompany}
       activeInventory = {activeInventory}
       setSnackbar     = {setSnackbar}
-      onBack          = {onArticleBackButtonClick} />
+      onBack          = {onArticleBackButtonClick}
+      setTopBarContext  = {setTopBarContext}/>
     <FullPrice
       open            = {userToken != null && showFullPrices}
       onBack          = {() => setShowFullPrices(false)}
