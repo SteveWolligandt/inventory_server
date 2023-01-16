@@ -18,6 +18,7 @@ export default function FullPrice({open, userToken, onBack, setSnackbar, activeI
   
   React.useEffect(() => {
     if (userToken == null) {return;}
+    if (open === false) {return;}
     const loadData = async() => {
       try {
         const response = await fetch('/api/inventory/'+activeInventory.id+'/price', {
@@ -32,12 +33,10 @@ export default function FullPrice({open, userToken, onBack, setSnackbar, activeI
       }
     };
     loadData();
-  }, []);
+  }, [open, activeInventory, userToken]);
 
-
-
-  if (fullPrices == null) {return null;}
-  if (!open) { return null; }
+  if (fullPrices == null) { return null; }
+  if (!open)              { return null; }
   const style = {height: 500, width: '100%'};
   return (<>
     <div style ={{margin: '0 auto', maxWidth: '1000px'}} >

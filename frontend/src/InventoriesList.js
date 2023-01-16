@@ -47,8 +47,9 @@ export default function Inventories(
     }
   };
   React.useEffect(handleWebsocket, [lastMessage, setInventories]);
-  React.useEffect(() => {
-    if (userToken == null) {return;}
+  const loadInventories = () => {
+    if (!open)             { setInventories([]); return; }
+    if (userToken == null) { return; }
     async function loadData() {
       try {
         const response = await fetch('/api/inventories', {
@@ -60,35 +61,29 @@ export default function Inventories(
           setSnackbar({ children: 'Unauthorized', severity: 'error' });
           return;
         }
-        const inventoriesJson = await response.json();
-        var cs = [];
-        for (var inventory in inventoriesJson) {
-          if (inventoriesJson.hasOwnProperty(inventory)) {
-            cs.push({id:inventoriesJson[inventory].id, name:inventoriesJson[inventory].name});
-          }
-        }
-        setInventories(cs);
+        const inventories = await response.json();
+        setInventories(inventories);
       } catch (error) {
         console.error(error);
       }
     }
     loadData();
-  }, []);
+  };
+  React.useEffect(loadInventories, [userToken, setSnackbar, open]);
 
   if (!open) {return null;}
   const handleListItemClick = (inventory) => {
     setActiveInventory(inventory);
     setOpen(false);
   };
-  const handleClose = () => {
-  };
+  const handleClose = () => {};
   return (
     <>
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Inventur auswählen</DialogTitle>
       <List sx={{ pt: 0 }}>
         {inventories.map((inventory) => (
-          <ListItem disableGutters>
+          <ListItem key={inventory.id} disableGutters>
             <ListItemButton onClick={() => handleListItemClick(inventory)} key={inventory}>
               <ListItemAvatar>
                 <Avatar sx={{ bgcolor: blue[100], color: blue[600] }}>

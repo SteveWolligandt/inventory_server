@@ -20,8 +20,9 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({open, onCompanySelected, userToken, setSnackbar}) {
+export default function Companies({open, onCompanySelected, userToken, setSnackbar, setTopBarContext}) {
   var [companies, setCompanies] = React.useState([]);
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
   const handleWebsocket = () => {
@@ -44,8 +45,9 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
   };
   React.useEffect(handleWebsocket, [lastMessage, setCompanies]);
 
-  React.useEffect(() => {
-    if (userToken == null) {console.log('fdsfdas');return;}
+  const loadCompanies = () => {
+    if (!open)             { setCompanies([]); return; }
+    if (userToken == null) {return;}
     const loadData = async() => {
       try {
         const response = await fetch('/api/companies', {
@@ -62,12 +64,21 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
         }
         setCompanies(cs);
       } catch (error) {
-        console.error('fooooo');
         console.error(error);
       }
     };
     loadData();
-  }, []);
+  };
+  React.useEffect(loadCompanies, [open, userToken]);
+  React.useEffect(()=>{
+    if (open) {
+      setTopBarContext(() =>() => (
+        <Button onClick={()=>setCreateDialogOpen(true)}>
+          Neue Firma
+        </Button>
+      ));
+    }
+  },[open, setTopBarContext])
 
   const mutateRow = React.useCallback(
     (company) =>
@@ -151,13 +162,6 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     }
   };
 
-  const handleEntered = () => {
-    // The `autoFocus` is not used because, if used, the same Enter that saves
-    // the cell triggers "No". Instead, we manually focus the "No" button once
-    // the dialog is fully open.
-    // noButtonRef.current?.focus();
-  };
-
   const renderDeleteConfirmDialog = () => {
     if (!deleteArguments) {
       return null;
@@ -165,7 +169,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     return (
       <Dialog
         maxWidth="xs"
-        TransitionProps={{ onEntered: handleEntered }}
+        TransitionProps={{ onEntered: ()=>{} }}
         open={!!deleteArguments}
       >
         <DialogTitle><div style={{color:'red'}}>Firma wirklich löschen?</div></DialogTitle>
@@ -183,6 +187,8 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
       </Dialog>
     );
   };
+
+
   const renderChangeConfirmDialog = () => {
     if (!changeArguments) {
       return null;
@@ -192,7 +198,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     return (
       <Dialog
         maxWidth="xs"
-        TransitionProps={{ onEntered: handleEntered }}
+        TransitionProps={{ onEntered: ()=>{} }}
         open={!!changeArguments}
       >
         <DialogTitle>Firma wirklich ändern?</DialogTitle>
@@ -224,7 +230,10 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     </div>
     {renderChangeConfirmDialog()}
     {renderDeleteConfirmDialog()}
-    <CreateCompanyDialog open={open} userToken={userToken} setSnackbar={setSnackbar}/>
+    <CreateCompanyDialog open={createDialogOpen}
+                         setOpen={setCreateDialogOpen}
+                         userToken={userToken}
+                         setSnackbar={setSnackbar}/>
     </>
   );
 }

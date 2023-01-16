@@ -5,15 +5,8 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Fab from '@mui/material/Fab';
-import Zoom from '@mui/material/Zoom';
-import BusinessIcon from '@mui/icons-material/Business';
 
-export default function CreateCompanyDialog({open, userToken, setSnackbar}) {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-
-  const handleClickOpen = () => { setDialogOpen(true); };
-  const handleClose     = () => { setDialogOpen(false); };
+export default function CreateCompanyDialog({open, setOpen, userToken, setSnackbar}) {
   const handleCreate    = () => {
     const name = document.getElementById("createCompany.name").value
     if (name === '') {
@@ -34,10 +27,10 @@ export default function CreateCompanyDialog({open, userToken, setSnackbar}) {
       },
       body: JSON.stringify(data)}
     ).then((response) => {
-      setDialogOpen(false);
+      setOpen(false);
     }).catch(() => {
       console.log('Could not create Company');
-      setDialogOpen(false);
+      setOpen(false);
     });
   };
 
@@ -51,7 +44,7 @@ export default function CreateCompanyDialog({open, userToken, setSnackbar}) {
   };
     return (
       <div>
-        <Dialog open={dialogOpen} onClose={handleClose}>
+        <Dialog open={open} onClose={() => setOpen(false)}>
           <DialogTitle>Neue Firma</DialogTitle>
           <DialogContent>
             <TextField
@@ -65,15 +58,10 @@ export default function CreateCompanyDialog({open, userToken, setSnackbar}) {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose}>Abbrechen</Button>
+            <Button onClick={() => setOpen(false)}>Abbrechen</Button>
             <Button onClick={handleCreate}>Erstellen</Button>
           </DialogActions>
         </Dialog>
-        <Zoom in={open}>
-          <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
-            <BusinessIcon />
-          </Fab>
-        </Zoom>
       </div>
     );
 }

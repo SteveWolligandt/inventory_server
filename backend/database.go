@@ -594,7 +594,7 @@ func (db *Database) UserOfToken(token string) (bool, User) {
 func NewDatabase() *Database {
 	fmt.Println("Creating Database...")
 	dbPack := new(Database)
-	db, dbErr := sql.Open("mysql", "inventory:@tcp(localhost:3306)/inventory")
+	db, dbErr := sql.Open("mysql", "inventory:@tcp(127.0.0.1:3306)/inventory")
 	if dbErr != nil {
 		panic(dbErr.Error())
 	}

@@ -120,6 +120,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
 
   // initial get
   const initialGet = () => {
+    if (!open)             { setArticles([]); return; }
     if (userToken == null) {return;}
     const load = async () => {
       if (userToken == null) {return;}
@@ -155,7 +156,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     }
     load();
   }
-  useEffect(initialGet, [activeCompany, activeInventory, setArticles ]);
+  useEffect(initialGet, [open, userToken, activeCompany, activeInventory, setSnackbar]);
 
   const mutateRow = React.useCallback(
       (article) => new Promise(

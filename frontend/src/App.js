@@ -21,6 +21,7 @@ function App() {
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
+  var [topBarContext, setTopBarContext] = React.useState(()=> null);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
   var [title, setTitle] = useStickyState('Firmen', 'title');
@@ -29,9 +30,7 @@ function App() {
 
 
   React.useEffect(()=>{
-    if (userToken == null) {
-      return;
-    }
+    if (userToken == null) { return; }
     fetch('/api/tokenvalid', {
       method : "POST",
       headers : {"Content-Type" : "application/json"},
@@ -61,11 +60,13 @@ function App() {
   const onLogout = () => setUserToken(null);
   const onFullPrices = () => setShowFullPrices(true);
   return (<>
-    <TopBar setUserToken={setUserToken}
-            name = {title}
-            onInventorySelect = {() => { setShowInventories(true); }} 
-            onLogout = {onLogout}
-            onFullPrices = {onFullPrices}/>
+    <TopBar
+      title             = {title}
+      setUserToken      = {setUserToken}
+      onInventorySelect = {() => { setShowInventories(true); }} 
+      onLogout          = {onLogout}
+      onFullPrices      = {onFullPrices}
+      renderContext     = {topBarContext}/>
     <div style={{marginBottom: '100px'}}/>
     <LoginScreen open    = {userToken == null}
                  onLogin = {(token) => setUserToken(token)}
@@ -81,26 +82,30 @@ function App() {
         setActiveInventory(inventory);
       }}
     />
-    <Companies open              = {userToken != null && !showFullPrices && showCompanies}
-               activeCompany     = {activeCompany}
-               userToken             = {userToken}
-               setSnackbar = {setSnackbar}
-               onCompanySelected = {(company) => {
-                 setActiveCompany(company);
-                 setShowCompanies(false);
-                 setShowArticles(true);
-               }}/>
-    <Articles open            = {userToken != null && !showFullPrices && showArticles}
-              userToken       = {userToken}
-              activeCompany   = {activeCompany}
-              activeInventory = {activeInventory}
-              setSnackbar     = {setSnackbar}
-              onBack          = {onArticleBackButtonClick} />
-    <FullPrice open={userToken != null && showFullPrices}
-               onBack = {()=>{setShowFullPrices(false);console.log('dsadsadsa');}}
-               userToken={userToken}
-               setSnackbar={setSnackbar}
-               activeInventory = {activeInventory}/>
+    <Companies
+      open              = {userToken != null && !showFullPrices && showCompanies}
+      activeCompany     = {activeCompany}
+      userToken         = {userToken}
+      setSnackbar       = {setSnackbar}
+      onCompanySelected = {(company) => {
+        setActiveCompany(company);
+        setShowCompanies(false);
+        setShowArticles(true);
+      }}
+      setTopBarContext  = {setTopBarContext}/>
+    <Articles
+      open            = {userToken != null && !showFullPrices && showArticles}
+      userToken       = {userToken}
+      activeCompany   = {activeCompany}
+      activeInventory = {activeInventory}
+      setSnackbar     = {setSnackbar}
+      onBack          = {onArticleBackButtonClick} />
+    <FullPrice
+      open            = {userToken != null && showFullPrices}
+      onBack          = {() => setShowFullPrices(false)}
+      userToken       = {userToken}
+      setSnackbar     = {setSnackbar}
+      activeInventory = {activeInventory}/>
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
