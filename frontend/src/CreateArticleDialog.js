@@ -36,14 +36,14 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
       name : name,
       companyId : activeCompany.id,
       articleNumber : articleNumber,
-      token:userToken
     };
 
     fetch(
       '/api/article',{
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        token:userToken
       },
       body: JSON.stringify(data)}
     ).then((response) => {

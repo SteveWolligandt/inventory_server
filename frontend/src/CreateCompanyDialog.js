@@ -14,18 +14,16 @@ export default function CreateCompanyDialog({open, setOpen, userToken, setSnackb
           {children :'Name darf nicht leer sein', severity : 'error'});
       return;
     }
-    const data = {
-      name : name,
-      token:userToken
-    };
 
     fetch(
       '/api/company',{
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)}
+        method: 'POST',
+        body: JSON.stringify({'name' : name}),
+        headers: {
+          'Content-Type': 'application/json',
+          token         : userToken
+        },
+      }
     ).then((response) => {
       setOpen(false);
     }).catch(() => {

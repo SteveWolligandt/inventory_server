@@ -32,9 +32,8 @@ function App() {
   React.useEffect(()=>{
     if (userToken == null) { return; }
     fetch('/api/tokenvalid', {
-      method : "POST",
-      headers : {"Content-Type" : "application/json"},
-      body : JSON.stringify({token : userToken})
+      method : "GET",
+      headers : {"Content-Type" : "application/json", token : userToken}
     })
     .then((response) => response.json())
     .then((response) => {if(!response.success) {setUserToken(null);}})
@@ -101,12 +100,14 @@ function App() {
       setSnackbar     = {setSnackbar}
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
+    {/*
     <FullPrice
       open            = {userToken != null && showFullPrices}
       onBack          = {() => setShowFullPrices(false)}
       userToken       = {userToken}
       setSnackbar     = {setSnackbar}
       activeInventory = {activeInventory}/>
+      */}
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />

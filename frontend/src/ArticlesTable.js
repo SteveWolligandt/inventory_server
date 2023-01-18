@@ -79,9 +79,8 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
                       newArticle.id;
           fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({token:userToken})
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', token:userToken}
           }).then((response) => response.json()).then((inventoryData) =>{
             newArticle.purchasePrice = inventoryData.purchasePrice;
             newArticle.percentage = inventoryData.percentage;
@@ -132,9 +131,8 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
                   ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
                   : '/api/company/' + activeCompany.id + '/articles',
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({token:userToken})
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json',token:userToken },
           }
         )
         if (response.status == 401) {
@@ -227,11 +225,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
               percentage : newRow.percentage,
               sellingPrice : newRow.sellingPrice,
               notes : newRow.notes,
-              token:userToken
             });
             fetch(url, {
               method : 'PUT',
-              headers : {'Content-Type' : 'application/json'},
+              headers : {'Content-Type' : 'application/json', token:userToken},
               body : body
             }).then((response) => {
               setSnackbar(
@@ -263,11 +260,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           articleId : newRow.id,
           name : newRow.name,
           articleNumber : newRow.articleNumber,
-          token:userToken
         });
       await fetch(url, {
         method : 'PUT',
-        headers : {'Content-Type' : 'application/json'},
+        headers : {'Content-Type' : 'application/json', token:userToken},
         body : body
       });
 
@@ -280,11 +276,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           purchasePrice : newRow.purchasePrice,
           percentage : newRow.percentage,
           notes : newRow.notes,
-          token:userToken
         });
         await fetch(url, {
           method : 'PUT',
-          headers : {'Content-Type' : 'application/json'},
+          headers : {'Content-Type' : 'application/json', token:userToken},
           body : body
         });
       }
@@ -308,8 +303,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       const url = '/api/article/' + deleteArguments.id;
       await fetch(url, {
         method : 'DELETE', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({token:userToken})
+          headers: { 'Content-Type': 'application/json', token:userToken },
         });
 
       setSnackbar(

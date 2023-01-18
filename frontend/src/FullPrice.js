@@ -21,7 +21,7 @@ export default function FullPrice({open, userToken, onBack, setSnackbar, activeI
     if (open === false) {return;}
     const loadData = async() => {
       try {
-        const response = await fetch('/api/inventory/'+activeInventory.id+'/price', {
+        const response = await fetch('/api/inventory/'+activeInventory.id+'/value', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({token:userToken})

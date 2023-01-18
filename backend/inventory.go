@@ -1,7 +1,13 @@
 package main
-//------------------------------------------------------------------------------
-// Company - Our struct for all articles
+
+// -----------------------------------------------------------------------------
 type Inventory struct {
-  Id    int    `json:"id"`
-  Name  string `json:"name"`
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// -----------------------------------------------------------------------------
+type InventoryWithValue struct {
+	Inventory
+	Value float32 `json:"value"`
 }

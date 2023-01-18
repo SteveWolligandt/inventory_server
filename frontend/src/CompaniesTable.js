@@ -51,9 +51,8 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     const loadData = async() => {
       try {
         const response = await fetch('/api/companies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({token:userToken})
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', token:userToken},
         })
         const companiesJson = await response.json();
         var cs = [];
@@ -125,10 +124,10 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
 
     try {
       const url = '/api/company/' + newRow.id;
-      const body = JSON.stringify({name:newRow.name, token:userToken});
+      const body = JSON.stringify({name:newRow.name});
       await fetch(url, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', token:userToken },
         body: body
       });
 
@@ -152,8 +151,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
       const url = '/api/company/' + deleteArguments.id;
       await fetch(url, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({token:userToken})
+        headers: { 'Content-Type': 'application/json', token:userToken }
       });
 
       setSnackbar({ children: 'Firma in Datenbank gelöscht', severity: 'success' });

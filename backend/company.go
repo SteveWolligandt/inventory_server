@@ -1,8 +1,12 @@
 package main
-//------------------------------------------------------------------------------
-// Company - Our struct for all articles
+// ------------------------------------------------------------------------------
 type Company struct {
-  Id   int `json:"id"`
-  Name string `json:"name"`
-  ImagePath string `json:"-"`
+	Id        int    `json:"id"`
+	Name      string `json:"name"`
+	ImagePath string `json:"-"`
+}
+// ------------------------------------------------------------------------------
+type CompanyWithValue struct {
+	Company
+	Value float32 `json:"value"`
 }

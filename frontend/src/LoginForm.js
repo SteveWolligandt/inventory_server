@@ -19,17 +19,16 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, 
           {children : 'Passwort darf nicht leer sein', severity : 'error'});
       return;
     }
-    const data = {
-      username:     document.getElementById("login.username").value,
-      password: document.getElementById("login.password").value,
-    };
+    const username = document.getElementById("login.username").value;
+    const password = document.getElementById("login.password").value;
+    const basicAuth = "Basic " + btoa(username + ':' + password);
+    console.log(basicAuth);
     fetch(
       '/api/login',{
-      method: "POST",
       headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)})
+        "Content-Type": "application/json",
+        'Authorization': basicAuth
+      }})
     .then((response)  => response.json())
     .then((data) => {
       if (data.success) {

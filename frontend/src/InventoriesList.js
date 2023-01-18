@@ -42,7 +42,7 @@ export default function Inventories(
         }));
       } else if (msg.action === 'deleteInventory') {
         let deletedInventory = msg.data;
-        setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
+      setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
       }
     }
   };
@@ -53,16 +53,21 @@ export default function Inventories(
     async function loadData() {
       try {
         const response = await fetch('/api/inventories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({token:userToken})
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', token:userToken}
         });
         if (response.status === 401) {
           setSnackbar({ children: 'Unauthorized', severity: 'error' });
           return;
         }
         const inventories = await response.json();
-        setInventories(inventories);
+        console.log(inventories);
+        if (inventories == null) {
+          setInventories([]);
+        } else {
+          setInventories(inventories);
+        }
+
       } catch (error) {
         console.error(error);
       }
