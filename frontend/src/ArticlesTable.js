@@ -63,7 +63,7 @@ function computeMutationPricing(newRow, oldRow) {
   return null;
 }
 
-export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar, setTopBarContext}) {
+export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar, setTopBarContext, updateTitle}) {
   var [articles, setArticles] = React.useState([]);
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
   const [dialogOpen, setDialogOpen] = React.useState(false);

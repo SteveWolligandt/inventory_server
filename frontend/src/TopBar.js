@@ -4,7 +4,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 
-export default function TopBar({title, onInventorySelect, setUserToken, onFullPrices, onLogout, renderContext}) {
+export default function TopBar({title, onInventorySelect, setUserToken, onLogout, renderContext}) {
   return (
       <AppBar position="fixed">
         <Toolbar>
@@ -17,10 +17,6 @@ export default function TopBar({title, onInventorySelect, setUserToken, onFullPr
             color="inherit"
             onClick={onInventorySelect}>
             Inventur Auswählen
-          </Button>
-
-          <Button color="inherit" onClick={onFullPrices}>
-            Gesamt
           </Button>
 
           <Button color="inherit" onClick={onLogout}>

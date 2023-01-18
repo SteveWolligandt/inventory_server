@@ -9,12 +9,12 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
-  "bufio"
-  "os"
 )
 
 // -----------------------------------------------------------------------------
@@ -65,7 +65,7 @@ func (db *Database) Article(id int) *Article {
 
 // -----------------------------------------------------------------------------
 func (db *Database) User(name string) User {
-  user := User{Name:name}
+	user := User{Name: name}
 	q := fmt.Sprintf("SELECT hashedPassword, isAdmin FROM users WHERE name = '%s'", name)
 	err := db.db.QueryRow(q).Scan(&user.HashedPassword, &user.IsAdmin)
 	if err != nil {
@@ -80,15 +80,15 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) User 
 	if hashErr != nil {
 		panic(hashErr.Error()) // proper error handling instead of panic in your app
 	}
-  user := User{Name:name, HashedPassword:hashedPassword, IsAdmin:isAdmin}
+	user := User{Name: name, HashedPassword: hashedPassword, IsAdmin: isAdmin}
 	// create new article in database
-  q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
-			name, hashedPassword, isAdmin)
-  fmt.Println(q)
-  _, err := db.db.Query(q)
-  if err != nil {
-    panic(err)
-  }
+	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
+		name, hashedPassword, isAdmin)
+	fmt.Println(q)
+	_, err := db.db.Query(q)
+	if err != nil {
+		panic(err)
+	}
 	return user
 }
 
@@ -174,7 +174,7 @@ func (db *Database) CompaniesWithValue(inventoryId int) []CompanyWithValue {
 		if err = rows.Scan(&company.Id, &company.Name); err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
-                company.Value = db.ValueOfCompany(company.Id, inventoryId)
+		company.Value = db.ValueOfCompany(company.Id, inventoryId)
 		// and then print out the tag's Name attribute
 		companies = append(companies, company)
 	}
@@ -222,16 +222,17 @@ func (db *Database) Company(id int) *Company {
 	}
 	return nil
 }
+
 // ------------------------------------------------------------------------------
 func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWithValue {
-  rawCompany := db.Company(companyId);
-  if rawCompany == nil {
-    return nil
-  }
-  var company CompanyWithValue
-  company.Company = *rawCompany
-  company.Value = db.ValueOfCompany(companyId, inventoryId)
-  return &company
+	rawCompany := db.Company(companyId)
+	if rawCompany == nil {
+		return nil
+	}
+	var company CompanyWithValue
+	company.Company = *rawCompany
+	company.Value = db.ValueOfCompany(companyId, inventoryId)
+	return &company
 }
 
 // -----------------------------------------------------------------------------
@@ -363,18 +364,29 @@ func (db *Database) Inventory(id int) *Inventory {
 	}
 	return nil
 }
+
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryWithValue(id int) *InventoryWithValue {
 	var inventory InventoryWithValue
-        rawInventory := db.Inventory(id);
+	rawInventory := db.Inventory(id)
 	if rawInventory == nil {
 		return nil
 	}
-	inventory.Inventory = *rawInventory;
-        inventory.Value = db.ValueOfInventory(rawInventory.Id);
-        return &inventory;
+	inventory.Inventory = *rawInventory
+	inventory.Value = db.ValueOfInventory(rawInventory.Id)
+	return &inventory
 
 }
+
+// ------------------------------------------------------------------------------
+func (db *Database) InventoriesWithValue() []InventoryWithValue {
+	var inventoriesWithValue []InventoryWithValue
+	for _, inv := range db.Inventories() {
+          inventoriesWithValue = append(inventoriesWithValue, *db.InventoryWithValue(inv.Id)) 
+	}
+	return inventoriesWithValue
+}
+
 // ------------------------------------------------------------------------------
 func (db *Database) ValueOfInventory(id int) float32 {
 	var value float32
@@ -527,10 +539,10 @@ func (db *Database) Initialize() {
 	if !db.UsersTableCreated() {
 		db.CreateUsersTable()
 	}
-  var count int
-  err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
+	var count int
+	err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
 	fmt.Println("count: ", count)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	} else if count == 0 {
 		db.CreateAdminUser()
@@ -567,25 +579,26 @@ func (db *Database) CreateAdminUser() {
 	fmt.Println("Create Admin Account")
 	fmt.Println("---------------------")
 
-  fmt.Print("name of admin account -> ")
-  name , _ := reader.ReadString('\n')
-  name = name[:len(name)-len("\n")] // remove \n
-  passwordsMatch := false
-  for ok := true; ok; ok = !passwordsMatch {
-    fmt.Print("password -> ")
-    pw1 , _ := reader.ReadString('\n')
-    fmt.Print("confirm password -> ")
-    pw2 , _ := reader.ReadString('\n')
-    passwordsMatch = pw1 == pw2
-    if !passwordsMatch {
-      fmt.Println("Passwords do not match. Try again.")
-    } else {
-      pw1 = pw1[:len(pw1)-len("\n")] // remove \n
-      db.CreateUser(name, pw1, true)
-      fmt.Printf("User %v created\n", name)
-    }
-  }
+	fmt.Print("name of admin account -> ")
+	name, _ := reader.ReadString('\n')
+	name = name[:len(name)-len("\n")] // remove \n
+	passwordsMatch := false
+	for ok := true; ok; ok = !passwordsMatch {
+		fmt.Print("password -> ")
+		pw1, _ := reader.ReadString('\n')
+		fmt.Print("confirm password -> ")
+		pw2, _ := reader.ReadString('\n')
+		passwordsMatch = pw1 == pw2
+		if !passwordsMatch {
+			fmt.Println("Passwords do not match. Try again.")
+		} else {
+			pw1 = pw1[:len(pw1)-len("\n")] // remove \n
+			db.CreateUser(name, pw1, true)
+			fmt.Printf("User %v created\n", name)
+		}
+	}
 }
+
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() {
 	_, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")

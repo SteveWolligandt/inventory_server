@@ -20,7 +20,6 @@ export default function CreateInventoryDialog({open, setOpen, setActiveInventory
     }
     const data = {
       name : name,
-      token:userToken
     };
     console.log(data);
 
@@ -28,7 +27,8 @@ export default function CreateInventoryDialog({open, setOpen, setActiveInventory
       '/api/inventory',{
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        token:userToken
       },
       body: JSON.stringify(data)}
     ).then((response) => {

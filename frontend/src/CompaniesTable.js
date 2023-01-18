@@ -20,7 +20,7 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({open, onCompanySelected, userToken, setSnackbar, setTopBarContext}) {
+export default function Companies({open, onCompanySelected, userToken, setSnackbar, setTopBarContext, activeInventory}) {
   var [companies, setCompanies] = React.useState([]);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   
@@ -48,17 +48,18 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
   const loadCompanies = () => {
     if (!open)             { setCompanies([]); return; }
     if (userToken == null) {return;}
+    if (activeInventory == null) {return;}
     const loadData = async() => {
       try {
-        const response = await fetch('/api/companies', {
+        const response = await fetch('/api/companies/value/'+activeInventory.id, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken},
         })
         const companiesJson = await response.json();
         var cs = [];
-        for (var company in companiesJson) {
-          if (companiesJson.hasOwnProperty(company)) {
-            cs.push({id:companiesJson[company].id, name:companiesJson[company].name});
+        for (var i in companiesJson) {
+          if (companiesJson.hasOwnProperty(i)) {
+            cs.push(companiesJson[i]);
           }
         }
         setCompanies(cs);
@@ -68,7 +69,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     };
     loadData();
   };
-  React.useEffect(loadCompanies, [open, userToken]);
+  React.useEffect(loadCompanies, [open, userToken, activeInventory]);
   React.useEffect(() => {
     if (open) {
       setTopBarContext(() =>() => (
@@ -241,6 +242,15 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
 function columns(onCompanySelected, setDeleteArguments) {
   return [
     { field: 'name', align:'center', headerAlign:'center', headerName: 'Name', flex: 1, editable: true },
+    { field: 'value', align:'center', headerAlign:'center', headerName: 'Warenwert', flex: 1, editable: false,
+      valueFormatter: (params) => {
+        if (params.value == null) {
+          return '';
+        }
+
+        const valueFormatted = params.value.toFixed(2).toLocaleString();
+        return `${valueFormatted} €`;
+      } },
     { field: 'delete',
       editable: false,
       headerName: '',
@@ -281,6 +291,6 @@ function columns(onCompanySelected, setDeleteArguments) {
                  <ArrowForwardIosIcon fontSize="small" />
                </IconButton>;
       }
-    },
+    }
   ];
 }

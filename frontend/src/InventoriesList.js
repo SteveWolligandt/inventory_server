@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import PersonIcon from '@mui/icons-material/Person';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import Avatar from '@mui/material/Avatar';
 import {blue} from '@mui/material/colors';
 import Dialog from '@mui/material/Dialog';
@@ -52,12 +52,12 @@ export default function Inventories(
     if (userToken == null) { return; }
     async function loadData() {
       try {
-        const response = await fetch('/api/inventories', {
+        const response = await fetch('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
         });
         if (response.status === 401) {
-          setSnackbar({ children: 'Unauthorized', severity: 'error' });
+          setSnackbar({ children: 'Kein Zugriff', severity: 'error' });
           return;
         }
         const inventories = await response.json();
@@ -89,13 +89,13 @@ export default function Inventories(
       <List sx={{ pt: 0 }}>
         {inventories.map((inventory) => (
           <ListItem key={inventory.id} disableGutters>
-            <ListItemButton onClick={() => handleListItemClick(inventory)} key={inventory}>
+            <ListItemButton onClick={() => handleListItemClick(inventory)} key={inventory.id}>
               <ListItemAvatar>
                 <Avatar sx={{ bgcolor: blue[100], color: blue[600] }}>
-                  <PersonIcon />
+                  <ApartmentIcon />
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={inventory.name} />
+              <ListItemText primary={inventory.name + ' - ' + inventory.value + '€'} />
             </ListItemButton>
           </ListItem>
         ))}

@@ -14,6 +14,7 @@ import Alert from '@mui/material/Alert';
 
 
 function App() {
+  React.useEffect(() => { document.title = 'Inventur'; }, []);
   const [snackbar, setSnackbar] = React.useState(null);
   const handleCloseSnackbar = () => setSnackbar(null);
   var [showFullPrices, setShowFullPrices] = useStickyState(false, 'showFullPrices');
@@ -39,16 +40,16 @@ function App() {
     .then((response) => {if(!response.success) {setUserToken(null);}})
   }, [userToken, setUserToken]);
 
-  const handleTitleBar = () => {
+  const updateTitle = () => {
     if (activeInventory == null) {
       setTitle('Keine Inventur ausgewählt');
     } else if (activeCompany != null) {
-      setTitle(activeInventory.name + ' - ' + activeCompany.name);
+      setTitle(activeInventory.name + ' (' + activeInventory.value + '€) - ' + activeCompany.name);
     } else {
-      setTitle(activeInventory.name + ' - Firmenauswahl');
+      setTitle(activeInventory.name + ' (' + activeInventory.value + '€) - Firmenauswahl');
     }
   };
-  React.useEffect(handleTitleBar, [activeInventory, activeCompany, setTitle]);
+  React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
   var onArticleBackButtonClick = () => {
     setShowCompanies(true);
@@ -86,6 +87,7 @@ function App() {
       activeCompany     = {activeCompany}
       userToken         = {userToken}
       setSnackbar       = {setSnackbar}
+      activeInventory   = {activeInventory}
       onCompanySelected = {(company) => {
         setActiveCompany(company);
         setShowCompanies(false);
@@ -97,17 +99,10 @@ function App() {
       userToken       = {userToken}
       activeCompany   = {activeCompany}
       activeInventory = {activeInventory}
+      updateTitle     = {updateTitle}
       setSnackbar     = {setSnackbar}
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
-    {/*
-    <FullPrice
-      open            = {userToken != null && showFullPrices}
-      onBack          = {() => setShowFullPrices(false)}
-      userToken       = {userToken}
-      setSnackbar     = {setSnackbar}
-      activeInventory = {activeInventory}/>
-      */}
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />

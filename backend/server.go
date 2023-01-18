@@ -292,13 +292,13 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reqBody, err := ioutil.ReadAll(r.Body)
-        if (err != nil) {
-          panic(err)
-        }
-        fmt.Printf("client: response body: %s\n", reqBody)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("client: response body: %s\n", reqBody)
 	var company Company
 	json.Unmarshal(reqBody, &company)
-        fmt.Println(company)
+	fmt.Println(company)
 
 	company = s.db.CreateCompany(company.Name)
 	marshaledCompany, marshalErr := json.Marshal(company)
@@ -508,14 +508,9 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(&w, r) {
 		return
 	}
-	type CompanyPrice struct {
-		Id    int     `json:"id"`
-		Name  string  `json:"name"`
-		Price float32 `json:"price"`
-	}
 	type Return struct {
-		CompanyPrices []CompanyPrice `json:"companies"`
-		Price         float32        `json:"price"`
+		CompaniesWithValue []CompanyWithValue `json:"companies"`
+		Value              float32            `json:"value"`
 	}
 	var ret Return
 	vars := mux.Vars(r)
@@ -530,13 +525,24 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 	companies := s.db.Companies()
 
 	for _, company := range companies {
-		valueOfGoods := s.db.ValueOfCompany(company.Id, inventoryId)
-		ret.CompanyPrices = append(ret.CompanyPrices, CompanyPrice{Id: company.Id, Name: company.Name, Price: valueOfGoods})
-		totalValue += valueOfGoods
+		value := s.db.ValueOfCompany(company.Id, inventoryId)
+		var companyWithValue CompanyWithValue
+		companyWithValue.Company = company
+		companyWithValue.Value = value
+		ret.CompaniesWithValue = append(ret.CompaniesWithValue, companyWithValue)
+		totalValue += value
 	}
 
-	ret.Price = totalValue
+	ret.Value = totalValue
 	json.NewEncoder(w).Encode(ret)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorized(&w, r) {
+		return
+	}
+	json.NewEncoder(w).Encode(s.db.InventoriesWithValue())
 }
 
 // ------------------------------------------------------------------------------
@@ -739,6 +745,11 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/inventory/{id}/value",
 		s.GetInventoryWithValue).
+		Methods("GET")
+
+	s.router.HandleFunc(
+		"/api/inventories/value",
+		s.GetInventoriesWithValue).
 		Methods("GET")
 
 	s.router.HandleFunc(
