@@ -1,4 +1,5 @@
 import websocketAddr from './websocketAddress.js';
+import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Button from '@mui/material/Button';
@@ -67,6 +68,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   var [articles, setArticles] = React.useState([]);
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  var [isLoading, setIsLoading] = React.useState(false);
 
   // websocket
   const handleWebSocket = () => {
@@ -127,6 +129,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       if (activeInventory == null) {return;}
       if (activeCompany == null) {return;}
       try {
+        setIsLoading(true);
         const response = await fetch(activeInventory
                   ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
                   : '/api/company/' + activeCompany.id + '/articles',
@@ -148,6 +151,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
                 }
               }
               setArticles(cs);
+        setIsLoading(false);
       } catch (error) {
         setSnackbar(
             {children :'Da lief was schief: ' + error, severity : 'error'});
@@ -384,19 +388,32 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   };
 
   if (!open) { return null; }
+  const renderLoading = () => {
+    if (isLoading) {
+      return (
+        <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
+        <CircularProgress /></div>);
+    }
+    return null;
+  };
+  const renderDataGrid = () => {
+    if (!isLoading) {
+      return (<DataGrid rows={articles}
+                        columns={columns(setDeleteArguments)}
+                        processRowUpdate={processRowUpdate}
+                        experimentalFeatures={
+                    { newEditingApi: true }}/>);
+    } 
+    return null;
+  }
   const style = {height : 500, width : '100%'};
   return (<>
     <div style ={{margin: '0 auto'}} >
     <div style={style}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
-      <DataGrid
-        rows={articles}
-        columns={columns(setDeleteArguments)}
-        processRowUpdate={processRowUpdate}
-        experimentalFeatures={
-    { newEditingApi: true }}
-      />
+      {renderLoading()}
+      {renderDataGrid()}
     </div>
     </div>
     <CreateArticleDialog open={dialogOpen} setOpen={setDialogOpen} userToken={userToken} activeCompany={activeCompany} setSnackbar={setSnackbar}/>

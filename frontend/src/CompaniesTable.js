@@ -1,4 +1,5 @@
 import websocketAddr from './websocketAddress.js';
+import CircularProgress from '@mui/material/CircularProgress';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import { DataGrid } from '@mui/x-data-grid';
 import Dialog from '@mui/material/Dialog';
@@ -23,6 +24,7 @@ function computeMutation(newRow, oldRow) {
 export default function Companies({open, onCompanySelected, userToken, setSnackbar, setTopBarContext, activeInventory}) {
   var [companies, setCompanies] = React.useState([]);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  var [isLoading, setIsLoading] = React.useState(false);
   
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
   const handleWebsocket = () => {
@@ -50,6 +52,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     if (userToken == null) {return;}
     if (activeInventory == null) {return;}
     const loadData = async() => {
+      setIsLoading(true);
       try {
         const response = await fetch('/api/companies/value/'+activeInventory.id, {
           method: 'GET',
@@ -66,6 +69,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
       } catch (error) {
         console.error(error);
       }
+      setIsLoading(false);
     };
     loadData();
   };
@@ -217,16 +221,31 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
   };
 
   if (!open) { return null; }
+  const renderLoading = () => {
+    if (isLoading) {
+      return (
+        <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
+        <CircularProgress /></div>);
+    } else {
+      return null;
+    }
+  };
+  const renderDataGrid = () => {
+    if (!isLoading) {
+      return (<DataGrid rows={companies}
+                        columns={columns(onCompanySelected, setDeleteArguments)}
+                        processRowUpdate={processRowUpdate}
+                        experimentalFeatures={{ newEditingApi: true }}/>);
+    } else {
+      return null;
+    }
+  }
   const style = {height: 500, width: '100%'};
   return (<>
     <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
     <div style={style}>
-    <DataGrid
-      rows={companies}
-      columns={columns(onCompanySelected, setDeleteArguments)}
-      processRowUpdate={processRowUpdate}
-      experimentalFeatures={{ newEditingApi: true }}
-    />
+    {renderLoading()}
+    {renderDataGrid()}
     </div>
     </div>
     {renderChangeConfirmDialog()}

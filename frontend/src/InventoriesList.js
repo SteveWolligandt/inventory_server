@@ -86,7 +86,7 @@ export default function Inventories(
     setOpen(false);
   };
   const handleClose = () => {};
-  const showLoading = () => {
+  const renderLoading = () => {
     if (isLoading) {
       return (<Box m="auto"><CircularProgress /></Box>);
     } else {
@@ -97,7 +97,7 @@ export default function Inventories(
     <>
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Inventur auswählen</DialogTitle>
-      {showLoading()}
+      {renderLoading()}
       <List sx={{ pt: 0 }}>
         {inventories.map((inventory) => (
           <ListItem key={inventory.id} disableGutters>
