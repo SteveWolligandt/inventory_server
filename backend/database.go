@@ -238,12 +238,16 @@ func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWit
 // -----------------------------------------------------------------------------
 func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id WHERE inventoryId=%v AND companyId=%v", inventoryId, companyId)
-        var value float32
+        fmt.Println(q)
+        var value sql.NullFloat64
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
 		panic(err) // proper error handling instead of panic in your app
 	}
-        return value
+        if value.Valid == false {
+          return 0
+        }
+        return float32(value.Float64)
 }
 //func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
 //	type Mem struct {
