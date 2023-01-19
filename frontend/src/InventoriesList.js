@@ -1,4 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import Avatar from '@mui/material/Avatar';
 import {blue} from '@mui/material/colors';
@@ -26,6 +28,7 @@ export default function Inventories(
   {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setSnackbar}) {
   var [inventories, setInventories] = React.useState([]);
   var [createOpen, setCreateOpen] = React.useState(false);
+  var [isLoading, setIsLoading] = React.useState(false);
 
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
 
@@ -52,6 +55,7 @@ export default function Inventories(
     if (userToken == null) { return; }
     async function loadData() {
       try {
+        setIsLoading(true);
         const response = await fetch('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
@@ -67,7 +71,7 @@ export default function Inventories(
         } else {
           setInventories(inventories);
         }
-
+        setIsLoading(false);
       } catch (error) {
         console.error(error);
       }
@@ -82,10 +86,18 @@ export default function Inventories(
     setOpen(false);
   };
   const handleClose = () => {};
+  const showLoading = () => {
+    if (isLoading) {
+      return (<Box m="auto"><CircularProgress /></Box>);
+    } else {
+      return null;
+    }
+  };
   return (
     <>
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Inventur auswählen</DialogTitle>
+      {showLoading()}
       <List sx={{ pt: 0 }}>
         {inventories.map((inventory) => (
           <ListItem key={inventory.id} disableGutters>
