@@ -237,34 +237,43 @@ func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWit
 
 // -----------------------------------------------------------------------------
 func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
-	type Mem struct {
-		PurchasePrice float32
-		Amount        int
-	}
-	var valueOfGoods float32
-	q := fmt.Sprintf(
-		"SELECT inventoryData.purchasePrice, inventoryData.amount FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
-		inventoryId, companyId)
-
-	rows, err := db.db.Query(q)
+	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id WHERE inventoryId=%v AND companyId=%v", inventoryId, companyId)
+        var value float32
+	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		panic(err) // proper error handling instead of panic in your app
 	}
-	var articles []Mem
-	for rows.Next() {
-		var article Mem
-		// for each row, scan the result into our tag composite object
-		err = rows.Scan(&article.PurchasePrice, &article.Amount)
-		if err != nil {
-			panic(err.Error()) // proper error handling instead of panic in your app
-		}
-		articles = append(articles, article)
-	}
-	for _, article := range articles {
-		valueOfGoods += float32(article.Amount) * article.PurchasePrice
-	}
-	return valueOfGoods
+        return value
 }
+//func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
+//	type Mem struct {
+//		PurchasePrice float32
+//		Amount        int
+//	}
+//	var valueOfGoods float32
+//	q := fmt.Sprintf(
+//		"SELECT inventoryData.purchasePrice, inventoryData.amount FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
+//		inventoryId, companyId)
+//
+//	rows, err := db.db.Query(q)
+//	if err != nil {
+//		panic(err.Error()) // proper error handling instead of panic in your app
+//	}
+//	var articles []Mem
+//	for rows.Next() {
+//		var article Mem
+//		// for each row, scan the result into our tag composite object
+//		err = rows.Scan(&article.PurchasePrice, &article.Amount)
+//		if err != nil {
+//			panic(err.Error()) // proper error handling instead of panic in your app
+//		}
+//		articles = append(articles, article)
+//	}
+//	for _, article := range articles {
+//		valueOfGoods += float32(article.Amount) * article.PurchasePrice
+//	}
+//	return valueOfGoods
+//}
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompany(name string) Company {
@@ -389,12 +398,13 @@ func (db *Database) InventoriesWithValue() []InventoryWithValue {
 
 // ------------------------------------------------------------------------------
 func (db *Database) ValueOfInventory(id int) float32 {
-	var value float32
-	companies := db.Companies()
-	for _, company := range companies {
-		value += db.ValueOfCompany(company.Id, id)
+	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData WHERE inventoryId=%v", id)
+        var value float32
+	err := db.db.QueryRow(q).Scan(&value)
+	if err != nil {
+		panic(err) // proper error handling instead of panic in your app
 	}
-	return value
+        return value
 }
 
 // ------------------------------------------------------------------------------
