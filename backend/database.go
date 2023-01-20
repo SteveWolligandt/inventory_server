@@ -12,9 +12,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 )
 
 // -----------------------------------------------------------------------------
@@ -561,9 +559,6 @@ func (db *Database) Initialize() {
 	} else if count == 0 {
 		db.CreateAdminUser()
 	}
-	if !db.UserTokensTableCreated() {
-		db.CreateUserTokensTable()
-	}
 }
 
 // ------------------------------------------------------------------------------
@@ -621,19 +616,6 @@ func (db *Database) CreateUsersTable() {
 	}
 }
 
-// ------------------------------------------------------------------------------
-func (db *Database) UserTokensTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM userTokens")
-	return err == nil
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) CreateUserTokensTable() {
-	_, err := db.db.Query("CREATE TABLE userTokens (userName varchar(255) NOT NULL, token varchar(255) NOT NULL, FOREIGN KEY (userName) REFERENCES users(name))")
-	if err != nil {
-		panic(err.Error())
-	}
-}
 
 // ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
@@ -675,31 +657,6 @@ func (db *Database) CreateArticlesTable() {
 	if err != nil {
 		panic(err.Error())
 	}
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) CreateUserToken(userName string) string {
-	const tokenLength = 128
-	const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, tokenLength)
-	rand.Seed(time.Now().UnixNano())
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	var token = string(b)
-	q := fmt.Sprintf("INSERT INTO userTokens (userName, token) VALUES ('%v','%v')",
-		userName, token)
-	db.db.QueryRow(q)
-	return token
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) UserOfToken(token string) (bool, User) {
-	var userName string
-	q := fmt.Sprintf("SELECT userName FROM userTokens WHERE token='%s'", token)
-	err := db.db.QueryRow(q).Scan(&userName)
-	isValid := err == nil
-	return isValid, db.User(userName)
 }
 
 // ------------------------------------------------------------------------------

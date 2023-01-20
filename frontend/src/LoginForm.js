@@ -22,7 +22,6 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, 
     const username = document.getElementById("login.username").value;
     const password = document.getElementById("login.password").value;
     const basicAuth = "Basic " + btoa(username + ':' + password);
-    console.log(basicAuth);
     fetch(
       '/api/login',{
       headers: {

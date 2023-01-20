@@ -1,12 +1,14 @@
 package main
 
 import (
+	"time"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
+        "github.com/golang-jwt/jwt"
 
 	"log"
 	"net"
@@ -69,11 +71,30 @@ func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorized(w *http.ResponseWriter, r *http.Request) bool {
-	isAuthorized, _ := s.db.UserOfToken(r.Header.Get("token"))
-	if !isAuthorized {
-		WriteUnauthorizedToResponse(w)
-	}
-	return isAuthorized
+	tokenString := r.Header.Get("token")
+	//token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	//	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	//		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+	//	}
+	//	return []byte("SecretYouShouldHide"), nil
+	//})
+	//if !token.Valid {
+	//	fmt.Println("Couldn't handle this token:", err)
+	//}
+	//claims, ok := token.Claims.(jwt.MapClaims)
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("SecretYouShouldHide"), nil
+	})
+	if token.Valid {
+		for key, val := range claims {
+			fmt.Printf("Key: %v, value: %v\n", key, val)
+		}
+		return true
+	} 
+	fmt.Println(err.Error())
+	WriteUnauthorizedToResponse(w)
+	return false
 }
 
 // ------------------------------------------------------------------------------
@@ -91,12 +112,13 @@ func WriteUnauthorizedToResponse(w *http.ResponseWriter) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorizedAdmin(w *http.ResponseWriter, r *http.Request) bool {
-	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-	authorized := isValid && user.IsAdmin
-	if !authorized {
-		WriteUnauthorizedToResponse(w)
-	}
-	return authorized
+	//isValid, user := s.db.UserOfToken(r.Header.Get("token"))
+	//authorized := isValid && user.IsAdmin
+	//if !authorized {
+	//	WriteUnauthorizedToResponse(w)
+	//}
+	//return authorized
+        return false
 }
 
 // ------------------------------------------------------------------------------
@@ -564,6 +586,18 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
+func (s *Server) GenerateJWT(username string) (string, error) {
+	var sampleSecretKey = []byte("SecretYouShouldHide")
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+        ttl := 24 * time.Hour
+        exp := time.Now().UTC().Add(ttl).Unix()
+	claims["exp"] = exp
+	claims["user"] = username
+	return token.SignedString(sampleSecretKey)
+}
+
+// ------------------------------------------------------------------------------
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
@@ -574,42 +608,54 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	success := VerifyPassword(userHashed.HashedPassword, password)
 
 	if success {
-		type Response struct {
-			Success bool   `json:"success"`
-			Token   string `json:"token"`
+		var token, errToken = s.GenerateJWT(username)
+                if errToken != nil {
+		  type Response struct {
+		  	Success bool `json:"success"`
+			Message string `json:"message"`
+		  }
+		  w.Header().Set("Content-Type", "application/json")
+                  var res = Response{Success: false, Message: errToken.Error()}
+		  resstring, _ := json.Marshal(res)
+		  w.Write(resstring)
+		} else {
+			type Response struct {
+				Success bool   `json:"success"`
+				Token   string `json:"token"`
+			}
+			w.Header().Set("Content-Type", "application/json")
+			var res = Response{Success: success, Token: token}
+			resstring, _ := json.Marshal(res)
+			w.Write(resstring)
 		}
-		var token = s.db.CreateUserToken(username)
-		w.Header().Set("Content-Type", "application/json")
-		var res = Response{Success: success, Token: token}
-		resstring, _ := json.Marshal(res)
-		w.Write(resstring)
 	} else {
 		type Response struct {
 			Success bool `json:"success"`
+			Message string `json:"message"`
 		}
 		w.Header().Set("Content-Type", "application/json")
-		var res = Response{Success: success}
+                var res = Response{Success: success, Message: "could not login"}
 		resstring, _ := json.Marshal(res)
 		w.Write(resstring)
 	}
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
-		return
-	}
-	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-	w.Header().Set("Content-Type", "application/json")
-	type ResponseValid struct {
-		Success bool   `json:"success"`
-		User    string `json:"user"`
-		IsAdmin bool   `json:"isAdmin"`
-	}
-	var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
-	resstring, _ := json.Marshal(res)
-	w.Write(resstring)
-}
+//func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
+//	if !s.CheckAuthorized(&w, r) {
+//		return
+//	}
+//	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
+//	w.Header().Set("Content-Type", "application/json")
+//	type ResponseValid struct {
+//		Success bool   `json:"success"`
+//		User    string `json:"user"`
+//		IsAdmin bool   `json:"isAdmin"`
+//	}
+//	var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
+//	resstring, _ := json.Marshal(res)
+//	w.Write(resstring)
+//}
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleRequests() {
@@ -763,10 +809,6 @@ func (s *Server) HandleRequests() {
 
 	s.router.HandleFunc(
 		"/api/login", s.Login).
-		Methods("GET")
-
-	s.router.HandleFunc(
-		"/api/tokenvalid", s.TokenValid).
 		Methods("GET")
 }
 
