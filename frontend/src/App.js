@@ -14,7 +14,6 @@ import Alert from '@mui/material/Alert';
 
 
 function App() {
-  React.useEffect(() => { document.title = 'Inventur'; }, []);
   const [snackbar, setSnackbar] = React.useState(null);
   const handleCloseSnackbar = () => setSnackbar(null);
   var [showFullPrices, setShowFullPrices] = useStickyState(false, 'showFullPrices');
@@ -25,19 +24,39 @@ function App() {
   var [topBarContext, setTopBarContext] = React.useState(()=> null);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
+  var [isLoggedIn, setIsLoggedIn] = useStickyState(false, 'isLoggedIn');
   var [title, setTitle] = useStickyState('Firmen', 'title');
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
 
 
+  React.useEffect(() => {
+    console.log("Initial");
+    document.title = 'Inventur';
+
+    if (userToken != null) {
+      const renew = async () => {
+        const renewResponse = await fetch('/api/renew', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', token:userToken}
+        });
+        const renewJson = await renewResponse.json();
+        if (renewJson.status === 400) {
+          setUserToken(null);
+          setSnackbar({ children: 'Session beendet', severity: 'error' });
+          return;
+        } else {
+          setUserToken(renewJson.token);
+          setSnackbar({ children: 'Neuer Token wurde erhalten', severity: 'warning' });
+        }
+      }; renew();
+    }
+  }, []);
   React.useEffect(()=>{
-    if (userToken == null) { return; }
-    fetch('/api/tokenvalid', {
-      method : "GET",
-      headers : {"Content-Type" : "application/json", token : userToken}
-    })
-    .then((response) => response.json())
-    .then((response) => {if(!response.success) {setUserToken(null);}})
+    const f = async() => {
+      setIsLoggedIn(userToken != null);
+    };
+    f();
   }, [userToken, setUserToken]);
 
   const updateTitle = () => {
@@ -68,13 +87,14 @@ function App() {
       onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
     <div style={{marginBottom: '100px'}}/>
-    <LoginScreen open    = {userToken == null}
+    <LoginScreen open    = {!isLoggedIn}
                  onLogin = {(token) => setUserToken(token)}
                  setSnackbar = {setSnackbar}/>
     <Inventories
       setSnackbar = {setSnackbar}
       userToken = {userToken}
-      open = {userToken != null && (showInventories || !activeInventory)}
+      setUserToken = {setUserToken}
+      open = {isLoggedIn && (showInventories || !activeInventory)}
       setOpen = {setShowInventories}
       activeInventory = {activeInventory}
       setActiveInventory = {setActiveInventory}
@@ -82,8 +102,9 @@ function App() {
         setActiveInventory(inventory);
       }}
     />
+    {/*
     <Companies
-      open              = {userToken != null && !showFullPrices && showCompanies}
+      open              = {isLoggedIn && !showFullPrices && showCompanies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
       setSnackbar       = {setSnackbar}
@@ -95,7 +116,7 @@ function App() {
       }}
       setTopBarContext  = {setTopBarContext}/>
     <Articles
-      open            = {userToken != null && !showFullPrices && showArticles}
+      open            = {isLoggedIn && !showFullPrices && showArticles}
       userToken       = {userToken}
       activeCompany   = {activeCompany}
       activeInventory = {activeInventory}
@@ -108,6 +129,7 @@ function App() {
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
       </Snackbar>
     )}
+    */}
   </>);
 }
 export default App;

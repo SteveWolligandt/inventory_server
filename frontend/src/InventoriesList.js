@@ -25,7 +25,7 @@ function computeMutation(newRow, oldRow) {
 }
 
 export default function Inventories(
-  {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setSnackbar}) {
+  {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setUserToken, setSnackbar}) {
   var [inventories, setInventories] = React.useState([]);
   var [createOpen, setCreateOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
@@ -56,16 +56,38 @@ export default function Inventories(
     async function loadData() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/inventories/value', {
+        var response = await fetch('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
         });
-        if (response.status === 401) {
-          setSnackbar({ children: 'Kein Zugriff', severity: 'error' });
-          return;
+        if (!response.ok) {
+          if (response.status === 400) {
+            console.log('Neuer Token wird angefragt');
+            const renewResponse = await fetch('/api/renew', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json', token:userToken}
+            });
+            if (!renewResponse.ok) {
+              setUserToken(null);
+              console.log('Session beendet');
+              return;
+            } else {
+              const renewJson = await renewResponse.json();
+              setUserToken(renewJson.token);
+              console.log('Neuer Token wurde erhalten');
+              response = await fetch('/api/inventories/value', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json', token:renewJson.token}
+              });
+            }
+          } else {
+            setUserToken(null);
+            console.log('Irgendwas lief da schief');
+            return 
+          }
+
         }
         const inventories = await response.json();
-        console.log(inventories);
         if (inventories == null) {
           setInventories([]);
         } else {
