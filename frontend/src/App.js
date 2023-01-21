@@ -106,11 +106,11 @@ function App() {
         setActiveInventory(inventory);
       }}
     />
-    {/*
     <Companies
       open              = {isLoggedIn && !showFullPrices && showCompanies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
+      setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}
       onCompanySelected = {(company) => {
@@ -122,13 +122,13 @@ function App() {
     <Articles
       open            = {isLoggedIn && !showFullPrices && showArticles}
       userToken       = {userToken}
+      setUserToken    = {setUserToken}
       activeCompany   = {activeCompany}
       activeInventory = {activeInventory}
       updateTitle     = {updateTitle}
       setSnackbar     = {setSnackbar}
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
-    */}
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />

@@ -60,7 +60,7 @@ export default function Inventories(
         var response = await fetchWithToken('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
-        }, userToken, setUserToken);
+        }, userToken, setUserToken, setSnackbar);
         const inventories = await response.json();
         if (inventories == null) {
           setInventories([]);

@@ -5,9 +5,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import fetchWithToken from './jwtFetch.js';
 
-export default function CreateCompanyDialog({open, setOpen, userToken, setSnackbar}) {
-  const handleCreate    = () => {
+export default function CreateCompanyDialog({open, setOpen, userToken, setUserToken, setSnackbar}) {
+  const handleCreate    = async () => {
     const name = document.getElementById("createCompany.name").value
     if (name === '') {
       setSnackbar(
@@ -15,7 +16,7 @@ export default function CreateCompanyDialog({open, setOpen, userToken, setSnackb
       return;
     }
 
-    fetch(
+    await fetchWithToken(
       '/api/company',{
         method: 'POST',
         body: JSON.stringify({'name' : name}),
@@ -23,13 +24,8 @@ export default function CreateCompanyDialog({open, setOpen, userToken, setSnackb
           'Content-Type': 'application/json',
           token         : userToken
         },
-      }
-    ).then((response) => {
-      setOpen(false);
-    }).catch(() => {
-      console.log('Could not create Company');
-      setOpen(false);
-    });
+      }, userToken, setUserToken, setSnackbar)
+    setOpen(false);
   };
 
   const style = {

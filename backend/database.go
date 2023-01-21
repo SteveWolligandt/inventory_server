@@ -82,7 +82,6 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) User 
 	// create new article in database
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)
-	fmt.Println(q)
 	_, err := db.db.Query(q)
 	if err != nil {
 		panic(err)
@@ -236,7 +235,6 @@ func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWit
 // -----------------------------------------------------------------------------
 func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id WHERE inventoryId=%v AND companyId=%v", inventoryId, companyId)
-        fmt.Println(q)
         var value sql.NullFloat64
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
@@ -554,7 +552,6 @@ func (db *Database) Initialize() {
 	}
 	var count int
 	err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
-	fmt.Println("count: ", count)
 	if err != nil {
 		panic(err)
 	} else if count == 0 {

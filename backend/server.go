@@ -590,7 +590,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GenerateJWT(username string) (string, error) {
-	expirationTime := time.Now().Add(10 * time.Second)
+	expirationTime := time.Now().Add(2 * time.Second)
 	claims := &Claims{
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -659,15 +659,12 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil && !token.Valid {
 		if err == jwt.ErrSignatureInvalid {
-			fmt.Println("Signature Invalid")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 	}
 
-	if time.Until(claims.ExpiresAt.Time) < -time.Second*10 {
-		fmt.Println(time.Until(claims.ExpiresAt.Time))
-		fmt.Println("Out of time range")
+	if time.Until(claims.ExpiresAt.Time) < -time.Second*60 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

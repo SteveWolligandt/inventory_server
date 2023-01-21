@@ -32,7 +32,7 @@ export default function CreateInventoryDialog({open, setOpen, setActiveInventory
           "Content-Type": "application/json",
           token:userToken
         },
-        body: JSON.stringify(data)}, userToken, setUserToken);
+        body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar);
       if (!response.ok) {
         if (response.status === 400) {
           setSnackbar({ children: 'Session wurde beendet. Bitte neu anmelden.', severity: 'error' });
