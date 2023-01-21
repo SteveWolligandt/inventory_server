@@ -126,7 +126,8 @@ export default function Inventories(
                            setOpen={setCreateOpen}
                            setSnackbar={setSnackbar}
                            setActiveInventory={setActiveInventory}
-                           userToken={userToken}/>
+                           userToken={userToken}
+                           setUserToken={setUserToken}/>
     </>
   );
 }

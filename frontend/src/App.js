@@ -36,18 +36,22 @@ function App() {
 
     if (userToken != null) {
       const renew = async () => {
-        const renewResponse = await fetch('/api/renew', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json', token:userToken}
-        });
-        const renewJson = await renewResponse.json();
-        if (renewJson.status === 400) {
-          setUserToken(null);
-          setSnackbar({ children: 'Session beendet', severity: 'error' });
-          return;
-        } else {
-          setUserToken(renewJson.token);
-          setSnackbar({ children: 'Neuer Token wurde erhalten', severity: 'warning' });
+        try {
+          const renewResponse = await fetch('/api/renew', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', token:userToken}
+          });
+          const renewJson = await renewResponse.json();
+          if (renewJson.status === 400) {
+            setUserToken(null);
+            setSnackbar({ children: 'Session beendet', severity: 'error' });
+            return;
+          } else {
+            setUserToken(renewJson.token);
+            setSnackbar({ children: 'Neuer Token wurde erhalten', severity: 'warning' });
+          }
+        } catch(e) {
+          console.log(e);
         }
       }; renew();
     }
@@ -124,12 +128,12 @@ function App() {
       setSnackbar     = {setSnackbar}
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
+    */}
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
       </Snackbar>
     )}
-    */}
   </>);
 }
 export default App;
