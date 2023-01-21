@@ -27,6 +27,7 @@ func (db *Database) Articles() []Article {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name, articleNumber FROM articles")
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
@@ -40,6 +41,7 @@ func (db *Database) Articles() []Article {
 		// and then print out the tag's Name attribute
 		articles = append(articles, article)
 	}
+	rows.Close()
 	return articles
 }
 
@@ -49,6 +51,7 @@ func (db *Database) Article(id int) *Article {
 
 	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	for rows.Next() {
@@ -58,8 +61,10 @@ func (db *Database) Article(id int) *Article {
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
+		rows.Close()
 		return &article
 	}
+	rows.Close()
 	return nil
 }
 
@@ -85,7 +90,8 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) User 
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)
 	fmt.Println(q)
-	_, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
+	rows.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +109,8 @@ func (db *Database) CreateArticle(name string, companyId int, articleNumber stri
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
 	}
 	// create new inventory data for new articles in database
-	_, dbErr = db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT ? as articleId, id as inventoryId FROM inventories", article.Id)
+	rows, dbErr := db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT ? as articleId, id as inventoryId FROM inventories", article.Id)
+	rows.Close()
 	if dbErr != nil {
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -118,7 +125,8 @@ func (db *Database) CreateArticle(name string, companyId int, articleNumber stri
 func (db *Database) UpdateArticle(article Article) Article {
 	q := fmt.Sprintf("UPDATE articles SET name = '%v', articleNumber = '%v' WHERE id = %v", article.Name, article.ArticleNumber, article.Id)
 
-	_, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
+	rows.Close()
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -128,11 +136,13 @@ func (db *Database) UpdateArticle(article Article) Article {
 // ------------------------------------------------------------------------------
 func (db *Database) DeleteArticle(id int) {
 	// delete inventory data of article
-	_, deleteInventoryDataErr := db.db.Query("DELETE FROM inventoryData WHERE articleId =?", id)
+	rows, deleteInventoryDataErr := db.db.Query("DELETE FROM inventoryData WHERE articleId =?", id)
+	rows.Close()
 	if deleteInventoryDataErr != nil {
 		panic(deleteInventoryDataErr.Error()) // proper error handling instead of panic in your app
 	}
-	_, deleteArticlesErr := db.db.Query("DELETE FROM articles WHERE id =?", id)
+	rows2, deleteArticlesErr := db.db.Query("DELETE FROM articles WHERE id =?", id)
+	rows2.Close()
 	if deleteArticlesErr != nil {
 		panic(deleteArticlesErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -143,6 +153,7 @@ func (db *Database) Companies() []Company {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name FROM companies")
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
@@ -156,6 +167,7 @@ func (db *Database) Companies() []Company {
 		// and then print out the tag's Name attribute
 		companies = append(companies, company)
 	}
+	rows.Close()
 	return companies
 }
 
@@ -164,6 +176,7 @@ func (db *Database) CompaniesWithValue(inventoryId int) []CompanyWithValue {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name FROM companies")
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
@@ -178,6 +191,7 @@ func (db *Database) CompaniesWithValue(inventoryId int) []CompanyWithValue {
 		// and then print out the tag's Name attribute
 		companies = append(companies, company)
 	}
+	rows.Close()
 	return companies
 }
 
@@ -188,6 +202,7 @@ func (db *Database) ArticlesOfCompany(companyId int) []Article {
 	q := fmt.Sprintf("SELECT id, name, articleNumber FROM articles WHERE companyId = %v", companyId)
 	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	var articles []Article
@@ -200,6 +215,7 @@ func (db *Database) ArticlesOfCompany(companyId int) []Article {
 		}
 		articles = append(articles, article)
 	}
+	rows.Close()
 	return articles
 }
 
@@ -208,6 +224,7 @@ func (db *Database) Company(id int) *Company {
 	q := fmt.Sprintf("SELECT id, name FROM companies WHERE id = %v", id)
 	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	for rows.Next() {
@@ -218,8 +235,10 @@ func (db *Database) Company(id int) *Company {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		// and then print out the tag's Name attribute
+		rows.Close()
 		return &company
 	}
+	rows.Close()
 	return nil
 }
 
@@ -238,46 +257,17 @@ func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWit
 // -----------------------------------------------------------------------------
 func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id WHERE inventoryId=%v AND companyId=%v", inventoryId, companyId)
-        fmt.Println(q)
-        var value sql.NullFloat64
+	fmt.Println(q)
+	var value sql.NullFloat64
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
 		panic(err) // proper error handling instead of panic in your app
 	}
-        if value.Valid == false {
-          return 0
-        }
-        return float32(value.Float64)
+	if value.Valid == false {
+		return 0
+	}
+	return float32(value.Float64)
 }
-//func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
-//	type Mem struct {
-//		PurchasePrice float32
-//		Amount        int
-//	}
-//	var valueOfGoods float32
-//	q := fmt.Sprintf(
-//		"SELECT inventoryData.purchasePrice, inventoryData.amount FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
-//		inventoryId, companyId)
-//
-//	rows, err := db.db.Query(q)
-//	if err != nil {
-//		panic(err.Error()) // proper error handling instead of panic in your app
-//	}
-//	var articles []Mem
-//	for rows.Next() {
-//		var article Mem
-//		// for each row, scan the result into our tag composite object
-//		err = rows.Scan(&article.PurchasePrice, &article.Amount)
-//		if err != nil {
-//			panic(err.Error()) // proper error handling instead of panic in your app
-//		}
-//		articles = append(articles, article)
-//	}
-//	for _, article := range articles {
-//		valueOfGoods += float32(article.Amount) * article.PurchasePrice
-//	}
-//	return valueOfGoods
-//}
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompany(name string) Company {
@@ -297,7 +287,8 @@ func (db *Database) CreateCompany(name string) Company {
 func (db *Database) UpdateCompany(company Company) {
 	q := fmt.Sprintf("UPDATE companies SET name = '%v' WHERE id = %v", company.Name, company.Id)
 
-	_, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
+	rows.Close()
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -306,20 +297,23 @@ func (db *Database) UpdateCompany(company Company) {
 // ------------------------------------------------------------------------------
 func (db *Database) DeleteCompany(id int) {
 	// delete all inventory data of all articles of company
-	_, inventoryDataDeleteErr := db.db.Query(
+	rows0, inventoryDataDeleteErr := db.db.Query(
 		fmt.Sprintf(
 			"DELETE inventoryData FROM articles JOIN inventoryData ON inventoryData.articleId = articles.id WHERE companyId = %v",
 			id))
+	rows0.Close()
 	if inventoryDataDeleteErr != nil {
 		panic(inventoryDataDeleteErr.Error()) // proper error handling instead of panic in your app
 	}
-	_, articlesDeleteErr := db.db.Query(
+	rows1, articlesDeleteErr := db.db.Query(
 		fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", id))
+	rows1.Close()
 	if articlesDeleteErr != nil {
 		panic(articlesDeleteErr.Error()) // proper error handling instead of panic in your app
 	}
-	_, companiesDeleteErr := db.db.Query(
+	rows2, companiesDeleteErr := db.db.Query(
 		fmt.Sprintf("DELETE FROM companies WHERE id = %v", id))
+	rows2.Close()
 	if companiesDeleteErr != nil {
 		panic(companiesDeleteErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -330,7 +324,8 @@ func (db *Database) DeleteCompany(id int) {
 func (db *Database) UpdateInventoryData(inventoryData InventoryData) {
 	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v, purchasePrice = %v, percentage = %v, notes = '%v' WHERE articleId = %v AND inventoryId = %v", inventoryData.Amount, inventoryData.PurchasePrice, inventoryData.Percentage, inventoryData.Notes, inventoryData.ArticleId, inventoryData.InventoryId)
 
-	_, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
+	rows.Close()
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -342,6 +337,7 @@ func (db *Database) Inventories() []Inventory {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name FROM inventories")
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
@@ -355,6 +351,7 @@ func (db *Database) Inventories() []Inventory {
 		// and then print out the tag's Name attribute
 		inventories = append(inventories, inventory)
 	}
+	rows.Close()
 	return inventories
 }
 
@@ -364,6 +361,7 @@ func (db *Database) Inventory(id int) *Inventory {
 
 	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	for rows.Next() {
@@ -373,8 +371,10 @@ func (db *Database) Inventory(id int) *Inventory {
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
+		rows.Close()
 		return &inventory
 	}
+	rows.Close()
 	return nil
 }
 
@@ -395,7 +395,7 @@ func (db *Database) InventoryWithValue(id int) *InventoryWithValue {
 func (db *Database) InventoriesWithValue() []InventoryWithValue {
 	var inventoriesWithValue []InventoryWithValue
 	for _, inv := range db.Inventories() {
-          inventoriesWithValue = append(inventoriesWithValue, *db.InventoryWithValue(inv.Id)) 
+		inventoriesWithValue = append(inventoriesWithValue, *db.InventoryWithValue(inv.Id))
 	}
 	return inventoriesWithValue
 }
@@ -403,12 +403,12 @@ func (db *Database) InventoriesWithValue() []InventoryWithValue {
 // ------------------------------------------------------------------------------
 func (db *Database) ValueOfInventory(id int) float32 {
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData WHERE inventoryId=%v", id)
-        var value float32
+	var value float32
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
 		panic(err) // proper error handling instead of panic in your app
 	}
-        return value
+	return value
 }
 
 // ------------------------------------------------------------------------------
@@ -423,7 +423,8 @@ func (db *Database) CreateInventory(name string) Inventory {
 	}
 
 	// create new inventory data for present articles in database
-	_, dbErr = db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT id as articleId, ? as inventoryId FROM articles", inventory.Id)
+	rows, dbErr := db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT id as articleId, ? as inventoryId FROM articles", inventory.Id)
+	rows.Close()
 	if dbErr != nil {
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -436,7 +437,8 @@ func (db *Database) UpdateInventory(inventory Inventory) {
 		"UPDATE inventories SET name = '%v' WHERE id = %v",
 		inventory.Name, inventory.Id)
 
-	_, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
+	rows.Close()
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -445,12 +447,14 @@ func (db *Database) UpdateInventory(inventory Inventory) {
 // ------------------------------------------------------------------------------
 func (db *Database) DeleteInventory(id int) {
 	// delete inventoryData of inventory
-	_, inventoryDataDeleteErr := db.db.Query("DELETE FROM inventoryData WHERE articleId =?", id)
+	rows0, inventoryDataDeleteErr := db.db.Query("DELETE FROM inventoryData WHERE articleId =?", id)
+	rows0.Close()
 	if inventoryDataDeleteErr != nil {
 		panic(inventoryDataDeleteErr.Error()) // proper error handling instead of panic in your app
 	}
 
-	_, inventoryDeleteErr := db.db.Query("DELETE FROM inventories WHERE id =?", id)
+	rows1, inventoryDeleteErr := db.db.Query("DELETE FROM inventories WHERE id =?", id)
+	rows1.Close()
 	if inventoryDeleteErr != nil {
 		panic(inventoryDeleteErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -462,6 +466,7 @@ func (db *Database) InventoryData(id int) []InventoryData {
 
 	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	var inventoryData []InventoryData
@@ -474,6 +479,7 @@ func (db *Database) InventoryData(id int) []InventoryData {
 		// and then print out the tag's Name attribute
 		inventoryData = append(inventoryData, inventoryDate)
 	}
+	rows.Close()
 	return inventoryData
 }
 
@@ -513,21 +519,23 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) []Article
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
 		inventoryId, companyId)
 
-	inventoryDataPerArticle, err := db.db.Query(q)
+	rows, err := db.db.Query(q)
 	if err != nil {
+		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	var articles []ArticleWithInventoryData
-	for inventoryDataPerArticle.Next() {
+	for rows.Next() {
 		var article ArticleWithInventoryData
 		// for each row, scan the result into our tag composite object
-		err = inventoryDataPerArticle.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.ArticleNumber, &article.Amount, &article.Notes)
+		err = rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.ArticleNumber, &article.Amount, &article.Notes)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		article.ComputeSellingPrice()
 		articles = append(articles, article)
 	}
+	rows.Close()
 	return articles
 }
 
@@ -568,13 +576,15 @@ func (db *Database) Initialize() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CompaniesTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM companies")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM companies")
+	rows.Close()
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompaniesTable() {
-	_, err := db.db.Query("CREATE TABLE companies(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, imagePath varchar(255), primary key (id))")
+	rows, err := db.db.Query("CREATE TABLE companies(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, imagePath varchar(255), primary key (id))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -582,7 +592,8 @@ func (db *Database) CreateCompaniesTable() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) UsersTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM users")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM users")
+	rows.Close()
 	return err == nil
 }
 
@@ -615,7 +626,8 @@ func (db *Database) CreateAdminUser() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() {
-	_, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
+	rows, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -623,13 +635,15 @@ func (db *Database) CreateUsersTable() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) UserTokensTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM userTokens")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM userTokens")
+	rows.Close()
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUserTokensTable() {
-	_, err := db.db.Query("CREATE TABLE userTokens (userName varchar(255) NOT NULL, token varchar(255) NOT NULL, FOREIGN KEY (userName) REFERENCES users(name))")
+	rows, err := db.db.Query("CREATE TABLE userTokens (userName varchar(255) NOT NULL, token varchar(255) NOT NULL, FOREIGN KEY (userName) REFERENCES users(name))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -637,13 +651,15 @@ func (db *Database) CreateUserTokensTable() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM inventories")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventories")
+	rows.Close()
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoriesTable() {
-	_, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY (id))")
+	rows, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY (id))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -651,13 +667,15 @@ func (db *Database) CreateInventoriesTable() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryDataTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM inventoryData")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventoryData")
+	rows.Close()
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoryDataTable() {
-	_, err := db.db.Query("CREATE TABLE inventoryData (articleId int NOT NULL,inventoryId int NOT NULL,amount int DEFAULT 0,purchasePrice float DEFAULT 0,percentage float DEFAULT 0,notes varchar(255) DEFAULT '', FOREIGN KEY (articleId) REFERENCES articles(id),FOREIGN KEY (inventoryId) REFERENCES inventories(id))")
+	rows, err := db.db.Query("CREATE TABLE inventoryData (articleId int NOT NULL,inventoryId int NOT NULL,amount int DEFAULT 0,purchasePrice float DEFAULT 0,percentage float DEFAULT 0,notes varchar(255) DEFAULT '', FOREIGN KEY (articleId) REFERENCES articles(id),FOREIGN KEY (inventoryId) REFERENCES inventories(id))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -665,13 +683,15 @@ func (db *Database) CreateInventoryDataTable() {
 
 // ------------------------------------------------------------------------------
 func (db *Database) ArticlesTableCreated() bool {
-	_, err := db.db.Query("SELECT COUNT(*) as count FROM articles")
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM articles")
+	rows.Close()
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateArticlesTable() {
-	_, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,imagePath varchar(255),barcode int,FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id))")
+	rows, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,imagePath varchar(255),barcode int,FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id))")
+	rows.Close()
 	if err != nil {
 		panic(err.Error())
 	}
