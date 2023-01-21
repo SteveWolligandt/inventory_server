@@ -67,7 +67,7 @@ func (db *Database) User(name string) User {
 	q := fmt.Sprintf("SELECT hashedPassword, isAdmin FROM users WHERE name = '%s'", name)
 	err := db.db.QueryRow(q).Scan(&user.HashedPassword, &user.IsAdmin)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+          panic(err)
 	}
 	return user
 }
@@ -353,6 +353,7 @@ func (db *Database) Inventories() []Inventory {
 		// and then print out the tag's Name attribute
 		inventories = append(inventories, inventory)
 	}
+        rows.Close()
 	return inventories
 }
 

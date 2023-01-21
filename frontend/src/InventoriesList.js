@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import fetchWithToken from './jwtFetch.js';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import ApartmentIcon from '@mui/icons-material/Apartment';
@@ -56,37 +57,10 @@ export default function Inventories(
     async function loadData() {
       try {
         setIsLoading(true);
-        var response = await fetch('/api/inventories/value', {
+        var response = await fetchWithToken('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
-        });
-        if (!response.ok) {
-          if (response.status === 400) {
-            console.log('Neuer Token wird angefragt');
-            const renewResponse = await fetch('/api/renew', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json', token:userToken}
-            });
-            if (!renewResponse.ok) {
-              setUserToken(null);
-              console.log('Session beendet');
-              return;
-            } else {
-              const renewJson = await renewResponse.json();
-              setUserToken(renewJson.token);
-              console.log('Neuer Token wurde erhalten');
-              response = await fetch('/api/inventories/value', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', token:renewJson.token}
-              });
-            }
-          } else {
-            setUserToken(null);
-            console.log('Irgendwas lief da schief');
-            return 
-          }
-
-        }
+        }, userToken, setUserToken);
         const inventories = await response.json();
         if (inventories == null) {
           setInventories([]);
