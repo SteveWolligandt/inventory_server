@@ -7,7 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 
-export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, setSnackbar}) {
+export default function LoginForm({onLogin, setShowRegisterForm, setSnackbar}) {
   const handleLogin = () => {
     if (document.getElementById("login.username").value === '') {
       setSnackbar(
@@ -22,7 +22,6 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, 
     const username = document.getElementById("login.username").value;
     const password = document.getElementById("login.password").value;
     const basicAuth = "Basic " + btoa(username + ':' + password);
-    console.log(basicAuth);
     fetch(
       '/api/login',{
       headers: {
@@ -41,14 +40,9 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, 
       setSnackbar({children : 'Etwas ist schiefgelaufen', severity : 'error'});
     });
   };
-  const handleOpenRegister = () => {
-    setOpen(false);
-    setShowRegisterForm(true);
-  };
-  const handleCloseSnackbar = () => setSnackbar(null);
 
   return (<>
-    <Dialog open={open}>
+    <Dialog open={true}>
       <DialogTitle>Login</DialogTitle>
       <DialogContent>
         <TextField
@@ -63,7 +57,6 @@ export default function LoginForm({open, setOpen, onLogin, setShowRegisterForm, 
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleOpenRegister}>Zur Nutzererstellung</Button>
         <Button variant='contained' onClick={handleLogin}>Login</Button>
       </DialogActions>
     </Dialog>

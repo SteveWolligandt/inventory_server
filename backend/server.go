@@ -1,12 +1,14 @@
 package main
 
 import (
+	"time"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
+        "github.com/golang-jwt/jwt/v4"
 
 	"log"
 	"net"
@@ -24,6 +26,10 @@ import (
 var (
 	domain string
 )
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
 
 func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -68,12 +74,30 @@ func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) CheckAuthorized(w *http.ResponseWriter, r *http.Request) bool {
-	isAuthorized, _ := s.db.UserOfToken(r.Header.Get("token"))
-	if !isAuthorized {
-		WriteUnauthorizedToResponse(w)
+func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
+	tokenString := r.Header.Get("token")
+        claims := &Claims{}
+
+	// Parse the JWT string and store the result in `claims`.
+	// Note that we are passing the key in this method as well. This method will return an error
+	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
+	// or if the signature does not match
+	tkn, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("SecretYouShouldHide"), nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return false
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return false
 	}
-	return isAuthorized
+	if !tkn.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return false
+	}
+        return true
 }
 
 // ------------------------------------------------------------------------------
@@ -91,17 +115,18 @@ func WriteUnauthorizedToResponse(w *http.ResponseWriter) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorizedAdmin(w *http.ResponseWriter, r *http.Request) bool {
-	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-	authorized := isValid && user.IsAdmin
-	if !authorized {
-		WriteUnauthorizedToResponse(w)
-	}
-	return authorized
+	//isValid, user := s.db.UserOfToken(r.Header.Get("token"))
+	//authorized := isValid && user.IsAdmin
+	//if !authorized {
+	//	WriteUnauthorizedToResponse(w)
+	//}
+	//return authorized
+        return false
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -118,7 +143,7 @@ func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	articles := s.db.Articles()
@@ -127,7 +152,7 @@ func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -142,7 +167,7 @@ func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	// extract article from json response
@@ -162,7 +187,7 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
@@ -187,7 +212,7 @@ func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -203,7 +228,7 @@ func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	companies := s.db.Companies()
@@ -212,7 +237,7 @@ func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -227,7 +252,7 @@ func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	companies := s.db.Companies()
@@ -236,7 +261,7 @@ func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Reques
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -251,7 +276,7 @@ func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -267,7 +292,7 @@ func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -288,7 +313,7 @@ func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -311,7 +336,7 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
@@ -335,7 +360,7 @@ func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
 // server-related
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -356,7 +381,7 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var inventoryData InventoryData
 	json.Unmarshal(reqBody, &inventoryData)
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 
@@ -374,7 +399,7 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 // inventory-related
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	inventories := s.db.Inventories()
@@ -383,7 +408,7 @@ func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -401,7 +426,7 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	var inventory Inventory
 	json.Unmarshal(reqBody, &inventory)
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 
@@ -416,7 +441,7 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -441,7 +466,7 @@ func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -460,7 +485,7 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -482,7 +507,7 @@ func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Reques
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	vars := mux.Vars(r)
@@ -505,7 +530,7 @@ func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	type Return struct {
@@ -539,7 +564,7 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	json.NewEncoder(w).Encode(s.db.InventoriesWithValue())
@@ -564,6 +589,20 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
+func (s *Server) GenerateJWT(username string) (string, error) {
+	expirationTime := time.Now().Add(2 * time.Second)
+	claims := &Claims{
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			// In JWT, the expiry time is expressed as unix milliseconds
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte("SecretYouShouldHide"))
+}
+
+// ------------------------------------------------------------------------------
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
@@ -574,42 +613,92 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	success := VerifyPassword(userHashed.HashedPassword, password)
 
 	if success {
-		type Response struct {
-			Success bool   `json:"success"`
-			Token   string `json:"token"`
+		var token, errToken = s.GenerateJWT(username)
+                if errToken != nil {
+		  type Response struct {
+		  	Success bool `json:"success"`
+			Message string `json:"message"`
+		  }
+		  w.Header().Set("Content-Type", "application/json")
+                  var res = Response{Success: false, Message: errToken.Error()}
+		  resstring, _ := json.Marshal(res)
+		  w.Write(resstring)
+		} else {
+			type Response struct {
+				Success bool   `json:"success"`
+				Token   string `json:"token"`
+			}
+			w.Header().Set("Content-Type", "application/json")
+			var res = Response{Success: success, Token: token}
+			resstring, _ := json.Marshal(res)
+			w.Write(resstring)
 		}
-		var token = s.db.CreateUserToken(username)
-		w.Header().Set("Content-Type", "application/json")
-		var res = Response{Success: success, Token: token}
-		resstring, _ := json.Marshal(res)
-		w.Write(resstring)
 	} else {
 		type Response struct {
 			Success bool `json:"success"`
+			Message string `json:"message"`
 		}
 		w.Header().Set("Content-Type", "application/json")
-		var res = Response{Success: success}
+                var res = Response{Success: success, Message: "could not login"}
 		resstring, _ := json.Marshal(res)
 		w.Write(resstring)
 	}
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
+	tokenString := r.Header.Get("token")
+	claims := &Claims{}
+
+	// Parse the JWT string and store the result in `claims`.
+	// Note that we are passing the key in this method as well. This method will return an error
+	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
+	// or if the signature does not match
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("SecretYouShouldHide"), nil
+	})
+	if err != nil && !token.Valid {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+
+	if time.Until(claims.ExpiresAt.Time) < -time.Second*60 {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-	w.Header().Set("Content-Type", "application/json")
-	type ResponseValid struct {
-		Success bool   `json:"success"`
-		User    string `json:"user"`
-		IsAdmin bool   `json:"isAdmin"`
+
+	var renewedToken, errToken = s.GenerateJWT(claims.Username)
+	if errToken != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		type Response struct {
+			Token string `json:"token"`
+		}
+		w.Header().Set("Content-Type", "application/json")
+		var res = Response{Token: renewedToken}
+		resstring, _ := json.Marshal(res)
+		w.Write(resstring)
 	}
-	var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
-	resstring, _ := json.Marshal(res)
-	w.Write(resstring)
 }
+
+// ------------------------------------------------------------------------------
+//func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
+//	if !s.CheckAuthorized(w, r) {
+//		return
+//	}
+//	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
+//	w.Header().Set("Content-Type", "application/json")
+//	type ResponseValid struct {
+//		Success bool   `json:"success"`
+//		User    string `json:"user"`
+//		IsAdmin bool   `json:"isAdmin"`
+//	}
+//	var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
+//	resstring, _ := json.Marshal(res)
+//	w.Write(resstring)
+//}
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleRequests() {
@@ -766,13 +855,13 @@ func (s *Server) HandleRequests() {
 		Methods("GET")
 
 	s.router.HandleFunc(
-		"/api/tokenvalid", s.TokenValid).
+		"/api/renew", s.Renew).
 		Methods("GET")
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(&w, r) {
+	if !s.CheckAuthorized(w, r) {
 		return
 	}
 	connection, _ := upgrader.Upgrade(w, r, nil)

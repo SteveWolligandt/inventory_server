@@ -13,6 +13,7 @@ import Zoom from '@mui/material/Zoom';
 import {DataGrid} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
 import useWebSocket from 'react-use-websocket';
+import fetchWithToken from './jwtFetch.js';
 
 import CreateArticleDialog from './CreateArticleDialog.js';
 
@@ -64,14 +65,14 @@ function computeMutationPricing(newRow, oldRow) {
   return null;
 }
 
-export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setSnackbar, setTopBarContext, updateTitle}) {
+export default function Articles({open, activeCompany, activeInventory, onBack, userToken, setUserToken, setSnackbar, setTopBarContext, updateTitle}) {
   var [articles, setArticles] = React.useState([]);
   const lastMessage = useWebSocket(websocketAddr()).lastMessage;
   const [dialogOpen, setDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
 
   // websocket
-  const handleWebSocket = () => {
+  const handleWebSocket = async () => {
     if (lastMessage !== null && activeCompany !== null) {
       let msg = JSON.parse(lastMessage.data);
       let action = msg.action;
@@ -80,17 +81,17 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
         if (newArticle.companyId === activeCompany.id) {
           const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
                       newArticle.id;
-          fetch(url, {
+          const response = await fetchWithToken(url, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json', token:userToken}
-          }).then((response) => response.json()).then((inventoryData) =>{
-            newArticle.purchasePrice = inventoryData.purchasePrice;
-            newArticle.percentage = inventoryData.percentage;
-            newArticle.sellingPrice = inventoryData.sellingPrice;
-            newArticle.notes = inventoryData.notes;
-            newArticle.amount = inventoryData.amount;
-            setArticles(articles => articles.concat(newArticle));
-          });
+          }, userToken, setUserToken, setSnackbar);
+          const inventoryData = await response.json();
+          newArticle.purchasePrice = inventoryData.purchasePrice;
+          newArticle.percentage = inventoryData.percentage;
+          newArticle.sellingPrice = inventoryData.sellingPrice;
+          newArticle.notes = inventoryData.notes;
+          newArticle.amount = inventoryData.amount;
+          setArticles(articles => articles.concat(newArticle));
         }
       } else if (action === 'updateArticle') {
         let updatedArticle = msg.data;
@@ -118,7 +119,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       }
     }
   };
-  useEffect(handleWebSocket, [activeCompany, lastMessage, activeInventory, setArticles]);
+  useEffect(()=>{handleWebSocket();}, [activeCompany, lastMessage, activeInventory, setArticles]);
 
   // initial get
   const initialGet = () => {
@@ -130,13 +131,13 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       if (activeCompany == null) {return;}
       try {
         setIsLoading(true);
-        const response = await fetch(activeInventory
+        const response = await fetchWithToken(activeInventory
                   ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
                   : '/api/company/' + activeCompany.id + '/articles',
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json',token:userToken },
-          }
+          }, userToken, setUserToken, setSnackbar
         )
         if (response.status == 401) {
           setSnackbar(
@@ -230,16 +231,15 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
               sellingPrice : newRow.sellingPrice,
               notes : newRow.notes,
             });
-            fetch(url, {
+            fetchWithToken(url, {
               method : 'PUT',
               headers : {'Content-Type' : 'application/json', token:userToken},
               body : body
-            }).then((response) => {
-              setSnackbar(
-                  {children : 'Inventurdaten geändert', severity : 'success'});
-              resolve(newRow);
-              setChangeArguments(null);
-            });
+            }, userToken, setUserToken, setSnackbar)
+            setSnackbar(
+                {children : 'Inventurdaten geändert', severity : 'success'});
+            resolve(newRow);
+            setChangeArguments(null);
           }
         } else {
           resolve(oldRow); // Nothing was changed
@@ -265,11 +265,11 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           name : newRow.name,
           articleNumber : newRow.articleNumber,
         });
-      await fetch(url, {
+      await fetchWithToken(url, {
         method : 'PUT',
         headers : {'Content-Type' : 'application/json', token:userToken},
         body : body
-      });
+      }, userToken, setUserToken, setSnackbar);
 
       if (activeInventory) {
         const url = '/api/inventorydata/';
@@ -281,11 +281,11 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
           percentage : newRow.percentage,
           notes : newRow.notes,
         });
-        await fetch(url, {
+        await fetchWithToken(url, {
           method : 'PUT',
           headers : {'Content-Type' : 'application/json', token:userToken},
           body : body
-        });
+        }, userToken, setUserToken, setSnackbar);
       }
 
       const response = await mutateRow(newRow);
@@ -305,10 +305,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   const handleDeleteYes = async () => {
     try {
       const url = '/api/article/' + deleteArguments.id;
-      await fetch(url, {
+      await fetchWithToken(url, {
         method : 'DELETE', 
           headers: { 'Content-Type': 'application/json', token:userToken },
-        });
+        }, userToken, setUserToken, setSnackbar);
 
       setSnackbar(
           {children : 'Artikel in Datenbank gelöscht', severity : 'success'});
@@ -399,7 +399,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   const renderDataGrid = () => {
     if (!isLoading) {
       return (<DataGrid rows={articles}
-                        columns={columns(setDeleteArguments)}
+                        columns={columns(setDeleteArguments, userToken, setUserToken)}
                         processRowUpdate={processRowUpdate}
                         experimentalFeatures={
                     { newEditingApi: true }}/>);
@@ -416,7 +416,12 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
       {renderDataGrid()}
     </div>
     </div>
-    <CreateArticleDialog open={dialogOpen} setOpen={setDialogOpen} userToken={userToken} activeCompany={activeCompany} setSnackbar={setSnackbar}/>
+    <CreateArticleDialog open={dialogOpen}
+                         setOpen={setDialogOpen}
+                         userToken={userToken}
+                         setUserToken={setUserToken}
+                         activeCompany={activeCompany}
+                         setSnackbar={setSnackbar}/>
     <Zoom in={open}>
       <Fab color='secondary'
            aria-label="add"
@@ -434,7 +439,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   </>);
 }
 
-function columns(setDeleteArguments) {
+function columns(setDeleteArguments, userToken, setUserToken) {
   return [
     { field: 'name',
       flex: 1,

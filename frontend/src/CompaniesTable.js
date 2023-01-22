@@ -3,6 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import { DataGrid } from '@mui/x-data-grid';
 import Dialog from '@mui/material/Dialog';
+import fetchWithToken from './jwtFetch.js';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
@@ -21,7 +22,7 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({open, onCompanySelected, userToken, setSnackbar, setTopBarContext, activeInventory}) {
+export default function Companies({open, onCompanySelected, userToken, setUserToken, setSnackbar, setTopBarContext, activeInventory}) {
   var [companies, setCompanies] = React.useState([]);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
@@ -54,10 +55,11 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     const loadData = async() => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/companies/value/'+activeInventory.id, {
+        const response = await fetchWithToken('/api/companies/value/'+activeInventory.id, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken},
-        })
+        }, userToken, setUserToken, setSnackbar)
+        if (response == null) {return;}
         const companiesJson = await response.json();
         var cs = [];
         for (var i in companiesJson) {
@@ -130,11 +132,11 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     try {
       const url = '/api/company/' + newRow.id;
       const body = JSON.stringify({name:newRow.name});
-      await fetch(url, {
+      await fetchWithToken(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', token:userToken },
         body: body
-      });
+      }, userToken, setUserToken, setSnackbar);
 
       const response = await mutateRow(newRow);
       setSnackbar({ children: 'Firma in Datenbank geändert', severity: 'success' });
@@ -154,10 +156,10 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
   const handleDeleteYes = async () => {
     try {
       const url = '/api/company/' + deleteArguments.id;
-      await fetch(url, {
+      await fetchWithToken(url, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', token:userToken }
-      });
+      }, userToken, setUserToken, setSnackbar);
 
       setSnackbar({ children: 'Firma in Datenbank gelöscht', severity: 'success' });
       setDeleteArguments(null);
@@ -195,17 +197,13 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
 
 
   const renderChangeConfirmDialog = () => {
-    if (!changeArguments) {
-      return null;
-    }
+    if (!changeArguments) { return null; }
     const { newRow, oldRow } = changeArguments;
     const mutation = computeMutation(newRow, oldRow);
     return (
-      <Dialog
-        maxWidth="xs"
-        TransitionProps={{ onEntered: ()=>{} }}
-        open={!!changeArguments}
-      >
+      <Dialog maxWidth="xs"
+              TransitionProps={{ onEntered: ()=>{} }}
+              open={!!changeArguments}>
         <DialogTitle>Firma wirklich ändern?</DialogTitle>
         <DialogContent dividers>
           {mutation}
@@ -222,23 +220,17 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
 
   if (!open) { return null; }
   const renderLoading = () => {
-    if (isLoading) {
-      return (
-        <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
-        <CircularProgress /></div>);
-    } else {
-      return null;
-    }
+    if (!isLoading) { return null; }
+    return (
+      <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
+      <CircularProgress /></div>);
   };
   const renderDataGrid = () => {
-    if (!isLoading) {
-      return (<DataGrid rows={companies}
-                        columns={columns(onCompanySelected, setDeleteArguments)}
-                        processRowUpdate={processRowUpdate}
-                        experimentalFeatures={{ newEditingApi: true }}/>);
-    } else {
-      return null;
-    }
+    if (isLoading) { return null; }
+    return (<DataGrid rows={companies}
+                      columns={columns(onCompanySelected, setDeleteArguments)}
+                      processRowUpdate={processRowUpdate}
+                      experimentalFeatures={{ newEditingApi: true }}/>);
   }
   const style = {height: 500, width: '100%'};
   return (<>
@@ -253,6 +245,7 @@ export default function Companies({open, onCompanySelected, userToken, setSnackb
     <CreateCompanyDialog open={createDialogOpen}
                          setOpen={setCreateDialogOpen}
                          userToken={userToken}
+                         setUserToken={setUserToken}
                          setSnackbar={setSnackbar}/>
     </>
   );

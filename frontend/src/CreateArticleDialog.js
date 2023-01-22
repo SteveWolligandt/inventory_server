@@ -14,12 +14,13 @@ import InputAdornment from '@mui/material/InputAdornment';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
+import fetchWithToken from './jwtFetch.js';
 
-export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setSnackbar}) {
+export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar}) {
 
   const handleClickOpen = () => { setOpen(true); };
   const handleClose     = () => { setOpen(false); };
-  const handleCreate    = () => {
+  const handleCreate    = async () => {
     const name = document.getElementById("createArticle.name").value;
     const articleNumber = document.getElementById("createArticle.articleNumber").value;
     if (name === '') {
@@ -38,19 +39,16 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
       articleNumber : articleNumber,
     };
 
-    fetch(
+    await fetchWithToken(
       '/api/article',{
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         token:userToken
       },
-      body: JSON.stringify(data)}
-    ).then((response) => {
-      setOpen(false);
-    }).catch(() => {
-      setOpen(false);
-    });
+      body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar
+    )
+    setOpen(false);
   };
 
   const style = {

@@ -12,9 +12,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 )
 
 // -----------------------------------------------------------------------------
@@ -74,7 +72,7 @@ func (db *Database) User(name string) User {
 	q := fmt.Sprintf("SELECT hashedPassword, isAdmin FROM users WHERE name = '%s'", name)
 	err := db.db.QueryRow(q).Scan(&user.HashedPassword, &user.IsAdmin)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+          panic(err)
 	}
 	return user
 }
@@ -89,7 +87,6 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) User 
 	// create new article in database
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)
-	fmt.Println(q)
 	rows, err := db.db.Query(q)
 	rows.Close()
 	if err != nil {
@@ -257,17 +254,45 @@ func (db *Database) CompanyWithValue(companyId int, inventoryId int) *CompanyWit
 // -----------------------------------------------------------------------------
 func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id WHERE inventoryId=%v AND companyId=%v", inventoryId, companyId)
-	fmt.Println(q)
-	var value sql.NullFloat64
+        var value sql.NullFloat64
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
 		panic(err) // proper error handling instead of panic in your app
 	}
-	if value.Valid == false {
-		return 0
-	}
-	return float32(value.Float64)
+        if value.Valid == false {
+          return 0
+        }
+        return float32(value.Float64)
 }
+//func (db *Database) ValueOfCompany(companyId int, inventoryId int) float32 {
+//	type Mem struct {
+//		PurchasePrice float32
+//		Amount        int
+//	}
+//	var valueOfGoods float32
+//	q := fmt.Sprintf(
+//		"SELECT inventoryData.purchasePrice, inventoryData.amount FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
+//		inventoryId, companyId)
+//
+//	rows, err := db.db.Query(q)
+//	if err != nil {
+//		panic(err.Error()) // proper error handling instead of panic in your app
+//	}
+//	var articles []Mem
+//	for rows.Next() {
+//		var article Mem
+//		// for each row, scan the result into our tag composite object
+//		err = rows.Scan(&article.PurchasePrice, &article.Amount)
+//		if err != nil {
+//			panic(err.Error()) // proper error handling instead of panic in your app
+//		}
+//		articles = append(articles, article)
+//	}
+//	for _, article := range articles {
+//		valueOfGoods += float32(article.Amount) * article.PurchasePrice
+//	}
+//	return valueOfGoods
+//}
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompany(name string) Company {
@@ -563,14 +588,10 @@ func (db *Database) Initialize() {
 	}
 	var count int
 	err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
-	fmt.Println("count: ", count)
 	if err != nil {
 		panic(err)
 	} else if count == 0 {
 		db.CreateAdminUser()
-	}
-	if !db.UserTokensTableCreated() {
-		db.CreateUserTokensTable()
 	}
 }
 
@@ -633,21 +654,6 @@ func (db *Database) CreateUsersTable() {
 	}
 }
 
-// ------------------------------------------------------------------------------
-func (db *Database) UserTokensTableCreated() bool {
-	rows, err := db.db.Query("SELECT COUNT(*) as count FROM userTokens")
-	rows.Close()
-	return err == nil
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) CreateUserTokensTable() {
-	rows, err := db.db.Query("CREATE TABLE userTokens (userName varchar(255) NOT NULL, token varchar(255) NOT NULL, FOREIGN KEY (userName) REFERENCES users(name))")
-	rows.Close()
-	if err != nil {
-		panic(err.Error())
-	}
-}
 
 // ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
@@ -695,31 +701,6 @@ func (db *Database) CreateArticlesTable() {
 	if err != nil {
 		panic(err.Error())
 	}
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) CreateUserToken(userName string) string {
-	const tokenLength = 128
-	const letterBytes = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	b := make([]byte, tokenLength)
-	rand.Seed(time.Now().UnixNano())
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	var token = string(b)
-	q := fmt.Sprintf("INSERT INTO userTokens (userName, token) VALUES ('%v','%v')",
-		userName, token)
-	db.db.QueryRow(q)
-	return token
-}
-
-// ------------------------------------------------------------------------------
-func (db *Database) UserOfToken(token string) (bool, User) {
-	var userName string
-	q := fmt.Sprintf("SELECT userName FROM userTokens WHERE token='%s'", token)
-	err := db.db.QueryRow(q).Scan(&userName)
-	isValid := err == nil
-	return isValid, db.User(userName)
 }
 
 // ------------------------------------------------------------------------------

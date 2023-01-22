@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
+import fetchWithToken from './jwtFetch.js';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import ApartmentIcon from '@mui/icons-material/Apartment';
@@ -25,7 +26,7 @@ function computeMutation(newRow, oldRow) {
 }
 
 export default function Inventories(
-  {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setSnackbar}) {
+  {open, setOpen, onInventorySelected, activeInventory, setActiveInventory, userToken, setUserToken, setSnackbar}) {
   var [inventories, setInventories] = React.useState([]);
   var [createOpen, setCreateOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
@@ -56,16 +57,11 @@ export default function Inventories(
     async function loadData() {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/inventories/value', {
+        var response = await fetchWithToken('/api/inventories/value', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken}
-        });
-        if (response.status === 401) {
-          setSnackbar({ children: 'Kein Zugriff', severity: 'error' });
-          return;
-        }
+        }, userToken, setUserToken, setSnackbar);
         const inventories = await response.json();
-        console.log(inventories);
         if (inventories == null) {
           setInventories([]);
         } else {
@@ -130,7 +126,8 @@ export default function Inventories(
                            setOpen={setCreateOpen}
                            setSnackbar={setSnackbar}
                            setActiveInventory={setActiveInventory}
-                           userToken={userToken}/>
+                           userToken={userToken}
+                           setUserToken={setUserToken}/>
     </>
   );
 }

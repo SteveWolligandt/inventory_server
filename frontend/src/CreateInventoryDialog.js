@@ -8,8 +8,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Fab from '@mui/material/Fab';
 import Zoom from '@mui/material/Zoom';
 import BusinessIcon from '@mui/icons-material/Business';
+import fetchWithToken from './jwtFetch';
 
-export default function CreateInventoryDialog({open, setOpen, setActiveInventory, userToken, setSnackbar}) {
+export default function CreateInventoryDialog({open, setOpen, setActiveInventory, userToken, setUserToken, setSnackbar}) {
   const handleClose           = () => { setOpen(false); };
   const handleCreateInventory = () => {
     const name = document.getElementById("createInventory.name").value;
@@ -23,23 +24,26 @@ export default function CreateInventoryDialog({open, setOpen, setActiveInventory
     };
     console.log(data);
 
-    fetch(
-      '/api/inventory',{
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        token:userToken
-      },
-      body: JSON.stringify(data)}
-    ).then((response) => {
-      if (response.status == 401) {
-      setSnackbar({ children: 'Konnte keine neue Inventur erstellen. Kein Zugriff', severity: 'error' });
+    try {
+      const response = fetchWithToken(
+        '/api/inventory',{
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          token:userToken
+        },
+        body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar);
+      if (!response.ok) {
+        if (response.status === 400) {
+          setSnackbar({ children: 'Session wurde beendet. Bitte neu anmelden.', severity: 'error' });
+        } else if (response.status === 401) {
+          setSnackbar({ children: 'Konnte keine neue Inventur erstellen. Kein Zugriff', severity: 'error' });
+        }
       }
-      setOpen(false);
-    }).catch(() => {
+    } catch(e) {
       setSnackbar({ children: 'Konnte keine neue Inventur erstellen', severity: 'error' });
-      setOpen(false);
-    });
+    }
+    setOpen(false);
   };
 
   return (
