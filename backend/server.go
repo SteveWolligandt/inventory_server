@@ -861,9 +861,9 @@ func (s *Server) HandleRequests() {
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
-		return
-	}
+	//if !s.CheckAuthorized(w, r) {
+	//	return
+	//}
 	connection, _ := upgrader.Upgrade(w, r, nil)
 
 	s.clients[connection] = true // Save the connection using it as a key
