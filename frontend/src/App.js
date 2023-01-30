@@ -4,6 +4,7 @@ import React from 'react';
 import useStickyState from './useStickyState.js';
 
 import Articles from './ArticlesTable.js';
+import InventoryValueDialog from './InventoryValue.js';
 import Companies from './CompaniesTable.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
@@ -18,6 +19,7 @@ function App() {
   const handleCloseSnackbar = () => setSnackbar(null);
   var [showFullPrices, setShowFullPrices] = useStickyState(false, 'showFullPrices');
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
+  var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
@@ -67,9 +69,9 @@ function App() {
     if (activeInventory == null) {
       setTitle('Keine Inventur ausgewählt');
     } else if (activeCompany != null) {
-      setTitle(activeInventory.name + ' (' + activeInventory.value + '€) - ' + activeCompany.name);
+      setTitle(activeInventory.name + ' - ' + activeCompany.name);
     } else {
-      setTitle(activeInventory.name + ' (' + activeInventory.value + '€) - Firmenauswahl');
+      setTitle(activeInventory.name + ' - Firmenauswahl');
     }
   };
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
@@ -82,15 +84,17 @@ function App() {
   };
   const onLogout = () => setUserToken(null);
   const onFullPrices = () => setShowFullPrices(true);
+  const onFullValue = () => setShowInventoryValue(true);
   return (<>
     <TopBar
       title             = {title}
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
       onLogout          = {onLogout}
+      onFullValue       = {onFullValue}
       onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
-    <div style={{marginBottom: '100px'}}/>
+    <div style={{marginBottom: '90px'}}/>
     <LoginScreen open    = {!isLoggedIn}
                  onLogin = {(token) => setUserToken(token)}
                  setSnackbar = {setSnackbar}/>
@@ -106,6 +110,13 @@ function App() {
         setActiveInventory(inventory);
       }}
     />
+    <InventoryValueDialog
+      open              = {isLoggedIn && (showInventoryValue)}
+      setOpen           = {setShowInventoryValue}
+      userToken         = {userToken}
+      setUserToken      = {setUserToken}
+      setSnackbar       = {setSnackbar}
+      activeInventory   = {activeInventory}/>
     <Companies
       open              = {isLoggedIn && !showFullPrices && showCompanies}
       activeCompany     = {activeCompany}

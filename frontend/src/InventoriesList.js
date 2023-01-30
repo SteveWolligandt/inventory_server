@@ -103,7 +103,7 @@ export default function Inventories(
                   <ApartmentIcon />
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={inventory.name + ' - ' + inventory.value + '€'} />
+              <ListItemText primary={inventory.name + ' - ' + inventory.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '€'} />
             </ListItemButton>
           </ListItem>
         ))}

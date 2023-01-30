@@ -590,7 +590,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GenerateJWT(username string) (string, error) {
-	expirationTime := time.Now().Add(2 * time.Second)
+	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -861,9 +861,9 @@ func (s *Server) HandleRequests() {
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
-	//if !s.CheckAuthorized(w, r) {
-	//	return
-	//}
+	if !s.CheckAuthorized(w, r) {
+		return
+	}
 	connection, _ := upgrader.Upgrade(w, r, nil)
 
 	s.clients[connection] = true // Save the connection using it as a key

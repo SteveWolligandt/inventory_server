@@ -232,10 +232,9 @@ export default function Companies({open, onCompanySelected, userToken, setUserTo
                       processRowUpdate={processRowUpdate}
                       experimentalFeatures={{ newEditingApi: true }}/>);
   }
-  const style = {height: 500, width: '100%'};
   return (<>
     <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-    <div style={style}>
+    <div style={{height: 'calc(100vh - 110px)', width: '100%'}}>
     {renderLoading()}
     {renderDataGrid()}
     </div>

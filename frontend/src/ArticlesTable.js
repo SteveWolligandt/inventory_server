@@ -406,15 +406,12 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     } 
     return null;
   }
-  const style = {height : 500, width : '100%'};
   return (<>
-    <div style ={{margin: '0 auto'}} >
-    <div style={style}>
+    <div style = {{height : 'calc(100vh - 110px)', margin: 'auto', width : 'calc(100% - 80px)'}}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
       {renderLoading()}
       {renderDataGrid()}
-    </div>
     </div>
     <CreateArticleDialog open={dialogOpen}
                          setOpen={setDialogOpen}
