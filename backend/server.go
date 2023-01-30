@@ -1,18 +1,20 @@
 package main
 
 import (
-	"time"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/golang-jwt/jwt/v4"
 	"html/template"
 	"io/ioutil"
-        "github.com/golang-jwt/jwt/v4"
+	"time"
 
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -24,8 +26,10 @@ import (
 )
 
 var (
-	domain string
+	domain    string
+	jwtSecret []byte
 )
+
 type Claims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
@@ -42,10 +46,8 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
 		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
 		if err != nil {
-			//fmt.Printf("%s\nFalling back to Letsencrypt\n", err)
 			return certManager.GetCertificate(hello)
 		}
-		//fmt.Println("Loaded selfsigned certificate.")
 		return &certificate, err
 	}
 }
@@ -76,14 +78,14 @@ func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
 	tokenString := r.Header.Get("token")
-        claims := &Claims{}
+	claims := &Claims{}
 
 	// Parse the JWT string and store the result in `claims`.
 	// Note that we are passing the key in this method as well. This method will return an error
 	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
 	// or if the signature does not match
 	tkn, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("SecretYouShouldHide"), nil
+		return jwtSecret, nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
@@ -97,7 +99,7 @@ func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
 		w.WriteHeader(http.StatusUnauthorized)
 		return false
 	}
-        return true
+	return true
 }
 
 // ------------------------------------------------------------------------------
@@ -121,7 +123,7 @@ func (s *Server) CheckAuthorizedAdmin(w *http.ResponseWriter, r *http.Request) b
 	//	WriteUnauthorizedToResponse(w)
 	//}
 	//return authorized
-        return false
+	return false
 }
 
 // ------------------------------------------------------------------------------
@@ -599,7 +601,7 @@ func (s *Server) GenerateJWT(username string) (string, error) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte("SecretYouShouldHide"))
+	return token.SignedString(jwtSecret)
 }
 
 // ------------------------------------------------------------------------------
@@ -614,15 +616,15 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 	if success {
 		var token, errToken = s.GenerateJWT(username)
-                if errToken != nil {
-		  type Response struct {
-		  	Success bool `json:"success"`
-			Message string `json:"message"`
-		  }
-		  w.Header().Set("Content-Type", "application/json")
-                  var res = Response{Success: false, Message: errToken.Error()}
-		  resstring, _ := json.Marshal(res)
-		  w.Write(resstring)
+		if errToken != nil {
+			type Response struct {
+				Success bool   `json:"success"`
+				Message string `json:"message"`
+			}
+			w.Header().Set("Content-Type", "application/json")
+			var res = Response{Success: false, Message: errToken.Error()}
+			resstring, _ := json.Marshal(res)
+			w.Write(resstring)
 		} else {
 			type Response struct {
 				Success bool   `json:"success"`
@@ -635,11 +637,11 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		type Response struct {
-			Success bool `json:"success"`
+			Success bool   `json:"success"`
 			Message string `json:"message"`
 		}
 		w.Header().Set("Content-Type", "application/json")
-                var res = Response{Success: success, Message: "could not login"}
+		var res = Response{Success: success, Message: "could not login"}
 		resstring, _ := json.Marshal(res)
 		w.Write(resstring)
 	}
@@ -934,8 +936,33 @@ func (s *Server) Close() {
 	s.db.Close()
 }
 
+func CreateOrReadJWTSecret(n int, path string) {
+	jwtSecret = make([]byte, n)
+	if _, statErr := os.Stat(path); statErr == nil {
+		var e error
+		jwtSecret, e = os.ReadFile(path)
+		if e != nil {
+			panic(e)
+		}
+	} else {
+		// create random string
+		rand.Seed(time.Now().UnixNano())
+		const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+		for i := range letterBytes {
+			jwtSecret[i] = letterBytes[rand.Intn(len(letterBytes))]
+		}
+		err := os.WriteFile(path, jwtSecret, 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 // ------------------------------------------------------------------------------
 func NewServer() *Server {
+	CreateOrReadJWTSecret(128, "jwtsecret")
+
 	flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
 	flag.Parse()
 
