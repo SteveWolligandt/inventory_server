@@ -69,6 +69,18 @@ func (db *Database) Article(id int) *Article {
 // -----------------------------------------------------------------------------
 func (db *Database) User(name string) User {
 	user := User{Name: name}
+	q := fmt.Sprintf("SELECT isAdmin FROM users WHERE name = '%s'", name)
+	err := db.db.QueryRow(q).Scan(&user.IsAdmin)
+	if err != nil {
+          panic(err)
+	}
+	return user
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) UserWithHashedPassword(name string) UserWithHashedPassword {
+	var user UserWithHashedPassword
+        user.Name = name
 	q := fmt.Sprintf("SELECT hashedPassword, isAdmin FROM users WHERE name = '%s'", name)
 	err := db.db.QueryRow(q).Scan(&user.HashedPassword, &user.IsAdmin)
 	if err != nil {
@@ -78,12 +90,48 @@ func (db *Database) User(name string) User {
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) CreateUser(name string, password string, isAdmin bool) User {
+func (db *Database) Users() []User {
+	rows, err := db.db.Query("SELECT name, isAdmin FROM users")
+	if err != nil {
+          panic(err)
+	}
+	var users []User
+	for rows.Next() {
+		var user User
+		if err = rows.Scan(&user.Name, &user.IsAdmin); err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		users = append(users, user)
+	}
+	rows.Close()
+	return users
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) UsersWithHashedPassword() []UserWithHashedPassword {
+	rows, err := db.db.Query("SELECT hashedPassword, name, isAdmin FROM users")
+	if err != nil {
+          panic(err)
+	}
+	var users []UserWithHashedPassword
+	for rows.Next() {
+		var user UserWithHashedPassword
+		if err = rows.Scan(&user.HashedPassword, &user.Name, &user.IsAdmin); err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		users = append(users, user)
+	}
+	rows.Close()
+	return users
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) CreateUser(name string, password string, isAdmin bool) UserWithHashedPassword {
 	hashedPassword, hashErr := HashPassword(password)
 	if hashErr != nil {
 		panic(hashErr.Error()) // proper error handling instead of panic in your app
 	}
-	user := User{Name: name, HashedPassword: hashedPassword, IsAdmin: isAdmin}
+        user := UserWithHashedPassword{User:User{Name: name, IsAdmin: isAdmin}, HashedPassword: hashedPassword}
 	// create new article in database
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)

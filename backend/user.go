@@ -7,9 +7,20 @@ import (
 
 // ------------------------------------------------------------------------------
 type User struct {
-	Name           string `json:"name"`
+	Name    string `json:"name"`
+	IsAdmin bool   `json:"isAdmin"`
+}
+
+// ------------------------------------------------------------------------------
+type UserWithHashedPassword struct {
+	User
 	HashedPassword string `json:"hashedPassword"`
-	IsAdmin        bool   `json:"isAdmin"`
+}
+
+// ------------------------------------------------------------------------------
+type UserWithPassword struct {
+	User
+	Password string `json:"password"`
 }
 
 // ------------------------------------------------------------------------------

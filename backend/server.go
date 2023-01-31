@@ -32,6 +32,7 @@ var (
 
 type Claims struct {
 	Username string `json:"username"`
+        IsAdmin bool `json:"isAdmin"`
 	jwt.RegisteredClaims
 }
 
@@ -80,10 +81,6 @@ func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
 	tokenString := r.Header.Get("token")
 	claims := &Claims{}
 
-	// Parse the JWT string and store the result in `claims`.
-	// Note that we are passing the key in this method as well. This method will return an error
-	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
-	// or if the signature does not match
 	tkn, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
@@ -116,14 +113,30 @@ func WriteUnauthorizedToResponse(w *http.ResponseWriter) {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) CheckAuthorizedAdmin(w *http.ResponseWriter, r *http.Request) bool {
-	//isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-	//authorized := isValid && user.IsAdmin
-	//if !authorized {
-	//	WriteUnauthorizedToResponse(w)
-	//}
-	//return authorized
-	return false
+func (s *Server) CheckAuthorizedAdmin(w http.ResponseWriter, r *http.Request) bool {
+	tokenString := r.Header.Get("token")
+	claims := &Claims{}
+
+	tkn, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return false
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return false
+	}
+	if !tkn.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return false
+	}
+	if !claims.IsAdmin {
+		w.WriteHeader(http.StatusUnauthorized)
+		return false
+	}
+	return true
 }
 
 // ------------------------------------------------------------------------------
@@ -574,27 +587,37 @@ func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request)
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
-
-	type UserPW struct {
-		Name     string `json:"name"`
-		Password string `json:"password"`
-		Token    string `json:"token"`
+	if !s.CheckAuthorizedAdmin(w, r) {
+		return
 	}
-	var userClear UserPW
-	json.Unmarshal(reqBody, &userClear)
-	if !s.CheckAuthorizedAdmin(&w, r) {
+	username, password, ok := r.BasicAuth()
+	if !ok {
+		WriteUnauthorizedToResponse(&w)
 		return
 	}
 
-	s.db.CreateUser(userClear.Name, userClear.Password, false)
+        isAdmin, err := strconv.ParseBool(r.Header.Get("isAdmin"))
+        fmt.Printf("isAdmin: %v", isAdmin)
+        if err != nil {isAdmin = false}
+        user := UserWithPassword{User:User{Name:username, IsAdmin:isAdmin}, Password:password}
+
+	s.db.CreateUser(user.Name, user.Password, false)
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GenerateJWT(username string) (string, error) {
+func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedAdmin(w, r) {
+		return
+	}
+	json.NewEncoder(w).Encode(s.db.Users())
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) GenerateJWT(username string, isAdmin bool) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		Username: username,
+                IsAdmin: isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -611,11 +634,11 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		WriteUnauthorizedToResponse(&w)
 		return
 	}
-	userHashed := s.db.User(username)
-	success := VerifyPassword(userHashed.HashedPassword, password)
+	user := s.db.UserWithHashedPassword(username)
+	success := VerifyPassword(user.HashedPassword, password)
 
 	if success {
-		var token, errToken = s.GenerateJWT(username)
+		var token, errToken = s.GenerateJWT(username, user.IsAdmin)
 		if errToken != nil {
 			type Response struct {
 				Success bool   `json:"success"`
@@ -629,9 +652,10 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 			type Response struct {
 				Success bool   `json:"success"`
 				Token   string `json:"token"`
+                                IsAdmin bool   `json:"isAdmin"`
 			}
 			w.Header().Set("Content-Type", "application/json")
-			var res = Response{Success: success, Token: token}
+                        var res = Response{Success: true, Token: token, IsAdmin: user.IsAdmin}
 			resstring, _ := json.Marshal(res)
 			w.Write(resstring)
 		}
@@ -657,7 +681,7 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
 	// or if the signature does not match
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("SecretYouShouldHide"), nil
+		return jwtSecret, nil
 	})
 	if err != nil && !token.Valid {
 		if err == jwt.ErrSignatureInvalid {
@@ -671,7 +695,7 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var renewedToken, errToken = s.GenerateJWT(claims.Username)
+	var renewedToken, errToken = s.GenerateJWT(claims.Username, claims.IsAdmin)
 	if errToken != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -685,22 +709,6 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ------------------------------------------------------------------------------
-//func (s *Server) TokenValid(w http.ResponseWriter, r *http.Request) {
-//	if !s.CheckAuthorized(w, r) {
-//		return
-//	}
-//	isValid, user := s.db.UserOfToken(r.Header.Get("token"))
-//	w.Header().Set("Content-Type", "application/json")
-//	type ResponseValid struct {
-//		Success bool   `json:"success"`
-//		User    string `json:"user"`
-//		IsAdmin bool   `json:"isAdmin"`
-//	}
-//	var res = ResponseValid{Success: isValid, User: user.Name, IsAdmin: user.IsAdmin}
-//	resstring, _ := json.Marshal(res)
-//	w.Write(resstring)
-//}
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleRequests() {
