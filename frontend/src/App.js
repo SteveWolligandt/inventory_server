@@ -6,6 +6,7 @@ import useStickyState from './useStickyState.js';
 import Articles from './ArticlesTable.js';
 import InventoryValueDialog from './InventoryValue.js';
 import Companies from './CompaniesTable.js';
+import AdminArea from './AdminArea.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
 import FullPrice from './FullPrice.js';
@@ -22,6 +23,7 @@ function App() {
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
   var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
+  var [showAdminArea, setShowAdminArea] = useStickyState(false, 'showAdminArea');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [topBarContext, setTopBarContext] = React.useState(()=> null);
 
@@ -85,12 +87,14 @@ function App() {
   const onLogout = () => setUserToken(null);
   const onFullPrices = () => setShowFullPrices(true);
   const onFullValue = () => setShowInventoryValue(true);
+  const onAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
   return (<>
     <TopBar
       title             = {title}
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
       onLogout          = {onLogout}
+      onAdminClick      = {onAdminClick}
       onFullValue       = {onFullValue}
       onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
@@ -140,6 +144,8 @@ function App() {
       setSnackbar     = {setSnackbar}
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
+    <AdminArea
+      open = {isLoggedIn && showAdminArea} />
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
