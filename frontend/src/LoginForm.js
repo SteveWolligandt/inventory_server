@@ -1,5 +1,4 @@
 import * as React from 'react';
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -7,7 +6,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 
-export default function LoginForm({onLogin, setShowRegisterForm, setSnackbar}) {
+export default function LoginForm({onLogin, setSnackbar}) {
   const handleLogin = () => {
     if (document.getElementById("login.username").value === '') {
       setSnackbar(
@@ -32,7 +31,7 @@ export default function LoginForm({onLogin, setShowRegisterForm, setSnackbar}) {
     .then((data) => {
       if (data.success) {
         setSnackbar({children : 'Erfolgreich angemeldet', severity : 'success'});
-        onLogin(data.token);
+        onLogin(data.token, data.isAdmin);
       } else {
         setSnackbar({children : 'Fehler bei der Anmeldung', severity : 'error'});
       }

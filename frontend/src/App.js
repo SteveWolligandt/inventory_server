@@ -28,6 +28,7 @@ function App() {
   var [topBarContext, setTopBarContext] = React.useState(()=> null);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
+  var [isAdmin, setIsAdmin] = useStickyState(null, 'isAdmin');
   var [isLoggedIn, setIsLoggedIn] = useStickyState(false, 'isLoggedIn');
   var [title, setTitle] = useStickyState('Firmen', 'title');
   var [activeInventory, setActiveInventory] =
@@ -88,19 +89,25 @@ function App() {
   const onFullPrices = () => setShowFullPrices(true);
   const onFullValue = () => setShowInventoryValue(true);
   const onAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
+  const onLogin = (token, isAd) => {
+    setUserToken(token);
+    setIsAdmin(isAd);
+    console.log('admin:' + isAd);
+  }
   return (<>
     <TopBar
       title             = {title}
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
       onLogout          = {onLogout}
+      isAdmin           = {isAdmin}
       onAdminClick      = {onAdminClick}
       onFullValue       = {onFullValue}
       onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
     <div style={{marginBottom: '90px'}}/>
     <LoginScreen open    = {!isLoggedIn}
-                 onLogin = {(token) => setUserToken(token)}
+                 onLogin = {onLogin}
                  setSnackbar = {setSnackbar}/>
     <Inventories
       setSnackbar = {setSnackbar}

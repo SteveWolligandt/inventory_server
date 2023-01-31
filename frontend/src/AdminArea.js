@@ -14,7 +14,6 @@ export const State = {
 };
 export default function AdminArea({open}) {
   const [currentState, setCurrentState] =  React.useState(State.Top);
-  console.log(currentState);
   if (!open) {
     return null;
   }

@@ -8,6 +8,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export default function TopBar({
   title,
+  isAdmin,
   onInventorySelect,
   onAdminClick,
   setUserToken,
@@ -15,6 +16,13 @@ export default function TopBar({
   renderContext,
   onFullValue
 }) {
+
+  const renderAdminButton = () => {
+    return (
+      <IconButton color="inherit" onClick={onAdminClick}>
+        <AdminPanelSettingsIcon />
+      </IconButton>);
+  };
   return (
       <AppBar position="fixed">
         <Toolbar>
@@ -22,10 +30,8 @@ export default function TopBar({
             {title}
           </Typography>
 
-          {renderContext != null ? renderContext() : null}
-          <IconButton color="inherit" onClick={onAdminClick}>
-            <AdminPanelSettingsIcon />
-          </IconButton>
+          { renderContext != null ? renderContext() : null }
+          { isAdmin ? renderAdminButton() : null }
           <Button
             color="inherit"
             onClick={onInventorySelect}>
