@@ -85,7 +85,7 @@ function App() {
 
     setActiveCompany(null);
   };
-  const onLogout = () => setUserToken(null);
+  const onLogout = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
   const onFullPrices = () => setShowFullPrices(true);
   const onFullValue = () => setShowInventoryValue(true);
   const onAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
@@ -152,7 +152,10 @@ function App() {
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
     <AdminArea
-      open = {isLoggedIn && showAdminArea} />
+      open = {isLoggedIn && showAdminArea} 
+      userToken={userToken}
+      setUserToken={setUserToken}
+      setSnackbar={setSnackbar} />
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />

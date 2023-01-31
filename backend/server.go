@@ -857,6 +857,10 @@ func (s *Server) HandleRequests() {
 		Methods("GET")
 
 	s.router.HandleFunc(
+		"/api/users", s.GetUsers).
+		Methods("GET")
+
+	s.router.HandleFunc(
 		"/api/user", s.CreateUser).
 		Methods("POST")
 

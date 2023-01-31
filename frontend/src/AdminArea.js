@@ -12,7 +12,7 @@ export const State = {
   Top : 'Top',
   Users : 'Users',
 };
-export default function AdminArea({open}) {
+export default function AdminArea({open, userToken, setUserToken, setSnackbar}) {
   const [currentState, setCurrentState] =  React.useState(State.Top);
   if (!open) {
     return null;
@@ -32,6 +32,13 @@ export default function AdminArea({open}) {
         </List>
       </Box>)
   } else if (currentState === State.Users) {
-    return (<><AdminAreaUsers setAdminState={setCurrentState}/></>)
+    return (<>
+      <AdminAreaUsers
+        adminState={currentState}
+        setAdminState={setCurrentState}
+        userToken={userToken}
+        setUserToken={setUserToken}
+        setSnackbar={setSnackbar} />
+    </>)
   }
 }
