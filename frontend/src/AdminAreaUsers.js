@@ -90,7 +90,13 @@ export default function AdminAreaUsers(
       setUserToken={setUserToken}
       setSnackbar={setSnackbar}
     />
-    <EditUserDialog open={showEditDialog} setOpen={setShowEditDialog} user={selectedUserRef}/>
+    <EditUserDialog
+      open={showEditDialog}
+      setOpen={setShowEditDialog}
+      user={selectedUserRef}
+      userToken={userToken}
+      setUserToken={setUserToken}
+      setSnackbar={setSnackbar}/>
   </>)
 }
 

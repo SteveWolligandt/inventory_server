@@ -129,7 +129,7 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) UserW
 	if hashErr != nil {
 		panic(hashErr.Error()) // proper error handling instead of panic in your app
 	}
-        user := UserWithHashedPassword{User:User{Name: name, IsAdmin: isAdmin}, HashedPassword: hashedPassword}
+	user := UserWithHashedPassword{User: User{Name: name, IsAdmin: isAdmin}, HashedPassword: hashedPassword}
 	// create new article in database
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)
@@ -139,6 +139,37 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) UserW
 		panic(err)
 	}
 	return user
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) UpdateUserName(oldName string, name string) error {
+	if _, err := db.db.Exec("UPDATE users SET name = ? WHERE name = ?",
+		name, oldName); err != nil {
+		return err
+	}
+	return nil
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) UpdateUserPassword(oldName string, password string) error {
+	hashedPassword, hashErr := HashPassword(password)
+	if hashErr != nil {
+		return hashErr
+	}
+	if _, err := db.db.Exec("UPDATE users SET hashedPassword = ? WHERE name = ?",
+		hashedPassword, oldName); err != nil {
+		return err
+	}
+	return nil
+}
+
+// -----------------------------------------------------------------------------
+func (db *Database) UpdateUserIsAdmin(oldName string, isAdmin bool) error {
+	if _, err := db.db.Exec("UPDATE users SET isAdmin = ? WHERE name = ?",
+		isAdmin, oldName); err != nil {
+		return err
+	}
+	return nil
 }
 
 // -----------------------------------------------------------------------------

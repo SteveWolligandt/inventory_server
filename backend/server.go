@@ -606,6 +606,45 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
+func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorizedAdmin(w, r) {
+		return
+	}
+
+  oldUserName := r.Header.Get("user")
+  fmt.Println(oldUserName)
+
+
+  password := r.Header.Get("password")
+	if password != "" {
+    fmt.Println(password)
+    err := s.db.UpdateUserPassword(oldUserName, password)
+    if err != nil {
+      w.WriteHeader(http.StatusBadRequest)
+    }
+	}
+
+	isAdmin, isAdminErr := strconv.ParseBool(r.Header.Get("isAdmin"))
+	if isAdminErr == nil {
+    fmt.Println(isAdmin)
+    err := s.db.UpdateUserIsAdmin(oldUserName, isAdmin)
+    if err != nil {
+      w.WriteHeader(http.StatusBadRequest)
+      fmt.Println(err)
+    }
+	}
+
+  newUserName := r.Header.Get("newUser")
+  if newUserName != "" {
+    fmt.Println(newUserName)
+    err := s.db.UpdateUserName(oldUserName, newUserName)
+    if err != nil {
+      w.WriteHeader(http.StatusBadRequest)
+    }
+	}
+}
+
+// ------------------------------------------------------------------------------
 func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorizedAdmin(w, r) {
 		return
@@ -864,6 +903,10 @@ func (s *Server) HandleRequests() {
 	s.router.HandleFunc(
 		"/api/user", s.CreateUser).
 		Methods("POST")
+
+	s.router.HandleFunc(
+		"/api/user", s.UpdateUser).
+		Methods("PUT")
 
 	s.router.HandleFunc(
 		"/api/login", s.Login).

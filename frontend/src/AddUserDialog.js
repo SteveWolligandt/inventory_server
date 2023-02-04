@@ -49,7 +49,7 @@ export default function AddUserDialog({open, setOpen, userToken, setUserToken, s
 
       setIsLoading(false);
       if (response.ok) {
-        setSnackbar({ children: 'Benutzer erstellt', severity: 'success' });
+        setSnackbar({ children: 'Benutzer erfolgreich erstellt', severity: 'success' });
         setOpen(false);
       } else {
         setSnackbar({ children: 'Benutzer erstellen fehlgeschlagen', severity: 'error' });
