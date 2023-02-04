@@ -25,7 +25,6 @@ func (db *Database) Articles() []Article {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name, articleNumber FROM articles")
 	if err != nil {
-		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 
@@ -49,7 +48,6 @@ func (db *Database) Article(id int) *Article {
 
 	rows, err := db.db.Query(q)
 	if err != nil {
-		rows.Close()
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
 	for rows.Next() {
@@ -475,8 +473,9 @@ func (db *Database) InventoriesWithValue() []InventoryWithValue {
 
 // ------------------------------------------------------------------------------
 func (db *Database) ValueOfInventory(id int) float32 {
+  value := float32(0)
+  if db.NumberOfArticles() == 0 { return value; }
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData WHERE inventoryId=%v", id)
-	var value float32
 	err := db.db.QueryRow(q).Scan(&value)
 	if err != nil {
 		panic(err) // proper error handling instead of panic in your app
@@ -644,17 +643,29 @@ func (db *Database) Initialize() {
 }
 
 // ------------------------------------------------------------------------------
+func (db *Database) NumberOfCompanies() int {
+  var count int
+	err := db.db.QueryRow("SELECT COUNT(*) as count FROM companies").Scan(&count)
+  if err != nil {
+    return 0
+  }
+  return count
+}
+// ------------------------------------------------------------------------------
 func (db *Database) CompaniesTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM companies")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompaniesTable() {
 	rows, err := db.db.Query("CREATE TABLE companies(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, imagePath varchar(255), primary key (id))")
-	rows.Close()
-	if err != nil {
+	if err == nil {
+    rows.Close()
+  } else {
 		panic(err.Error())
 	}
 }
@@ -662,7 +673,9 @@ func (db *Database) CreateCompaniesTable() {
 // ------------------------------------------------------------------------------
 func (db *Database) UsersTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM users")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err == nil
 }
 
@@ -696,8 +709,9 @@ func (db *Database) CreateAdminUser() {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() {
 	rows, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
-	rows.Close()
-	if err != nil {
+	if err == nil {
+    rows.Close()
+  } else {
 		panic(err.Error())
 	}
 }
@@ -706,15 +720,18 @@ func (db *Database) CreateUsersTable() {
 // ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventories")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoriesTable() {
 	rows, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY (id))")
-	rows.Close()
-	if err != nil {
+	if err == nil {
+    rows.Close()
+  } else {
 		panic(err.Error())
 	}
 }
@@ -722,33 +739,49 @@ func (db *Database) CreateInventoriesTable() {
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryDataTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventoryData")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoryDataTable() {
 	rows, err := db.db.Query("CREATE TABLE inventoryData (articleId int NOT NULL,inventoryId int NOT NULL,amount int DEFAULT 0,purchasePrice float DEFAULT 0,percentage float DEFAULT 0,notes varchar(255) DEFAULT '', FOREIGN KEY (articleId) REFERENCES articles(id),FOREIGN KEY (inventoryId) REFERENCES inventories(id))")
-	rows.Close()
-	if err != nil {
+	if err == nil {
+    rows.Close()
+  } else {
 		panic(err.Error())
 	}
 }
 
 // ------------------------------------------------------------------------------
+func (db *Database) NumberOfArticles() int {
+  var count int
+	err := db.db.QueryRow("SELECT COUNT(*) as count FROM articles").Scan(&count)
+  if err != nil {
+    return 0
+  }
+  return count
+}
+
+// ------------------------------------------------------------------------------
 func (db *Database) ArticlesTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM articles")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateArticlesTable() {
 	rows, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,imagePath varchar(255),barcode int,FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id))")
-	rows.Close()
-	if err != nil {
+	if err == nil {
+    rows.Close()
+  } else {
 		panic(err.Error())
-	}
+  }
 }
 
 // ------------------------------------------------------------------------------
