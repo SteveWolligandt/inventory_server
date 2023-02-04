@@ -1,5 +1,6 @@
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
+import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -58,11 +59,14 @@ export default function AdminAreaUsers(
     selectedUserRef.current = user;
     setShowEditDialog(true);
   }
-  return (<>
-    <Box sx={{m:'3', justifyContent:"center", alignItems:"center"}}>
-      <Button onClick={()=>setAdminState('Top')}>Back</Button>
-    </Box>
-    <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
+  const renderLoading = () => {
+    if (!isLoading) { return null; }
+    return (
+      <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
+      <CircularProgress /></div>);
+  };
+  const renderDataGrid = () => {
+    return(<div style ={{margin: '0 auto', maxWidth: '1000px'}} >
     <div style={{height: 'calc(100vh - 150px)', width: '100%'}}>
     <DataGrid
       rows={users}
@@ -70,7 +74,14 @@ export default function AdminAreaUsers(
       checkboxSelection={true}
     />
     </div>
-    </div>
+    </div>);
+  };
+  return (<>
+    <Box sx={{m:'3', justifyContent:"center", alignItems:"center"}}>
+      <Button onClick={()=>setAdminState('Top')}>Back</Button>
+    </Box>
+    {renderLoading()}
+    {renderDataGrid()}
 
     <AddUserDialog
       open={showAddDialog}

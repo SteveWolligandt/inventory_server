@@ -596,12 +596,13 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-        isAdmin, err := strconv.ParseBool(r.Header.Get("isAdmin"))
-        fmt.Printf("isAdmin: %v", isAdmin)
-        if err != nil {isAdmin = false}
-        user := UserWithPassword{User:User{Name:username, IsAdmin:isAdmin}, Password:password}
+	isAdmin, err := strconv.ParseBool(r.Header.Get("isAdmin"))
+	if err != nil {
+		isAdmin = false
+	}
+	user := UserWithPassword{User: User{Name: username, IsAdmin: isAdmin}, Password: password}
 
-	s.db.CreateUser(user.Name, user.Password, false)
+  s.db.CreateUser(user.Name, user.Password, user.IsAdmin)
 }
 
 // ------------------------------------------------------------------------------
