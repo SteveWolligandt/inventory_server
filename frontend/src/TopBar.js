@@ -4,6 +4,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export default function TopBar({
@@ -11,6 +12,7 @@ export default function TopBar({
   isAdmin,
   onInventorySelect,
   onAdminClick,
+  onCompaniesClick,
   setUserToken,
   onLogout,
   renderContext,
@@ -32,6 +34,9 @@ export default function TopBar({
 
           { renderContext != null ? renderContext() : null }
           { isAdmin ? renderAdminButton() : null }
+          <IconButton color="inherit" onClick={onCompaniesClick}>
+            <ApartmentIcon />
+          </IconButton>
           <Button
             color="inherit"
             onClick={onInventorySelect}>

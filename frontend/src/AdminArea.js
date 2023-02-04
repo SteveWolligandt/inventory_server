@@ -12,12 +12,13 @@ export const State = {
   Top : 'Top',
   Users : 'Users',
 };
-export default function AdminArea({open, userToken, setUserToken, setSnackbar}) {
+export default function AdminArea({open, userToken, setUserToken, setSnackbar, setTopBarContext}) {
   const [currentState, setCurrentState] =  React.useState(State.Top);
   if (!open) {
     return null;
   }
   if (currentState === State.Top) {
+    setTopBarContext(null);
     return (
       <Box sx={{m:'3', justifyContent:"center", alignItems:"center"}}>
         <List>
@@ -38,7 +39,9 @@ export default function AdminArea({open, userToken, setUserToken, setSnackbar}) 
         setAdminState={setCurrentState}
         userToken={userToken}
         setUserToken={setUserToken}
-        setSnackbar={setSnackbar} />
+        setSnackbar={setSnackbar}
+        setTopBarContext={setTopBarContext}
+      />
     </>)
   }
 }

@@ -10,8 +10,7 @@ import DialogActions from '@mui/material/DialogActions';
 
 //import fetchWithToken from './jwtFetch.js';
 
-export default function EditUserDialog({open, setOpen}) {
-  var nameRef = React.useRef('');
+export default function EditUserDialog({open, setOpen, user}) {
   const noButtonRef = React.useRef(null);
   if (!open) {return null;}
   const handleDeleteNo = () => {
@@ -45,13 +44,17 @@ export default function EditUserDialog({open, setOpen}) {
           autoFocus
           margin="dense"
           id="editUser.name"
+          defaultValue={user.current.name}
           label="Name"
           type="string"
           fullWidth
           variant="standard"
-          inputRef={nameRef}
         />
-        <FormControlLabel control={<Checkbox id="editUser.isAdmin" />} label="Admin" />
+        <FormControlLabel
+          control={<Checkbox
+                      id="editUser.isAdmin"
+                      defaultChecked={user.current.isAdmin}/>}
+          label="Admin" />
       </DialogContent>
       <DialogActions>
         <Button ref={noButtonRef} onClick={handleDeleteNo}>

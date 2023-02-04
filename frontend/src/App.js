@@ -88,7 +88,8 @@ function App() {
   const onLogout = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
   const onFullPrices = () => setShowFullPrices(true);
   const onFullValue = () => setShowInventoryValue(true);
-  const onAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
+  const onTopBarAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
+  const onTopBarCompaniesClick = () => {setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
   const onLogin = (token, isAd) => {
     setUserToken(token);
     setIsAdmin(isAd);
@@ -101,7 +102,8 @@ function App() {
       onInventorySelect = {() => { setShowInventories(true); }} 
       onLogout          = {onLogout}
       isAdmin           = {isAdmin}
-      onAdminClick      = {onAdminClick}
+      onAdminClick      = {onTopBarAdminClick}
+      onCompaniesClick  = {onTopBarCompaniesClick}
       onFullValue       = {onFullValue}
       onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
@@ -155,7 +157,9 @@ function App() {
       open = {isLoggedIn && showAdminArea} 
       userToken={userToken}
       setUserToken={setUserToken}
-      setSnackbar={setSnackbar} />
+      setSnackbar={setSnackbar}
+      setTopBarContext={setTopBarContext}
+    />
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />

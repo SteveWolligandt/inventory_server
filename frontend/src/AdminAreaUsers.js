@@ -1,21 +1,34 @@
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import {DataGrid} from '@mui/x-data-grid';
 import React from 'react';
+
 import EditUserDialog from './EditUserDialog.js';
+import AddUserDialog from './AddUserDialog.js';
 
 import fetchWithToken from './jwtFetch.js';
 
-export default function AdminAreaUsers({adminState, setAdminState, userToken, setUserToken, setSnackbar}) {
+export default function AdminAreaUsers(
+    {adminState, setAdminState, userToken, setUserToken, setSnackbar, setTopBarContext}) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [users, setUsers] = React.useState([]);
   const [showEditDialog, setShowEditDialog] = React.useState(false);
-  var nameRef = React.useRef('');
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
+  var selectedUserRef = React.useRef(null);
   React.useEffect(() => {
     const loadUsers = async () => {
       if (adminState === 'Users') {
+              setTopBarContext(() =>() => (
+        <IconButton
+          color="inherit"
+          onClick={()=>setShowAddDialog(true)}>
+          <AddCircleIcon/>
+        </IconButton>
+      ));
+
         setIsLoading(true);
         try {
           const response = await fetchWithToken('/api/users', {
@@ -36,11 +49,13 @@ export default function AdminAreaUsers({adminState, setAdminState, userToken, se
           console.error(error);
         }
         setIsLoading(false);
+
+
       }
     }; loadUsers();}, [adminState]);
 
   const onEdit = (user) => {
-    nameRef.current = user.name;
+    selectedUserRef.current = user;
     setShowEditDialog(true);
   }
   return (<>
@@ -48,22 +63,30 @@ export default function AdminAreaUsers({adminState, setAdminState, userToken, se
       <Button onClick={()=>setAdminState('Top')}>Back</Button>
     </Box>
     <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-    <div style={{height: 'calc(100vh - 110px)', width: '100%'}}>
+    <div style={{height: 'calc(100vh - 150px)', width: '100%'}}>
     <DataGrid
       rows={users}
       columns={columns(onEdit)}
+      checkboxSelection={true}
     />
     </div>
     </div>
 
-    <EditUserDialog open={showEditDialog} setOpen={setShowEditDialog} nameRef={nameRef}/>
+    <AddUserDialog
+      open={showAddDialog}
+      setOpen={setShowAddDialog}
+      userToken={userToken}
+      setUserToken={setUserToken}
+      setSnackbar={setSnackbar}
+    />
+    <EditUserDialog open={showEditDialog} setOpen={setShowEditDialog} user={selectedUserRef}/>
   </>)
 }
 
 function columns(onEdit) {
   return [
     { field: 'name', align:'center', headerAlign:'center', headerName: 'Name', flex: 1 },
-    { field: 'isAdmin', align:'center', headerAlign:'center', headerName: 'Administrator', flex: 1 },
+    { field: 'isAdmin', align:'center', headerAlign:'center', headerName: 'Administrator', flex: 1, type:'boolean'},
     { field: 'edit',
       headerName: '',
       align: 'center',
