@@ -85,9 +85,9 @@ function App() {
 
     setActiveCompany(null);
   };
-  const onLogout = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
+  const onLogout     = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
   const onFullPrices = () => setShowFullPrices(true);
-  const onFullValue = () => setShowInventoryValue(true);
+  const onFullValue  = () => setShowInventoryValue(true);
   const onTopBarAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
   const onTopBarCompaniesClick = () => {setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
   const onLogin = (token, isAd) => {

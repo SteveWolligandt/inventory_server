@@ -16,7 +16,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Input from '@mui/material/Input';
 import fetchWithToken from './jwtFetch.js';
 
-export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar}) {
+export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar, setArticles, activeInventory}) {
 
   const handleClickOpen = () => { setOpen(true); };
   const handleClose     = () => { setOpen(false); };

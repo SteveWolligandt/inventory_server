@@ -13,7 +13,6 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import React from 'react';
-import useWebSocket from 'react-use-websocket';
 
 import CreateInventoryDialog from './CreateInventoryDialog.js';
 import websocketAddr from './websocketAddress.js';
@@ -31,26 +30,25 @@ export default function Inventories(
   var [createOpen, setCreateOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
 
-  const lastMessage = useWebSocket(websocketAddr()).lastMessage;
-
-  const handleWebsocket = () => {
-    if (lastMessage !== null) {
-      let msg = JSON.parse(lastMessage.data);
-      if (msg.action === 'newInventory') {
-        let newInventory = msg.data;
-        setInventories(inventories => inventories.concat(newInventory));
-      } else if (msg.action === 'updateInventory') {
-        let updatedInventory = msg.data;
-        setInventories(inventories => inventories.map((inventory, j) => {
-          return updatedInventory.id === inventory.id ? updatedInventory : inventory;
-        }));
-      } else if (msg.action === 'deleteInventory') {
-        let deletedInventory = msg.data;
-      setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
-      }
-    }
+  const ws = React.useRef(new WebSocket(websocketAddr()));
+  ws.current.onopen = (event) => {
+    ws.current.send(JSON.stringify({token:userToken}));
   };
-  React.useEffect(handleWebsocket, [lastMessage, setInventories]);
+  ws.current.onmessage =  (event) => { const f = async () => {
+    let msg = JSON.parse(event.data);
+    if (msg.action === 'newInventory') {
+      let newInventory = msg.data;
+      setInventories(inventories => inventories.concat(newInventory));
+    } else if (msg.action === 'updateInventory') {
+      let updatedInventory = msg.data;
+      setInventories(inventories => inventories.map((inventory, j) => {
+        return updatedInventory.id === inventory.id ? updatedInventory : inventory;
+      }));
+    } else if (msg.action === 'deleteInventory') {
+      let deletedInventory = msg.data;
+    setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
+    }
+  };f()}
   const loadInventories = () => {
     if (!open)             { setInventories([]); return; }
     if (userToken == null) { return; }

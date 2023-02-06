@@ -4,7 +4,6 @@ import Zoom from '@mui/material/Zoom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import React from 'react';
-import useWebSocket from 'react-use-websocket';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {

@@ -32,7 +32,7 @@ var (
 
 type Claims struct {
 	Username string `json:"username"`
-        IsAdmin bool `json:"isAdmin"`
+	IsAdmin  bool   `json:"isAdmin"`
 	jwt.RegisteredClaims
 }
 
@@ -919,32 +919,68 @@ func (s *Server) HandleRequests() {
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
-		return
+	type Token struct {
+		Token string `json:"token"`
 	}
-	connection, _ := upgrader.Upgrade(w, r, nil)
+	conn, _ := upgrader.Upgrade(w, r, nil)
+  fmt.Println("new connection");
 
-	s.clients[connection] = true // Save the connection using it as a key
+  // initally set this to false which marks the connection unauthorized
+	s.clients[conn] = false
 
 	for {
-		mt, _, err := connection.ReadMessage()
+		mt, bytes, err := conn.ReadMessage()
+
+    // check if a token was sent
+		var token Token
+    parseErr := json.Unmarshal(bytes, &token)
+    if parseErr == nil {
+      claims := &Claims{}
+
+      tkn, err := jwt.ParseWithClaims(token.Token, claims, func(token *jwt.Token) (interface{}, error) {
+        return jwtSecret, nil
+      })
+      if err != nil {
+        if err == jwt.ErrSignatureInvalid {
+          w.WriteHeader(http.StatusUnauthorized)
+          s.clients[conn] = false
+          conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+        }
+        w.WriteHeader(http.StatusBadRequest)
+        s.clients[conn] = false
+        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+      } else if !tkn.Valid {
+        w.WriteHeader(http.StatusUnauthorized)
+        s.clients[conn] = false
+        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+      } else {
+        s.clients[conn] = true
+        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
+      }
+    }
 
 		if err != nil || mt == websocket.CloseMessage {
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted
 		}
 	}
 
-	delete(s.clients, connection) // Removing the connection
-	connection.Close()
+	delete(s.clients, conn) // Removing the connection
+  fmt.Println("connection closed");
+	conn.Close()
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) SendToWebSockets(message []byte) {
+  fmt.Println("SEND")
 	for conn := range s.clients {
-		conn.WriteMessage(websocket.TextMessage, message)
+    if (s.clients[conn]) {
+      fmt.Println("sending ", string(message))
+      conn.WriteMessage(websocket.TextMessage, message)
+    }
 	}
 }
 
+// ------------------------------------------------------------------------------
 func redirectHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" {
 		http.Error(w, "Use HTTPS", http.StatusBadRequest)

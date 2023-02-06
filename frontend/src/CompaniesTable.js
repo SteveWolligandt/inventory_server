@@ -13,7 +13,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 import React from 'react';
-import useWebSocket from 'react-use-websocket';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
@@ -22,31 +21,41 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({open, onCompanySelected, userToken, setUserToken, setSnackbar, setTopBarContext, activeInventory}) {
+export default function Companies({
+  open,
+  onCompanySelected,
+  userToken,
+  setUserToken,
+  setSnackbar,
+  setTopBarContext,
+  activeInventory
+}) {
   var [companies, setCompanies] = React.useState([]);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
   
-  const lastMessage = useWebSocket(websocketAddr()).lastMessage;
-  const handleWebsocket = () => {
-    if (lastMessage !== null) {
-      let msg = JSON.parse(lastMessage.data);
-      let action = msg.action;
-      if (action === 'newCompany') {
-        let newCompany = msg.data;
-        setCompanies(companies => companies.concat(newCompany));
-      } else if (action === 'updateCompany') {
-        let updatedCompany = msg.data;
-        setCompanies(companies => companies.map((company, j) => {
-          return updatedCompany.id === company.id ? updatedCompany : company;
-        }));
-      } else if (action === 'deleteCompany') {
-        let deletedCompany = msg.data;
-        setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
-      }
+  const ws = React.useRef(new WebSocket(websocketAddr()));
+  const authorizeWebSocket = () =>  ws.current.send(JSON.stringify({token:userToken}));
+  ws.current.onopen = (event) => authorizeWebSocket();
+
+  ws.current.onmessage =  (event) => { const f = async () => {
+    let msg = JSON.parse(event.data);
+    let action = msg.action;
+    if (action === 'newCompany') {
+      let newCompany = msg.data;
+      setCompanies(companies => companies.concat(newCompany));
+    } else if (action === 'updateCompany') {
+      let updatedCompany = msg.data;
+      setCompanies(companies => companies.map((company, j) => {
+        return updatedCompany.id === company.id ? updatedCompany : company;
+      }));
+    } else if (action === 'deleteCompany') {
+      let deletedCompany = msg.data;
+      setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
     }
-  };
-  React.useEffect(handleWebsocket, [lastMessage, setCompanies]);
+  }; f() };
+
+  React.useEffect(() => {if (ws.readyState === WebSocket.OPEN) {authorizeWebSocket();}}, [userToken]);
 
   const loadCompanies = () => {
     if (!open)             { setCompanies([]); return; }
