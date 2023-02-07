@@ -2,7 +2,6 @@ export default async function fetchWithToken(addr, fields, userToken, setUserTok
   var response = await fetch(addr, fields);
   if (!response.ok) {
     if (response.status === 400) {
-      //setSnackbar({ children: 'Neuer Token wird angefragt', severity: 'warning' });
       const renewResponse = await fetch('/api/renew', {
         method : 'GET',
         headers : {'Content-Type' : 'application/json', token : userToken}
@@ -14,7 +13,6 @@ export default async function fetchWithToken(addr, fields, userToken, setUserTok
       } else {
         const renewJson = await renewResponse.json();
         setUserToken(renewJson.token);
-        //setSnackbar({ children: 'Neuer Token wurde erhalten', severity: 'success' });
         fields.headers.token = renewJson.token;
         response = await fetch(addr, fields);
       }

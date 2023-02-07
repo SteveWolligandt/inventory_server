@@ -51,7 +51,6 @@ function App() {
             return;
           } else {
             setUserToken(renewJson.token);
-            setSnackbar({ children: 'Neuer Token wurde erhalten', severity: 'warning' });
           }
         } catch(e) {
           console.log(e);
