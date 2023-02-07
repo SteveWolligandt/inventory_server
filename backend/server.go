@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
-	"html/template"
 	"io/ioutil"
 	"sync"
 	"time"
