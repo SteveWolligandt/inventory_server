@@ -8,6 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"html/template"
 	"io/ioutil"
+	"sync"
 	"time"
 
 	"log"
@@ -55,9 +56,10 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 
 // ------------------------------------------------------------------------------
 type Server struct {
-	db      *Database
-	router  *mux.Router
-	clients map[*websocket.Conn]bool
+	db           *Database
+	router       *mux.Router
+	clients      map[*websocket.Conn]bool
+	clientsMutex sync.Mutex
 }
 
 // ------------------------------------------------------------------------------
@@ -602,7 +604,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	user := UserWithPassword{User: User{Name: username, IsAdmin: isAdmin}, Password: password}
 
-  s.db.CreateUser(user.Name, user.Password, user.IsAdmin)
+	s.db.CreateUser(user.Name, user.Password, user.IsAdmin)
 }
 
 // ------------------------------------------------------------------------------
@@ -611,36 +613,35 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  oldUserName := r.Header.Get("user")
-  fmt.Println(oldUserName)
+	oldUserName := r.Header.Get("user")
+	fmt.Println(oldUserName)
 
-
-  password := r.Header.Get("password")
+	password := r.Header.Get("password")
 	if password != "" {
-    fmt.Println(password)
-    err := s.db.UpdateUserPassword(oldUserName, password)
-    if err != nil {
-      w.WriteHeader(http.StatusBadRequest)
-    }
+		fmt.Println(password)
+		err := s.db.UpdateUserPassword(oldUserName, password)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	}
 
 	isAdmin, isAdminErr := strconv.ParseBool(r.Header.Get("isAdmin"))
 	if isAdminErr == nil {
-    fmt.Println(isAdmin)
-    err := s.db.UpdateUserIsAdmin(oldUserName, isAdmin)
-    if err != nil {
-      w.WriteHeader(http.StatusBadRequest)
-      fmt.Println(err)
-    }
+		fmt.Println(isAdmin)
+		err := s.db.UpdateUserIsAdmin(oldUserName, isAdmin)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println(err)
+		}
 	}
 
-  newUserName := r.Header.Get("newUser")
-  if newUserName != "" {
-    fmt.Println(newUserName)
-    err := s.db.UpdateUserName(oldUserName, newUserName)
-    if err != nil {
-      w.WriteHeader(http.StatusBadRequest)
-    }
+	newUserName := r.Header.Get("newUser")
+	if newUserName != "" {
+		fmt.Println(newUserName)
+		err := s.db.UpdateUserName(oldUserName, newUserName)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 	}
 }
 
@@ -657,7 +658,7 @@ func (s *Server) GenerateJWT(username string, isAdmin bool) (string, error) {
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &Claims{
 		Username: username,
-                IsAdmin: isAdmin,
+		IsAdmin:  isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -692,10 +693,10 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 			type Response struct {
 				Success bool   `json:"success"`
 				Token   string `json:"token"`
-                                IsAdmin bool   `json:"isAdmin"`
+				IsAdmin bool   `json:"isAdmin"`
 			}
 			w.Header().Set("Content-Type", "application/json")
-                        var res = Response{Success: true, Token: token, IsAdmin: user.IsAdmin}
+			var res = Response{Success: true, Token: token, IsAdmin: user.IsAdmin}
 			resstring, _ := json.Marshal(res)
 			w.Write(resstring)
 		}
@@ -748,7 +749,6 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 		w.Write(resstring)
 	}
 }
-
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleRequests() {
@@ -923,60 +923,73 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		Token string `json:"token"`
 	}
 	conn, _ := upgrader.Upgrade(w, r, nil)
-  fmt.Println("new connection");
+	fmt.Println("new connection")
 
-  // initally set this to false which marks the connection unauthorized
+	// initally set this to false which marks the connection unauthorized
+
+	s.clientsMutex.Lock()
 	s.clients[conn] = false
+	s.clientsMutex.Unlock()
 
 	for {
 		mt, bytes, err := conn.ReadMessage()
 
-    // check if a token was sent
+		// check if a token was sent
 		var token Token
-    parseErr := json.Unmarshal(bytes, &token)
-    if parseErr == nil {
-      claims := &Claims{}
+		parseErr := json.Unmarshal(bytes, &token)
+		if parseErr == nil {
+			claims := &Claims{}
 
-      tkn, err := jwt.ParseWithClaims(token.Token, claims, func(token *jwt.Token) (interface{}, error) {
-        return jwtSecret, nil
-      })
-      if err != nil {
-        if err == jwt.ErrSignatureInvalid {
-          w.WriteHeader(http.StatusUnauthorized)
-          s.clients[conn] = false
-          conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
-        }
-        w.WriteHeader(http.StatusBadRequest)
-        s.clients[conn] = false
-        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
-      } else if !tkn.Valid {
-        w.WriteHeader(http.StatusUnauthorized)
-        s.clients[conn] = false
-        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
-      } else {
-        s.clients[conn] = true
-        conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
-      }
-    }
+			tkn, err := jwt.ParseWithClaims(token.Token, claims, func(token *jwt.Token) (interface{}, error) {
+				return jwtSecret, nil
+			})
+			if err != nil {
+				if err == jwt.ErrSignatureInvalid {
+					w.WriteHeader(http.StatusUnauthorized)
+					s.clientsMutex.Lock()
+					s.clients[conn] = false
+					s.clientsMutex.Unlock()
+					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+				}
+				w.WriteHeader(http.StatusBadRequest)
+				s.clientsMutex.Lock()
+				s.clients[conn] = false
+				s.clientsMutex.Unlock()
+				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+			} else if !tkn.Valid {
+				w.WriteHeader(http.StatusUnauthorized)
+				s.clientsMutex.Lock()
+				s.clients[conn] = false
+				s.clientsMutex.Unlock()
+				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+			} else {
+				s.clientsMutex.Lock()
+				s.clients[conn] = true
+				s.clientsMutex.Unlock()
+				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
+			}
+		}
 
 		if err != nil || mt == websocket.CloseMessage {
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted
 		}
 	}
 
+	s.clientsMutex.Lock()
 	delete(s.clients, conn) // Removing the connection
-  fmt.Println("connection closed");
+	s.clientsMutex.Unlock()
+	fmt.Println("connection closed")
 	conn.Close()
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) SendToWebSockets(message []byte) {
-  fmt.Println("SEND")
+	fmt.Println("SEND")
 	for conn := range s.clients {
-    if (s.clients[conn]) {
-      fmt.Println("sending ", string(message))
-      conn.WriteMessage(websocket.TextMessage, message)
-    }
+		if s.clients[conn] {
+			fmt.Println("sending ", string(message))
+			conn.WriteMessage(websocket.TextMessage, message)
+		}
 	}
 }
 
