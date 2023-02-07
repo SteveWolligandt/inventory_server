@@ -925,6 +925,7 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		mt, bytes, err := conn.ReadMessage()
 
 		// if not already authorized
+		s.ClientsMutex.Lock()
 		if !s.Clients[conn] {
 			var token Token
 			parseErr := json.Unmarshal(bytes, &token)
@@ -937,30 +938,23 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					if err == jwt.ErrSignatureInvalid {
 						w.WriteHeader(http.StatusUnauthorized)
-						s.ClientsMutex.Lock()
 						s.Clients[conn] = false
-						s.ClientsMutex.Unlock()
 						conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 					}
 					w.WriteHeader(http.StatusBadRequest)
-					s.ClientsMutex.Lock()
 					s.Clients[conn] = false
-					s.ClientsMutex.Unlock()
 					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 				} else if !tkn.Valid {
 					w.WriteHeader(http.StatusUnauthorized)
-					s.ClientsMutex.Lock()
 					s.Clients[conn] = false
-					s.ClientsMutex.Unlock()
 					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 				} else {
-					s.ClientsMutex.Lock()
 					s.Clients[conn] = true
-					s.ClientsMutex.Unlock()
 					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
 				}
 			}
 		}
+		s.ClientsMutex.Unlock()
 
 		if err != nil || mt == websocket.CloseMessage {
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted
