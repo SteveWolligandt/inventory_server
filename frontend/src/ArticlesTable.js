@@ -73,7 +73,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   ws.current.onopen = (event) => {
     ws.current.send(JSON.stringify({token:userToken}));
   };
-  ws.current.onmessage =  (event) => { const f = async () => {
+  ws.current.onmessage =  async (event) => {
     if (activeCompany != null) {
       let msg = JSON.parse(event.data);
       let action = msg.action;
@@ -122,7 +122,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
         }));
       }
     }
-  };f();}
+  };
 
   // initial get
   const initialGet = () => {

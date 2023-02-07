@@ -34,7 +34,7 @@ export default function Inventories(
   ws.current.onopen = (event) => {
     ws.current.send(JSON.stringify({token:userToken}));
   };
-  ws.current.onmessage =  (event) => { const f = async () => {
+  ws.current.onmessage =  async (event) => {
     let msg = JSON.parse(event.data);
     if (msg.action === 'newInventory') {
       let newInventory = msg.data;
@@ -48,7 +48,7 @@ export default function Inventories(
       let deletedInventory = msg.data;
     setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
     }
-  };f()}
+  };
   const loadInventories = () => {
     if (!open)             { setInventories([]); return; }
     if (userToken == null) { return; }

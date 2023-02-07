@@ -35,10 +35,9 @@ export default function Companies({
   var [isLoading, setIsLoading] = React.useState(false);
   
   const ws = React.useRef(new WebSocket(websocketAddr()));
-  const authorizeWebSocket = () =>  ws.current.send(JSON.stringify({token:userToken}));
-  ws.current.onopen = (event) => authorizeWebSocket();
-
-  ws.current.onmessage =  (event) => { const f = async () => {
+  const authorizeWebSocket = ()      =>  ws.current.send(JSON.stringify({token:userToken}));
+  ws.current.onopen        = (event) => authorizeWebSocket();
+  ws.current.onmessage     = async (event) => {
     let msg = JSON.parse(event.data);
     let action = msg.action;
     if (action === 'newCompany') {
@@ -53,7 +52,7 @@ export default function Companies({
       let deletedCompany = msg.data;
       setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
     }
-  }; f() };
+  };
 
   React.useEffect(() => {if (ws.readyState === WebSocket.OPEN) {authorizeWebSocket();}}, [userToken]);
 
