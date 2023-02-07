@@ -57,9 +57,9 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 // ------------------------------------------------------------------------------
 type Server struct {
 	Db           *Database
-	router       *mux.Router
-	clients      map[*websocket.Conn]bool
-	clientsMutex sync.Mutex
+	Router       *mux.Router
+	Clients      map[*websocket.Conn]bool
+	ClientsMutex sync.Mutex
 }
 
 // ------------------------------------------------------------------------------
