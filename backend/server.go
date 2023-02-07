@@ -56,7 +56,7 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 
 // ------------------------------------------------------------------------------
 type Server struct {
-	db           *Database
+	Db           *Database
 	router       *mux.Router
 	clients      map[*websocket.Conn]bool
 	clientsMutex sync.Mutex
@@ -149,7 +149,7 @@ func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
-	filename := buildPdf(s.db, inventoryId)
+	filename := buildPdf(s.Db, inventoryId)
 	fileBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
@@ -163,7 +163,7 @@ func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	articles := s.db.Articles()
+	articles := s.Db.Articles()
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -178,7 +178,7 @@ func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	article := s.db.Article(articleId)
+	article := s.Db.Article(articleId)
 	json.NewEncoder(w).Encode(article)
 }
 
@@ -193,7 +193,7 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &article)
 
 	// create new article in database
-	article = s.db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber)
+	article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber)
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -218,7 +218,7 @@ func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 		panic(strConvErr.Error())
 	}
 
-	s.db.UpdateArticle(article)
+	s.Db.UpdateArticle(article)
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -238,7 +238,7 @@ func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	s.db.DeleteArticle(articleId)
+	s.Db.DeleteArticle(articleId)
 	action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", articleId)
 	s.SendToWebSockets([]byte(action))
 }
@@ -248,7 +248,7 @@ func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	companies := s.db.Companies()
+	companies := s.Db.Companies()
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -263,7 +263,7 @@ func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	companies := s.db.CompaniesWithValue(inventoryId)
+	companies := s.Db.CompaniesWithValue(inventoryId)
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -272,7 +272,7 @@ func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Reques
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	companies := s.db.Companies()
+	companies := s.Db.Companies()
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -287,7 +287,7 @@ func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	articles := s.db.ArticlesOfCompany(companyId)
+	articles := s.Db.ArticlesOfCompany(companyId)
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -303,7 +303,7 @@ func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	company := s.db.Company(companyId)
+	company := s.Db.Company(companyId)
 	json.NewEncoder(w).Encode(company)
 }
 
@@ -324,7 +324,7 @@ func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	company := s.db.CompanyWithValue(companyId, inventoryId)
+	company := s.Db.CompanyWithValue(companyId, inventoryId)
 	json.NewEncoder(w).Encode(company)
 }
 
@@ -342,7 +342,7 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &company)
 	fmt.Println(company)
 
-	company = s.db.CreateCompany(company.Name)
+	company = s.Db.CreateCompany(company.Name)
 	marshaledCompany, marshalErr := json.Marshal(company)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -368,7 +368,7 @@ func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	s.db.UpdateCompany(company)
+	s.Db.UpdateCompany(company)
 	action := fmt.Sprintf("{\"action\":\"updateCompany\", \"data\":{\"id\":%v, \"name\":\"%v\"}}", company.Id, company.Name)
 	s.SendToWebSockets([]byte(action))
 }
@@ -386,7 +386,7 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	s.db.DeleteCompany(companyId)
+	s.Db.DeleteCompany(companyId)
 	action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", companyId)
 	s.SendToWebSockets([]byte(action))
 }
@@ -402,7 +402,7 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.db.UpdateInventoryData(inventoryData)
+	s.Db.UpdateInventoryData(inventoryData)
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -419,7 +419,7 @@ func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	inventories := s.db.Inventories()
+	inventories := s.Db.Inventories()
 	json.NewEncoder(w).Encode(inventories)
 }
 
@@ -434,7 +434,7 @@ func (s *Server) GetInventory(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err.Error())
 	}
-	inventory := s.db.Inventory(inventoryId)
+	inventory := s.Db.Inventory(inventoryId)
 	json.NewEncoder(w).Encode(inventory)
 }
 
@@ -447,7 +447,7 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inventory = s.db.CreateInventory(inventory.Name)
+	inventory = s.Db.CreateInventory(inventory.Name)
 	json.NewEncoder(w).Encode(inventory)
 
 	action := fmt.Sprintf(
@@ -473,7 +473,7 @@ func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	s.db.UpdateInventory(inventory)
+	s.Db.UpdateInventory(inventory)
 
 	action := fmt.Sprintf(
 		"{\"action\":\"updateInventory\", \"data\":{\"id\":%v, \"name\":\"%v\"}}",
@@ -493,7 +493,7 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	s.db.DeleteInventory(inventoryId)
+	s.Db.DeleteInventory(inventoryId)
 
 	// handle websocket
 	action := fmt.Sprintf("{\"action\":\"deleteInventory\", \"data\":{\"id\":%v}}", inventoryId)
@@ -518,7 +518,7 @@ func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Reques
 		panic(articleErr.Error())
 	}
 
-	inventoryData := s.db.InventoryDataOfArticle(inventoryId, articleId)
+	inventoryData := s.Db.InventoryDataOfArticle(inventoryId, articleId)
 	json.NewEncoder(w).Encode(inventoryData)
 }
 
@@ -541,7 +541,7 @@ func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 		panic(inventoryErr.Error())
 	}
 
-	articles := s.db.InventoryOfCompany(inventoryId, companyId)
+	articles := s.Db.InventoryOfCompany(inventoryId, companyId)
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -564,10 +564,10 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var totalValue float32
-	companies := s.db.Companies()
+	companies := s.Db.Companies()
 
 	for _, company := range companies {
-		value := s.db.ValueOfCompany(company.Id, inventoryId)
+		value := s.Db.ValueOfCompany(company.Id, inventoryId)
 		var companyWithValue CompanyWithValue
 		companyWithValue.Company = company
 		companyWithValue.Value = value
@@ -584,7 +584,7 @@ func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request)
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	json.NewEncoder(w).Encode(s.db.InventoriesWithValue())
+	json.NewEncoder(w).Encode(s.Db.InventoriesWithValue())
 }
 
 // ------------------------------------------------------------------------------
@@ -604,7 +604,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	user := UserWithPassword{User: User{Name: username, IsAdmin: isAdmin}, Password: password}
 
-	s.db.CreateUser(user.Name, user.Password, user.IsAdmin)
+	s.Db.CreateUser(user.Name, user.Password, user.IsAdmin)
 }
 
 // ------------------------------------------------------------------------------
@@ -619,7 +619,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	password := r.Header.Get("password")
 	if password != "" {
 		fmt.Println(password)
-		err := s.db.UpdateUserPassword(oldUserName, password)
+		err := s.Db.UpdateUserPassword(oldUserName, password)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 		}
@@ -628,7 +628,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	isAdmin, isAdminErr := strconv.ParseBool(r.Header.Get("isAdmin"))
 	if isAdminErr == nil {
 		fmt.Println(isAdmin)
-		err := s.db.UpdateUserIsAdmin(oldUserName, isAdmin)
+		err := s.Db.UpdateUserIsAdmin(oldUserName, isAdmin)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Println(err)
@@ -638,7 +638,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	newUserName := r.Header.Get("newUser")
 	if newUserName != "" {
 		fmt.Println(newUserName)
-		err := s.db.UpdateUserName(oldUserName, newUserName)
+		err := s.Db.UpdateUserName(oldUserName, newUserName)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 		}
@@ -650,7 +650,7 @@ func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorizedAdmin(w, r) {
 		return
 	}
-	json.NewEncoder(w).Encode(s.db.Users())
+	json.NewEncoder(w).Encode(s.Db.Users())
 }
 
 // ------------------------------------------------------------------------------
@@ -675,7 +675,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		WriteUnauthorizedToResponse(&w)
 		return
 	}
-	user := s.db.UserWithHashedPassword(username)
+	user := s.Db.UserWithHashedPassword(username)
 	success := VerifyPassword(user.HashedPassword, password)
 
 	if success {
@@ -752,167 +752,167 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) HandleRequests() {
-	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	s.Router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "../frontend/build/index.html")
 	})
 
 	// frontend
-	s.router.PathPrefix("/static").Handler(
+	s.Router.PathPrefix("/static").Handler(
 		http.StripPrefix(
 			"/static",
 			http.FileServer(
 				http.Dir("../frontend/build/static"))))
 
 	// websockets
-	s.router.HandleFunc("/ws", s.HandleWebsocket)
+	s.Router.HandleFunc("/ws", s.HandleWebsocket)
 
 	// pdf
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/pdf/{id}", s.GetPdf).
 		Methods("GET")
 
 	// company-related
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/companies",
 		s.GetCompanies).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/companies/value/{inventoryId}",
 		s.GetCompaniesWithValue).
 		Methods("GET")
 
 	// company-related
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/companies/inventory/{inventoryId}",
 		s.GetCompaniesWithInventory).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company",
 		s.CreateCompany).
 		Methods("POST")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{id}",
 		s.GetCompany).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{companyId}/value/{inventoryId}",
 		s.GetCompanyWithValue).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{id}",
 		s.UpdateCompany).
 		Methods("PUT")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{id}",
 		s.DeleteCompany).
 		Methods("DELETE")
 
 	// article-related
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/articles",
 		s.GetArticles).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/article",
 		s.CreateArticle).
 		Methods("POST")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{id}/articles",
 		s.GetArticlesOfCompany).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/company/{companyId}/inventory/{inventoryId}",
 		s.GetInventoryOfCompany).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/article/{id}",
 		s.UpdateArticle).
 		Methods("PUT")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/article/{id}",
 		s.DeleteArticle).
 		Methods("DELETE")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/article/{id}",
 		s.GetArticle).
 		Methods("GET")
 
 	// inventoryData-related
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventorydata",
 		s.UpdateInventoryData).
 		Methods("PUT")
 
 	// inventory-related
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventories",
 		s.GetInventories).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory",
 		s.CreateInventory).
 		Methods("POST")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory/{id}",
 		s.UpdateInventory).
 		Methods("PUT")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory/{id}",
 		s.DeleteInventory).
 		Methods("DELETE")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory/{id}",
 		s.GetInventory).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory/{id}/value",
 		s.GetInventoryWithValue).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventories/value",
 		s.GetInventoriesWithValue).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/inventory/{inventoryId}/inventorydata/{articleId}",
 		s.GetInventoryDataOfArticle).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/users", s.GetUsers).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/user", s.CreateUser).
 		Methods("POST")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/user", s.UpdateUser).
 		Methods("PUT")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/login", s.Login).
 		Methods("GET")
 
-	s.router.HandleFunc(
+	s.Router.HandleFunc(
 		"/api/renew", s.Renew).
 		Methods("GET")
 }
@@ -927,9 +927,9 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	// initally set this to false which marks the connection unauthorized
 
-	s.clientsMutex.Lock()
-	s.clients[conn] = false
-	s.clientsMutex.Unlock()
+	s.ClientsMutex.Lock()
+	s.Clients[conn] = false
+	s.ClientsMutex.Unlock()
 
 	for {
 		mt, bytes, err := conn.ReadMessage()
@@ -946,26 +946,26 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				if err == jwt.ErrSignatureInvalid {
 					w.WriteHeader(http.StatusUnauthorized)
-					s.clientsMutex.Lock()
-					s.clients[conn] = false
-					s.clientsMutex.Unlock()
+					s.ClientsMutex.Lock()
+					s.Clients[conn] = false
+					s.ClientsMutex.Unlock()
 					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 				}
 				w.WriteHeader(http.StatusBadRequest)
-				s.clientsMutex.Lock()
-				s.clients[conn] = false
-				s.clientsMutex.Unlock()
+				s.ClientsMutex.Lock()
+				s.Clients[conn] = false
+				s.ClientsMutex.Unlock()
 				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 			} else if !tkn.Valid {
 				w.WriteHeader(http.StatusUnauthorized)
-				s.clientsMutex.Lock()
-				s.clients[conn] = false
-				s.clientsMutex.Unlock()
+				s.ClientsMutex.Lock()
+				s.Clients[conn] = false
+				s.ClientsMutex.Unlock()
 				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
 			} else {
-				s.clientsMutex.Lock()
-				s.clients[conn] = true
-				s.clientsMutex.Unlock()
+				s.ClientsMutex.Lock()
+				s.Clients[conn] = true
+				s.ClientsMutex.Unlock()
 				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
 			}
 		}
@@ -975,9 +975,9 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.clientsMutex.Lock()
-	delete(s.clients, conn) // Removing the connection
-	s.clientsMutex.Unlock()
+	s.ClientsMutex.Lock()
+	delete(s.Clients, conn) // Removing the connection
+	s.ClientsMutex.Unlock()
 	fmt.Println("connection closed")
 	conn.Close()
 }
@@ -985,8 +985,8 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) SendToWebSockets(message []byte) {
 	fmt.Println("SEND")
-	for conn := range s.clients {
-		if s.clients[conn] {
+	for conn := range s.Clients {
+		if s.Clients[conn] {
 			fmt.Println("sending ", string(message))
 			conn.WriteMessage(websocket.TextMessage, message)
 		}
@@ -1026,7 +1026,7 @@ func (s *Server) Start() {
 	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
 	server := http.Server{
 		Addr:      ":443",
-		Handler:   s.router,
+		Handler:   s.Router,
 		TLSConfig: tlsConfig,
 	}
 	go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
@@ -1038,7 +1038,7 @@ func (s *Server) Start() {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Close() {
-	s.db.Close()
+	s.Db.Close()
 }
 
 func CreateOrReadJWTSecret(n int, path string) {
@@ -1073,12 +1073,12 @@ func NewServer() *Server {
 
 	fmt.Println("Creating Server...")
 	s := new(Server)
-	s.db = NewDatabase()
+	s.Db = NewDatabase()
 	fmt.Println("Creating Router...")
-	s.router = mux.NewRouter().StrictSlash(true)
+	s.Router = mux.NewRouter().StrictSlash(true)
 
 	fmt.Println("Creating Router... done!")
-	s.clients = make(map[*websocket.Conn]bool)
+	s.Clients = make(map[*websocket.Conn]bool)
 	fmt.Println("Creating REST API...")
 	s.HandleRequests()
 	fmt.Println("Creating REST API... done!")
