@@ -70,15 +70,6 @@ var upgrader = websocket.Upgrader{
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("public/index.html")
-	if err != nil {
-		panic(err.Error())
-	}
-	t.Execute(w, nil)
-}
-
-// ------------------------------------------------------------------------------
 func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
 	tokenString := r.Header.Get("token")
 	claims := &Claims{}
