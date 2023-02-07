@@ -34,7 +34,6 @@ function App() {
 
 
   React.useEffect(() => {
-    console.log("Initial");
     document.title = 'Inventur';
 
     if (userToken != null) {
@@ -47,13 +46,14 @@ function App() {
           const renewJson = await renewResponse.json();
           if (renewJson.status === 400) {
             setUserToken(null);
-            setSnackbar({ children: 'Session beendet', severity: 'error' });
+            setSnackbar({ children: 'Session beendet', severity: 'warning' });
             return;
           } else {
             setUserToken(renewJson.token);
           }
         } catch(e) {
-          console.log(e);
+          console.error(e);
+          setSnackbar({ children: e.message, severity: 'error' });
         }
       }; renew();
     }
@@ -89,7 +89,6 @@ function App() {
   const onLogin = (token, isAd) => {
     setUserToken(token);
     setIsAdmin(isAd);
-    console.log('admin:' + isAd);
   }
   return (<>
     <TopBar
