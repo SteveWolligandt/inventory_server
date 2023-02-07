@@ -974,13 +974,13 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) SendToWebSockets(message []byte) {
-	fmt.Println("SEND")
+  s.ClientsMutex.Lock()
 	for conn := range s.Clients {
 		if s.Clients[conn] {
-			fmt.Println("sending ", string(message))
 			conn.WriteMessage(websocket.TextMessage, message)
 		}
 	}
+  s.ClientsMutex.Unlock()
 }
 
 // ------------------------------------------------------------------------------
