@@ -9,7 +9,6 @@ import Companies from './CompaniesTable.js';
 import AdminArea from './AdminArea.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
-import FullPrice from './FullPrice.js';
 import TopBar from './TopBar.js';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -18,7 +17,6 @@ import Alert from '@mui/material/Alert';
 function App() {
   const [snackbar, setSnackbar] = React.useState(null);
   const handleCloseSnackbar = () => setSnackbar(null);
-  var [showFullPrices, setShowFullPrices] = useStickyState(false, 'showFullPrices');
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
@@ -86,7 +84,6 @@ function App() {
     setActiveCompany(null);
   };
   const onLogout     = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
-  const onFullPrices = () => setShowFullPrices(true);
   const onFullValue  = () => setShowInventoryValue(true);
   const onTopBarAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
   const onTopBarCompaniesClick = () => {setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
@@ -105,7 +102,6 @@ function App() {
       onAdminClick      = {onTopBarAdminClick}
       onCompaniesClick  = {onTopBarCompaniesClick}
       onFullValue       = {onFullValue}
-      onFullPrices      = {onFullPrices}
       renderContext     = {topBarContext}/>
     <div style={{marginBottom: '90px'}}/>
     <LoginScreen open    = {!isLoggedIn}
@@ -131,7 +127,7 @@ function App() {
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
     <Companies
-      open              = {isLoggedIn && !showFullPrices && showCompanies}
+      open              = {isLoggedIn &&  showCompanies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
@@ -144,7 +140,7 @@ function App() {
       }}
       setTopBarContext  = {setTopBarContext}/>
     <Articles
-      open            = {isLoggedIn && !showFullPrices && showArticles}
+      open            = {isLoggedIn && showArticles}
       userToken       = {userToken}
       setUserToken    = {setUserToken}
       activeCompany   = {activeCompany}
