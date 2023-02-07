@@ -924,39 +924,41 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	for {
 		mt, bytes, err := conn.ReadMessage()
 
-		// check if a token was sent
-		var token Token
-		parseErr := json.Unmarshal(bytes, &token)
-		if parseErr == nil {
-			claims := &Claims{}
+		// if not already authorized
+		if !s.Clients[conn] {
+			var token Token
+			parseErr := json.Unmarshal(bytes, &token)
+			if parseErr == nil {
+				claims := &Claims{}
 
-			tkn, err := jwt.ParseWithClaims(token.Token, claims, func(token *jwt.Token) (interface{}, error) {
-				return jwtSecret, nil
-			})
-			if err != nil {
-				if err == jwt.ErrSignatureInvalid {
+				tkn, err := jwt.ParseWithClaims(token.Token, claims, func(token *jwt.Token) (interface{}, error) {
+					return jwtSecret, nil
+				})
+				if err != nil {
+					if err == jwt.ErrSignatureInvalid {
+						w.WriteHeader(http.StatusUnauthorized)
+						s.ClientsMutex.Lock()
+						s.Clients[conn] = false
+						s.ClientsMutex.Unlock()
+						conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+					}
+					w.WriteHeader(http.StatusBadRequest)
+					s.ClientsMutex.Lock()
+					s.Clients[conn] = false
+					s.ClientsMutex.Unlock()
+					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+				} else if !tkn.Valid {
 					w.WriteHeader(http.StatusUnauthorized)
 					s.ClientsMutex.Lock()
 					s.Clients[conn] = false
 					s.ClientsMutex.Unlock()
 					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
+				} else {
+					s.ClientsMutex.Lock()
+					s.Clients[conn] = true
+					s.ClientsMutex.Unlock()
+					conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
 				}
-				w.WriteHeader(http.StatusBadRequest)
-				s.ClientsMutex.Lock()
-				s.Clients[conn] = false
-				s.ClientsMutex.Unlock()
-				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
-			} else if !tkn.Valid {
-				w.WriteHeader(http.StatusUnauthorized)
-				s.ClientsMutex.Lock()
-				s.Clients[conn] = false
-				s.ClientsMutex.Unlock()
-				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":false}"))
-			} else {
-				s.ClientsMutex.Lock()
-				s.Clients[conn] = true
-				s.ClientsMutex.Unlock()
-				conn.WriteMessage(websocket.TextMessage, []byte("{\"action\":\"authorization\", \"authorized\":true}"))
 			}
 		}
 
@@ -974,13 +976,13 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) SendToWebSockets(message []byte) {
-  s.ClientsMutex.Lock()
+	s.ClientsMutex.Lock()
 	for conn := range s.Clients {
 		if s.Clients[conn] {
 			conn.WriteMessage(websocket.TextMessage, message)
 		}
 	}
-  s.ClientsMutex.Unlock()
+	s.ClientsMutex.Unlock()
 }
 
 // ------------------------------------------------------------------------------
