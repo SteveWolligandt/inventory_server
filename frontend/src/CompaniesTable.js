@@ -1,18 +1,19 @@
-import websocketAddr from './websocketAddress.js';
-import CircularProgress from '@mui/material/CircularProgress';
-import CreateCompanyDialog from './CreateCompanyDialog.js';
-import { DataGrid } from '@mui/x-data-grid';
-import fetchWithToken from './jwtFetch.js';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-
+import DeleteIcon from '@mui/icons-material/Delete';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import {DataGrid} from '@mui/x-data-grid';
 import React from 'react';
+
+import CreateCompanyDialog from './CreateCompanyDialog.js';
+import fetchWithToken from './jwtFetch.js';
+import websocketAddr from './websocketAddress.js';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
@@ -240,13 +241,10 @@ export default function Companies({
                       processRowUpdate={processRowUpdate}
                       experimentalFeatures={{ newEditingApi: true }}/>);
   }
-  return (<>
-    <div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-    <div style={{height: 'calc(100vh - 110px)', width: '100%'}}>
+  return (
+    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
     {renderLoading()}
     {renderDataGrid()}
-    </div>
-    </div>
     {renderChangeConfirmDialog()}
     {renderDeleteConfirmDialog()}
     <CreateCompanyDialog open={createDialogOpen}
@@ -254,7 +252,7 @@ export default function Companies({
                          userToken={userToken}
                          setUserToken={setUserToken}
                          setSnackbar={setSnackbar}/>
-    </>
+    </Paper>
   );
 }
 

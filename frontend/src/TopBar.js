@@ -50,8 +50,6 @@ export default function TopBar({
           <Button color="inherit" onClick={onLogout}>
             Logout
           </Button>
-
-
         </Toolbar>
       </AppBar>
   );

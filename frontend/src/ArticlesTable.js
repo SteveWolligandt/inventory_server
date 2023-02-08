@@ -1,4 +1,5 @@
 import websocketAddr from './websocketAddress.js';
+import Paper from '@mui/material/Paper';
 import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -410,12 +411,12 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     return null;
   }
   return (<>
-    <div style = {{height : 'calc(100vh - 110px)', margin: 'auto', width : 'calc(100% - 80px)'}}>
+    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
       {renderLoading()}
       {renderDataGrid()}
-    </div>
+    </Paper>
     <CreateArticleDialog open={dialogOpen}
                          setOpen={setDialogOpen}
                          userToken={userToken}

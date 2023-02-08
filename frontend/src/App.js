@@ -11,8 +11,11 @@ import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
 import TopBar from './TopBar.js';
 import Snackbar from '@mui/material/Snackbar';
+import CssBaseLine from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-
+import GlobalStyles from "@mui/material/GlobalStyles";
+import { ThemeProvider } from "@mui/material/styles";
+import { Theme } from "./Theme";
 
 function App() {
   const [snackbar, setSnackbar] = React.useState(null);
@@ -90,7 +93,11 @@ function App() {
     setUserToken(token);
     setIsAdmin(isAd);
   }
-  return (<>
+
+  return (
+    <>
+    <GlobalStyles styles={{body: { backgroundColor: "#E8EBF0" }}}/>
+    <ThemeProvider theme={Theme}>
     <TopBar
       title             = {title}
       setUserToken      = {setUserToken}
@@ -159,6 +166,8 @@ function App() {
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
       </Snackbar>
     )}
-  </>);
+    </ThemeProvider>
+    </>
+  );
 }
 export default App;

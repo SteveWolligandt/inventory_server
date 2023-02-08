@@ -1,4 +1,5 @@
 import List from '@mui/material/List';
+import Paper from '@mui/material/Paper';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -20,6 +21,7 @@ export default function AdminArea({open, userToken, setUserToken, setSnackbar, s
   if (currentState === State.Top) {
     setTopBarContext(null);
     return (
+    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
       <Box sx={{m:'3', justifyContent:"center", alignItems:"center"}}>
         <List>
           <ListItem>
@@ -31,9 +33,10 @@ export default function AdminArea({open, userToken, setUserToken, setSnackbar, s
             </ListItemButton>
           </ListItem>
         </List>
-      </Box>)
+      </Box>
+    </Paper>)
   } else if (currentState === State.Users) {
-    return (<>
+    return (
       <AdminAreaUsers
         adminState={currentState}
         setAdminState={setCurrentState}
@@ -41,7 +44,7 @@ export default function AdminArea({open, userToken, setUserToken, setSnackbar, s
         setUserToken={setUserToken}
         setSnackbar={setSnackbar}
         setTopBarContext={setTopBarContext}
-      />
-    </>)
+      />)
+
   }
 }

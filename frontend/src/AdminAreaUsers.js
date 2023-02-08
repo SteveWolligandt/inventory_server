@@ -1,4 +1,5 @@
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import Paper from '@mui/material/Paper';
 import EditIcon from '@mui/icons-material/Edit';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
@@ -66,15 +67,14 @@ export default function AdminAreaUsers(
       <CircularProgress /></div>);
   };
   const renderDataGrid = () => {
-    return(<div style ={{margin: '0 auto', maxWidth: '1000px'}} >
-    <div style={{height: 'calc(100vh - 150px)', width: '100%'}}>
+    return(
+    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
     <DataGrid
       rows={users}
       columns={columns(onEdit)}
       checkboxSelection={true}
     />
-    </div>
-    </div>);
+    </Paper>);
   };
   return (<>
     <Box sx={{m:'3', justifyContent:"center", alignItems:"center"}}>
