@@ -1,15 +1,10 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Zoom from '@mui/material/Zoom';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Fab from '@mui/material/Fab';
-import PercentIcon from '@mui/icons-material/Percent';
 import ArticleIcon from '@mui/icons-material/Article';
-import EuroIcon from '@mui/icons-material/Euro';
 import InputAdornment from '@mui/material/InputAdornment';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -84,11 +79,6 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           <Button onClick={handleCreate}>Erstellen</Button>
         </DialogActions>
       </Dialog>
-      <Zoom in={open}>
-        <Fab color="secondary" aria-label="add" style={style} onClick={handleClickOpen}>
-          <ArticleIcon />
-        </Fab>
-      </Zoom>
     </div>
   );
 }
