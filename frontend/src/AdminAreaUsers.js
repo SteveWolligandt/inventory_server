@@ -64,11 +64,12 @@ export default function AdminAreaUsers(
     if (!isLoading) { return null; }
     return (
       <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
-      <CircularProgress /></div>);
+        <CircularProgress />
+      </div>);
   };
   const renderDataGrid = () => {
     return(
-    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
+    <Paper elevation="5" sx={{ overflow: 'hidden', 'margin-left':'30px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
     <DataGrid
       rows={users}
       columns={columns(onEdit)}
@@ -102,13 +103,31 @@ export default function AdminAreaUsers(
 
 function columns(onEdit) {
   return [
-    { field: 'name', align:'center', headerAlign:'center', headerName: 'Name', flex: 1 },
-    { field: 'isAdmin', align:'center', headerAlign:'center', headerName: 'Administrator', flex: 1, type:'boolean'},
-    { field: 'edit',
-      headerName: '',
-      align: 'center',
-      width: 60,
-      sortable: false,
+    { field:          'name',
+      headerName:     'Name',
+      flex:           1,
+      headerAlign:    'center',
+      hideable:       false,
+      align:          'center',
+      disablePadding: true,
+    },
+    { field:          'isAdmin',
+      headerName:     'Administrator',
+      flex:           1,
+      type:           'boolean',
+      hideable:       false,
+      headerAlign:    'center',
+      align:          'center',
+      disablePadding: false,
+    },
+    { field:          'edit',
+      headerName:     '',
+      headerAlign:    'center',
+      align:          'center',
+      hideable:       false,
+      width:          60,
+      sortable:       false,
+      disablePadding: false,
       renderCell: (params) => {
         const onClick = (e) => {
           e.stopPropagation(); // don't select this row after clicking

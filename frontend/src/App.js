@@ -9,9 +9,9 @@ import Companies from './CompaniesTable.js';
 import AdminArea from './AdminArea.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
+import LeftDrawer from './LeftDrawer.js';
 import TopBar from './TopBar.js';
 import Snackbar from '@mui/material/Snackbar';
-import CssBaseLine from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import GlobalStyles from "@mui/material/GlobalStyles";
 import { ThemeProvider } from "@mui/material/styles";
@@ -19,6 +19,7 @@ import { Theme } from "./Theme";
 
 function App() {
   const [snackbar, setSnackbar] = React.useState(null);
+  const [leftDrawerOpen, setLeftDrawerOpen] = React.useState(false);
   const handleCloseSnackbar = () => setSnackbar(null);
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
@@ -102,12 +103,12 @@ function App() {
       title             = {title}
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
-      onLogout          = {onLogout}
       isAdmin           = {isAdmin}
       onAdminClick      = {onTopBarAdminClick}
       onCompaniesClick  = {onTopBarCompaniesClick}
       onFullValue       = {onFullValue}
-      renderContext     = {topBarContext}/>
+      renderContext     = {topBarContext}
+      setLeftDrawerOpen = {setLeftDrawerOpen}/>
     <div style={{marginBottom: '90px'}}/>
     <LoginScreen open    = {!isLoggedIn}
                  onLogin = {onLogin}
@@ -166,6 +167,7 @@ function App() {
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
       </Snackbar>
     )}
+    <LeftDrawer open={leftDrawerOpen} setOpen={setLeftDrawerOpen} onLogout={onLogout}/>
     </ThemeProvider>
     </>
   );

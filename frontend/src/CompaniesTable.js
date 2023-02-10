@@ -1,4 +1,5 @@
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -87,13 +88,11 @@ export default function Companies({
   React.useEffect(loadCompanies, [open, userToken, activeInventory]);
   React.useEffect(() => {
     if (open) {
-      setTopBarContext(() =>() => (
-        <Button
-          color="inherit"
-          onClick={()=>setCreateDialogOpen(true)}>
-          Neue Firma
-        </Button>
-      ));
+      setTopBarContext([{
+        key:'newCompany',
+        label:'Neue Firma',
+        icon:()=>(<AddCircleIcon/>),
+        onClick:()=>setCreateDialogOpen(true)}]);
     }
   },[open, setTopBarContext])
 
