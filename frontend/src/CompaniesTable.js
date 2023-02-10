@@ -241,7 +241,13 @@ export default function Companies({
                       experimentalFeatures={{ newEditingApi: true }}/>);
   }
   return (
-    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
+    <Paper
+      elevation="5"
+      sx={{overflow:'hidden',
+           'marginLeft':'20px',
+           'marginRight':'20px',
+           height:'calc(100vh - 110px)'
+         }}>
     {renderLoading()}
     {renderDataGrid()}
     {renderChangeConfirmDialog()}

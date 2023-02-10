@@ -17,17 +17,20 @@ import GlobalStyles from "@mui/material/GlobalStyles";
 import { ThemeProvider } from "@mui/material/styles";
 import { Theme } from "./Theme";
 
+const State = {
+  Companies : 'companies',
+  Articles : 'articles',
+  AdminArea : 'adminarea',
+};
 function App() {
   const [snackbar, setSnackbar] = React.useState(null);
   const [leftDrawerOpen, setLeftDrawerOpen] = React.useState(false);
   const handleCloseSnackbar = () => setSnackbar(null);
+  const [currentState, setCurrentState] = useStickyState('companies', 'currentState');
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
-  var [showCompanies, setShowCompanies] = useStickyState(true, 'showCompanies');
-  var [showArticles, setShowArticles] = useStickyState(false, 'showArticles');
-  var [showAdminArea, setShowAdminArea] = useStickyState(false, 'showAdminArea');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
-  var [topBarContext, setTopBarContext] = React.useState(()=> null);
+  var [topBarContext, setTopBarContext] = React.useState([]);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
   var [isAdmin, setIsAdmin] = useStickyState(null, 'isAdmin');
@@ -81,15 +84,13 @@ function App() {
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
   var onArticleBackButtonClick = () => {
-    setShowCompanies(true);
-    setShowArticles(false);
-
+    setCurrentState(State.Companies);
     setActiveCompany(null);
   };
-  const onLogout     = () => {setUserToken(null); setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
+  const onLogout     = () => {setUserToken(null); setCurrentState(State.companies);}
   const onFullValue  = () => setShowInventoryValue(true);
-  const onTopBarAdminClick = () => {setShowAdminArea(true); setShowCompanies(false); setShowArticles(false);}
-  const onTopBarCompaniesClick = () => {setShowAdminArea(false); setShowCompanies(true); setShowArticles(false);}
+  const onTopBarAdminClick = () => {setCurrentState(State.AdminArea);}
+  const onTopBarCompaniesClick = () => {setCurrentState(State.Companies);}
   const onLogin = (token, isAd) => {
     setUserToken(token);
     setIsAdmin(isAd);
@@ -133,7 +134,7 @@ function App() {
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
     <Companies
-      open              = {isLoggedIn &&  showCompanies}
+      open              = {isLoggedIn &&  currentState===State.Companies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
@@ -141,12 +142,11 @@ function App() {
       activeInventory   = {activeInventory}
       onCompanySelected = {(company) => {
         setActiveCompany(company);
-        setShowCompanies(false);
-        setShowArticles(true);
+        setCurrentState(State.Articles);
       }}
       setTopBarContext  = {setTopBarContext}/>
     <Articles
-      open            = {isLoggedIn && showArticles}
+      open            = {isLoggedIn && currentState===State.Articles}
       userToken       = {userToken}
       setUserToken    = {setUserToken}
       activeCompany   = {activeCompany}
@@ -156,7 +156,7 @@ function App() {
       onBack          = {onArticleBackButtonClick}
       setTopBarContext  = {setTopBarContext}/>
     <AdminArea
-      open = {isLoggedIn && showAdminArea} 
+      open = {isLoggedIn && currentState === State.AdminArea} 
       userToken={userToken}
       setUserToken={setUserToken}
       setSnackbar={setSnackbar}

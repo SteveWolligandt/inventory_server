@@ -3,6 +3,7 @@ import Paper from '@mui/material/Paper';
 import CircularProgress from '@mui/material/CircularProgress';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -169,13 +170,11 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
 
   React.useEffect(() => {
     if (open) {
-      setTopBarContext(() => () => (
-        <Button
-          color="inherit"
-          onClick={()=>setDialogOpen(true)}>
-          Neuer Artikel
-        </Button>
-      ));
+      setTopBarContext([{
+        key:'newArticle',
+        label:'Neuer Artikel',
+        icon:()=>(<AddCircleIcon/>),
+        onClick:()=>()=>setDialogOpen(true)}]);
     }
   },[open, setTopBarContext])
 
@@ -411,7 +410,13 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     return null;
   }
   return (<>
-    <Paper  elevation="5" sx={{ overflow: 'hidden', 'margin-left':'50px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
+    <Paper
+      elevation="5"
+      sx={{overflow: 'hidden',
+           'marginLeft':'20px',
+           'marginRight':'20px',
+           height:'calc(100vh - 110px)'
+         }}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
       {renderLoading()}

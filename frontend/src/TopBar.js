@@ -40,9 +40,11 @@ export default function TopBar({
 
   const renderAdminButton = () => {
     return (
-      <IconButton color="inherit" onClick={onAdminClick}>
-        <AdminPanelSettingsIcon />
-      </IconButton>);
+      <MenuItem key='chooseInventory' onClick={()=>{onAdminClick();handleClose();}}>
+        <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
+        Admin Panel
+      </MenuItem>
+    );
   };
   return (
       <AppBar position="fixed">
@@ -60,11 +62,6 @@ export default function TopBar({
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             {title}
           </Typography>
-
-          { isAdmin ? renderAdminButton() : null }
-          <IconButton color="inherit" onClick={onCompaniesClick}>
-            <ApartmentIcon />
-          </IconButton>
 
 
           <IconButton
@@ -104,10 +101,15 @@ export default function TopBar({
                   <ListItemIcon><FunctionsIcon/></ListItemIcon>
                   Gesamtwarenwert
                 </MenuItem>
+                <MenuItem key='fullValue' onClick={()=>{onCompaniesClick();handleClose();}}>
+                  <ListItemIcon><ApartmentIcon/></ListItemIcon>
+                  Firmenübersicht
+                </MenuItem>
                 <MenuItem key='chooseInventory' onClick={()=>{onInventorySelect();handleClose();}}>
                   <ListItemIcon><InventoryIcon/></ListItemIcon>
                   Inventur Auswählen
                 </MenuItem>
+                { isAdmin ? renderAdminButton() : null }
               </Menu>
         </Toolbar>
       </AppBar>

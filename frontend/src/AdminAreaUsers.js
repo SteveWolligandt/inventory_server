@@ -10,6 +10,7 @@ import React from 'react';
 
 import EditUserDialog from './EditUserDialog.js';
 import AddUserDialog from './AddUserDialog.js';
+import {State} from './AdminArea.js';
 
 import fetchWithToken from './jwtFetch.js';
 
@@ -22,14 +23,12 @@ export default function AdminAreaUsers(
   var selectedUserRef = React.useRef(null);
   React.useEffect(() => {
     const loadUsers = async () => {
-      if (adminState === 'Users') {
-              setTopBarContext(() =>() => (
-        <IconButton
-          color="inherit"
-          onClick={()=>setShowAddDialog(true)}>
-          <AddCircleIcon/>
-        </IconButton>
-      ));
+      if (adminState === State.Users) {
+        setTopBarContext([{
+          key:'newUser',
+          label:'Neuer Benutzer',
+          icon:()=>(<AddCircleIcon/>),
+          onClick:()=>setShowAddDialog(true)}]);
 
         setIsLoading(true);
         try {
@@ -56,6 +55,7 @@ export default function AdminAreaUsers(
       }
     }; loadUsers();}, [adminState]);
 
+  if (adminState !== State.Users) {return null;}
   const onEdit = (user) => {
     selectedUserRef.current = user;
     setShowEditDialog(true);
@@ -69,7 +69,7 @@ export default function AdminAreaUsers(
   };
   const renderDataGrid = () => {
     return(
-    <Paper elevation="5" sx={{ overflow: 'hidden', 'margin-left':'30px' , 'margin-right':'50px', height:'calc(100vh - 110px)' }}>
+    <Paper elevation="5" sx={{ overflow: 'hidden', 'marginLeft':'30px' , 'marginRight':'50px', height:'calc(100vh - 110px)' }}>
     <DataGrid
       rows={users}
       columns={columns(onEdit)}
