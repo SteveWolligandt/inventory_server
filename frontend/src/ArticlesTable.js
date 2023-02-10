@@ -174,7 +174,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
         key:'newArticle',
         label:'Neuer Artikel',
         icon:()=>(<AddCircleIcon/>),
-        onClick:()=>()=>setDialogOpen(true)}]);
+        onClick:()=>setDialogOpen(true)}]);
     }
   },[open, setTopBarContext])
 
