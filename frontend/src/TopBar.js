@@ -7,7 +7,6 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AppBar from '@mui/material/AppBar';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -21,8 +20,7 @@ export default function TopBar({
   title,
   isAdmin,
   onInventorySelect,
-  onAdminClick,
-  onCompaniesClick,
+  showAdminArea,
   setUserToken,
   renderContext,
   onFullValue,
@@ -40,7 +38,7 @@ export default function TopBar({
 
   const renderAdminButton = () => {
     return (
-      <MenuItem key='chooseInventory' onClick={()=>{onAdminClick();handleClose();}}>
+      <MenuItem key='chooseInventory' onClick={()=>{showAdminArea();handleClose();}}>
         <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
         Admin Panel
       </MenuItem>
@@ -100,10 +98,6 @@ export default function TopBar({
                 <MenuItem key='fullValue' onClick={()=>{onFullValue();handleClose();}}>
                   <ListItemIcon><FunctionsIcon/></ListItemIcon>
                   Gesamtwarenwert
-                </MenuItem>
-                <MenuItem key='fullValue' onClick={()=>{onCompaniesClick();handleClose();}}>
-                  <ListItemIcon><ApartmentIcon/></ListItemIcon>
-                  Firmenübersicht
                 </MenuItem>
                 <MenuItem key='chooseInventory' onClick={()=>{onInventorySelect();handleClose();}}>
                   <ListItemIcon><InventoryIcon/></ListItemIcon>

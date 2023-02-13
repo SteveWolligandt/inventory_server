@@ -7,9 +7,18 @@ import ListItemText from '@mui/material/ListItemText';
 import Box from '@mui/material/Box';
 import React from 'react';
 import PersonIcon from '@mui/icons-material/Person';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import {State} from './AdminArea.js';
 
-export default function AdminAreaTopMenu({adminState, setAdminState, userToken, setUserToken, setSnackbar, setTopBarContext}) {
+export default function AdminAreaTopMenu({
+  adminState,
+  setAdminState,
+  userToken,
+  setUserToken,
+  setSnackbar,
+  setTopBarContext,
+  showCompanies
+}) {
   if (adminState !== State.Top) { return null; }
   //setTopBarContext([]);
   return (
@@ -28,6 +37,14 @@ export default function AdminAreaTopMenu({adminState, setAdminState, userToken, 
               <PersonIcon />
             </ListItemIcon>
             <ListItemText primary="Benutzer" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem>
+          <ListItemButton onClick={showCompanies}>
+            <ListItemIcon>
+              <ApartmentIcon/>
+            </ListItemIcon>
+            <ListItemText primary="Firmen" />
           </ListItemButton>
         </ListItem>
       </List>

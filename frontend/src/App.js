@@ -22,7 +22,7 @@ const State = {
   Articles : 'articles',
   AdminArea : 'adminarea',
 };
-function App() {
+export default function App() {
   const [snackbar, setSnackbar] = React.useState(null);
   const [leftDrawerOpen, setLeftDrawerOpen] = React.useState(false);
   const handleCloseSnackbar = () => setSnackbar(null);
@@ -39,7 +39,6 @@ function App() {
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
 
-
   React.useEffect(() => {
     document.title = 'Inventur';
 
@@ -55,7 +54,6 @@ function App() {
             setUserToken(null);
             setSnackbar({ children: 'Session beendet', severity: 'warning' });
             return;
-          } else {
             setUserToken(renewJson.token);
           }
         } catch(e) {
@@ -83,14 +81,15 @@ function App() {
   };
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
+  const onFullValue   = () => setShowInventoryValue(true);
+  const showAdminArea = () => setCurrentState(State.AdminArea)
+  const showCompanies = () => setCurrentState(State.Companies)
+  const showArticles  = () => setCurrentState(State.Articles)
   var onArticleBackButtonClick = () => {
-    setCurrentState(State.Companies);
+    showArticles();
     setActiveCompany(null);
   };
-  const onLogout     = () => {setUserToken(null); setCurrentState(State.companies);}
-  const onFullValue  = () => setShowInventoryValue(true);
-  const onTopBarAdminClick = () => {setCurrentState(State.AdminArea);}
-  const onTopBarCompaniesClick = () => {setCurrentState(State.Companies);}
+  const onLogout     = () => {setUserToken(null); showCompanies();}
   const onLogin = (token, isAd) => {
     setUserToken(token);
     setIsAdmin(isAd);
@@ -105,8 +104,7 @@ function App() {
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
       isAdmin           = {isAdmin}
-      onAdminClick      = {onTopBarAdminClick}
-      onCompaniesClick  = {onTopBarCompaniesClick}
+      showAdminArea     = {showAdminArea}
       onFullValue       = {onFullValue}
       renderContext     = {topBarContext}
       setLeftDrawerOpen = {setLeftDrawerOpen}/>
@@ -142,7 +140,7 @@ function App() {
       activeInventory   = {activeInventory}
       onCompanySelected = {(company) => {
         setActiveCompany(company);
-        setCurrentState(State.Articles);
+        showArticles();
       }}
       setTopBarContext  = {setTopBarContext}/>
     <Articles
@@ -161,6 +159,7 @@ function App() {
       setUserToken={setUserToken}
       setSnackbar={setSnackbar}
       setTopBarContext={setTopBarContext}
+      showCompanies={showCompanies}
     />
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
@@ -172,4 +171,3 @@ function App() {
     </>
   );
 }
-export default App;

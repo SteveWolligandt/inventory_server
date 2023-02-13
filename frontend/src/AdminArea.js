@@ -6,7 +6,8 @@ export const State = {
   Top : 'Top',
   Users : 'Users',
 };
-export default function AdminArea({open, userToken, setUserToken, setSnackbar, setTopBarContext}) {
+export default function AdminArea(
+    {open, userToken, setUserToken, setSnackbar, setTopBarContext, showCompanies}) {
   const [currentState, setCurrentState] =  React.useState(State.Top);
   if (!open) { return null; }
   return (<>
@@ -17,6 +18,7 @@ export default function AdminArea({open, userToken, setUserToken, setSnackbar, s
         setUserToken={setUserToken}
         setSnackbar={setSnackbar}
         setTopBarContext={setTopBarContext}
+        showCompanies={showCompanies}
     />
     <AdminAreaUsers
       adminState={currentState}
