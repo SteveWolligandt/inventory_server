@@ -18,6 +18,18 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   const articleNumber = React.useRef();
   const [articleNumberValid, setArticleNumberValid] = React.useState(false);
 
+  const purchasePrice = React.useRef();
+  const [purchasePriceValid, setPurchasePriceValid] = React.useState(true);
+
+  const percentage = React.useRef();
+  const [percentageValid, setPercentageValid] = React.useState(true);
+
+  const sellingPrice = React.useRef();
+  const [sellingPriceValid, setSellingPriceValid] = React.useState(true);
+
+  const amount = React.useRef();
+  const [amountValid, setAmountValid] = React.useState(true);
+
   const handleClose     = () => { setOpen(false); };
   const handleCreate    = async () => {
     const data = {
@@ -79,6 +91,58 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           helperText={!articleNumberValid?"Artikelnummer darf nicht leer sein":""}
           variant="standard"
           inputRef={articleNumber}
+        />
+        <TextField
+          margin="dense"
+          disabled={isLoading}
+          label="EK"
+          type="string"
+          defaultValue={"0"}
+          onChange={()=>setArticleNumberValid(purchasePrice.current.value !== '')}
+          fullWidth
+          error={!purchasePriceValid}
+          helperText={!purchasePriceValid?"EK darf nicht leer sein":""}
+          variant="standard"
+          inputRef={purchasePrice}
+        />
+        <TextField
+          margin="dense"
+          disabled={isLoading}
+          label="%"
+          type="string"
+          onChange={()=>setArticleNumberValid(percentage.current.value !== '')}
+          fullWidth
+          defaultValue={0}
+          error={!percentageValid}
+          helperText={!percentageValid?"Prozent darf nicht leer sein":""}
+          variant="standard"
+          inputRef={percentage}
+        />
+        <TextField
+          margin="dense"
+          disabled={isLoading}
+          label="VK"
+          type="string"
+          defaultValue={0}
+          onChange={()=>setArticleNumberValid(sellingPrice.current.value !== '')}
+          fullWidth
+          error={!sellingPriceValid}
+          helperText={!sellingPriceValid?"VK darf nicht leer sein":""}
+          variant="standard"
+          inputRef={sellingPrice}
+        />
+        <TextField
+          margin="dense"
+          disabled={isLoading}
+          label="Artikelnummer"
+          type="string"
+          defaultValue={"0"}
+          onChange={()=>setArticleNumberValid(amount.current.value !== '')}
+          fullWidth
+          error={!amountValid}
+          helperText={!amountValid?"Stückzahl darf nicht leer sein":""}
+          variant="standard"
+          inputRef={amount}
         />
         </DialogContent>
         <DialogActions>
