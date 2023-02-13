@@ -2,39 +2,32 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
+import CircularProgress from '@mui/material/CircularProgress';
 import DialogContent from '@mui/material/DialogContent';
+import TextField from '@mui/material/TextField';
 import DialogTitle from '@mui/material/DialogTitle';
-import ArticleIcon from '@mui/icons-material/Article';
-import InputAdornment from '@mui/material/InputAdornment';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Input from '@mui/material/Input';
-import fetchWithToken from './jwtFetch.js';
+import fetchWithToken from './jwtFetch.js'
+
 
 export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar, setArticles, activeInventory}) {
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleClickOpen = () => { setOpen(true); };
+  const name = React.useRef();
+  const [nameValid, setNameValid] = React.useState(false);
+
+  const articleNumber = React.useRef();
+  const [articleNumberValid, setArticleNumberValid] = React.useState(false);
+
   const handleClose     = () => { setOpen(false); };
   const handleCreate    = async () => {
-    const name = document.getElementById("createArticle.name").value;
-    const articleNumber = document.getElementById("createArticle.articleNumber").value;
-    if (name === '') {
-      setSnackbar(
-          {children :'Name darf nicht leer sein', severity : 'error'});
-      return;
-    }
-    if (articleNumber === '') {
-      setSnackbar(
-          {children :'Artikelnummber darf nicht leer sein', severity : 'error'});
-      return;
-    }
     const data = {
-      name : name,
+      name : name.current.value,
       companyId : activeCompany.id,
-      articleNumber : articleNumber,
+      articleNumber : articleNumber.current.value,
     };
 
-    await fetchWithToken(
+    setIsLoading(true);
+    const response = await fetchWithToken(
       '/api/article',{
       method: "POST",
       headers: {
@@ -43,42 +36,58 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
       },
       body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar
     )
+    if (!response.ok) {
+      setSnackbar({ children: 'Fehler beim Erstellen von ', severity: 'error' });
+    }
+    setIsLoading(false);
     setOpen(false);
   };
 
-  const style = {
-    margin: 0,
-    top: 80,
-    bottom: 'auto',
-    right: 20,
-    left: 'auto',
-    position: 'fixed',
+  const renderLoading = () => {
+    if (!isLoading) { return null; }
+    const style = {
+      "float":"right",
+    };
+    return (<span style={style}><CircularProgress size="1rem"/></span>);
   };
   return (
-    <div>
+    <>
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Neuer Artikel</DialogTitle>
+        <DialogTitle>Neuer Artikel {renderLoading()}</DialogTitle>
         <DialogContent>
-        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-          <InputLabel htmlFor="createArticle.name">Name</InputLabel>
-          <Input
-            id="createArticle.name"
-            startAdornment={<InputAdornment position="start"><ArticleIcon /></InputAdornment>}
-          />
-        </FormControl>
-        <FormControl fullWidth sx={{ m: 1 }} variant="standard">
-          <InputLabel htmlFor="createArticle.articleNumber">Artikel Nummer</InputLabel>
-          <Input
-            id="createArticle.articleNumber"
-            startAdornment={<InputAdornment position="start"><ArticleIcon /></InputAdornment>}
-          />
-        </FormControl>
+        <TextField
+          autoFocus
+          margin="dense"
+          disabled={isLoading}
+          label="Name"
+          type="string"
+          onChange={()=>setNameValid(name.current.value !== '')}
+          fullWidth
+          error={!nameValid}
+          helperText={!nameValid?"Name darf nicht leer sein":""}
+          variant="standard"
+          inputRef={name}
+        />
+        <TextField
+          margin="dense"
+          disabled={isLoading}
+          label="Artikelnummer"
+          type="string"
+          onChange={()=>setArticleNumberValid(articleNumber.current.value !== '')}
+          fullWidth
+          error={!articleNumberValid}
+          helperText={!articleNumberValid?"Artikelnummer darf nicht leer sein":""}
+          variant="standard"
+          inputRef={articleNumber}
+        />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Abbrechen</Button>
-          <Button onClick={handleCreate}>Erstellen</Button>
+          <Button 
+            disabled={!nameValid || !articleNumberValid}
+            onClick={handleCreate}>Erstellen</Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </>
   );
 }
