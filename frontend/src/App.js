@@ -26,7 +26,7 @@ export default function App() {
   const [snackbar, setSnackbar] = React.useState(null);
   const [leftDrawerOpen, setLeftDrawerOpen] = React.useState(false);
   const handleCloseSnackbar = () => setSnackbar(null);
-  const [currentState, setCurrentState] = useStickyState('companies', 'currentState');
+  const [currentState, setCurrentState] = useStickyState(State.Companies, 'currentState');
   var [showInventories, setShowInventories] = useStickyState(false, 'showInventories');
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
@@ -82,11 +82,11 @@ export default function App() {
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
   const onFullValue   = () => setShowInventoryValue(true);
-  const showAdminArea = () => setCurrentState(State.AdminArea)
-  const showCompanies = () => setCurrentState(State.Companies)
-  const showArticles  = () => setCurrentState(State.Articles)
-  var onArticleBackButtonClick = () => {
-    showArticles();
+  const showAdminArea = () => setCurrentState(State.AdminArea);
+  const showCompanies = () => setCurrentState(State.Companies);
+  const showArticles  = () => setCurrentState(State.Articles);
+  const onArticleBackButtonClick = () => {
+    showCompanies();
     setActiveCompany(null);
   };
   const onLogout     = () => {setUserToken(null); showCompanies();}
@@ -132,7 +132,7 @@ export default function App() {
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
     <Companies
-      open              = {isLoggedIn &&  currentState===State.Companies}
+      open              = {isLoggedIn &&  currentState === State.Companies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
@@ -144,7 +144,7 @@ export default function App() {
       }}
       setTopBarContext  = {setTopBarContext}/>
     <Articles
-      open            = {isLoggedIn && currentState===State.Articles}
+      open            = {isLoggedIn && currentState === State.Articles}
       userToken       = {userToken}
       setUserToken    = {setUserToken}
       activeCompany   = {activeCompany}
