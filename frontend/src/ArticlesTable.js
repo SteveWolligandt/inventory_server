@@ -12,7 +12,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Fab from '@mui/material/Fab';
 import IconButton from '@mui/material/IconButton';
 import Zoom from '@mui/material/Zoom';
-import {DataGrid} from '@mui/x-data-grid';
+import Box from '@mui/material/Box';
+import {DataGrid, GridToolbarQuickFilter} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
 import fetchWithToken from './jwtFetch.js';
 
@@ -399,9 +400,22 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     }
     return null;
   };
+  const QuickSearchToolbar = () => {
+    return (
+      <Box
+        sx={{
+          p: 0.5,
+          pb: 0,
+        }}
+      >
+        <GridToolbarQuickFilter />
+      </Box>
+    );
+  }
   const renderDataGrid = () => {
     if (!isLoading) {
-      return (<DataGrid rows={articles}
+      return (<DataGrid 
+     components={{ Toolbar: QuickSearchToolbar }}   rows={articles}
                         columns={columns(setDeleteArguments, userToken, setUserToken)}
                         processRowUpdate={processRowUpdate}
                         experimentalFeatures={
@@ -413,9 +427,10 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     <Paper
       elevation="5"
       sx={{overflow: 'hidden',
+           'marginTop':'150px',
            'marginLeft':'20px',
            'marginRight':'20px',
-           height:'calc(100vh - 110px)'
+           height:'calc(100vh - 160px)'
          }}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
