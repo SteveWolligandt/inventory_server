@@ -413,15 +413,15 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
     );
   }
   const renderDataGrid = () => {
-    if (!isLoading) {
-      return (<DataGrid 
-     components={{ Toolbar: QuickSearchToolbar }}   rows={articles}
-                        columns={columns(setDeleteArguments, userToken, setUserToken)}
-                        processRowUpdate={processRowUpdate}
-                        experimentalFeatures={
-                    { newEditingApi: true }}/>);
-    } 
-    return null;
+    if (isLoading) { return null; }
+    return (
+      <DataGrid 
+        components           = {{Toolbar:QuickSearchToolbar}}
+        rows                 = {articles}
+        columns              = {columns(setDeleteArguments, userToken, setUserToken)}
+        processRowUpdate     = {processRowUpdate}
+        experimentalFeatures = {{newEditingApi: true }}
+      />);
   }
   return (<>
     <Paper
