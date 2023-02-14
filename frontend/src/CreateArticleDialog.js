@@ -1,6 +1,8 @@
 import * as React from 'react';
 import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
+import InputAdornment from '@mui/material/InputAdornment';
 import DialogActions from '@mui/material/DialogActions';
 import CircularProgress from '@mui/material/CircularProgress';
 import DialogContent from '@mui/material/DialogContent';
@@ -19,7 +21,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   const [articleNumberValid, setArticleNumberValid] = React.useState(false);
 
   const purchasePrice = React.useRef();
-  const [purchasePriceValid, setPurchasePriceValid] = React.useState(true);
+  const [purchasePriceValid, setPurchasePriceValid] = React.useState(false);
 
   const percentage = React.useRef();
   const [percentageValid, setPercentageValid] = React.useState(true);
@@ -39,17 +41,42 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
     };
 
     setIsLoading(true);
-    const response = await fetchWithToken(
-      '/api/article',{
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        token:userToken
-      },
-      body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar
-    )
-    if (!response.ok) {
-      setSnackbar({ children: 'Fehler beim Erstellen von ', severity: 'error' });
+    try{
+      const response = await fetchWithToken(
+        '/api/article',{
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          token:userToken
+        },
+        body: JSON.stringify(data)}, userToken, setUserToken, setSnackbar
+      )
+      if (!response.ok) {
+        setSnackbar({ children: 'Fehler beim Erstellen von ', severity: 'error' });
+      }
+      const article = await response.json();
+
+      const inventoryData = {
+        articleId : article.id,
+        inventoryId : activeInventory.id,
+        purchasePrice : Number(purchasePrice.current.value),
+        sellingPrice : Number(sellingPrice.current.value),
+        percentage : Number(percentage.current.value),
+        amount : Number(amount.current.value),
+        notes: ''
+      };
+      console.log(inventoryData);
+      const response2 = await fetchWithToken(
+        '/api/inventorydata',{
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          token:userToken
+        },
+        body: JSON.stringify(inventoryData)}, userToken, setUserToken, setSnackbar
+      )
+    } catch(e) {
+     console.log(e);
     }
     setIsLoading(false);
     setOpen(false);
@@ -62,6 +89,32 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
     };
     return (<span style={style}><CircularProgress size="1rem"/></span>);
   };
+
+  const updatePurchasePrice = () => {
+    purchasePrice.current.value = sellingPrice.current.value * (1 - percentage.current.value/100);
+  }
+  const updateSellingPrice = () => {
+    sellingPrice.current.value = purchasePrice.current.value / (1 - percentage.current.value/100);
+  }
+  const onPurchasePriceChange = () => {
+    const empty = purchasePrice.current.value === '';
+    setPurchasePriceValid(!empty);
+    if (empty || !percentageValid){ return; }
+    updateSellingPrice();
+  };
+  const onPercentageChange = () => {
+    const empty = percentage.current.value === '';
+    setPercentageValid(!empty);
+    if (empty || !sellingPriceValid){ return; }
+    updatePurchasePrice();
+  };
+  const onSellingPriceChange = () => {
+    const empty = sellingPrice.current.value === '';
+    setSellingPriceValid(!empty);
+    if (empty || !percentageValid){ return; }
+    updatePurchasePrice();
+  };
+
   return (
     <>
       <Dialog open={open} onClose={handleClose}>
@@ -92,52 +145,64 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           variant="standard"
           inputRef={articleNumber}
         />
+        <Box
+          sx={{
+              display:'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 2,
+          }}
+          noValidate
+          autoComplete="off"
+        >   
         <TextField
-          margin="dense"
           disabled={isLoading}
           label="EK"
-          type="string"
-          defaultValue={"0"}
-          onChange={()=>setArticleNumberValid(purchasePrice.current.value !== '')}
-          fullWidth
+          type="number"
+          onChange={onPurchasePriceChange}
           error={!purchasePriceValid}
           helperText={!purchasePriceValid?"EK darf nicht leer sein":""}
           variant="standard"
           inputRef={purchasePrice}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">€</InputAdornment>,
+          }}
         />
         <TextField
-          margin="dense"
           disabled={isLoading}
-          label="%"
-          type="string"
-          onChange={()=>setArticleNumberValid(percentage.current.value !== '')}
-          fullWidth
+          type="number"
+          label="Prozentsatz"
+          onChange={onPercentageChange}
           defaultValue={0}
           error={!percentageValid}
           helperText={!percentageValid?"Prozent darf nicht leer sein":""}
           variant="standard"
           inputRef={percentage}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">%</InputAdornment>,
+          }}
         />
         <TextField
-          margin="dense"
           disabled={isLoading}
           label="VK"
-          type="string"
+          type="number"
           defaultValue={0}
-          onChange={()=>setArticleNumberValid(sellingPrice.current.value !== '')}
-          fullWidth
+          onChange={onSellingPriceChange}
           error={!sellingPriceValid}
           helperText={!sellingPriceValid?"VK darf nicht leer sein":""}
           variant="standard"
           inputRef={sellingPrice}
+          InputProps={{
+            endAdornment: <InputAdornment position="end">€</InputAdornment>,
+          }}
         />
+        </Box>
         <TextField
           margin="dense"
           disabled={isLoading}
-          label="Artikelnummer"
-          type="string"
+          label="Stückzahl"
+          type="number"
           defaultValue={"0"}
-          onChange={()=>setArticleNumberValid(amount.current.value !== '')}
+          onChange={()=>setAmountValid(amount.current.value !== '')}
           fullWidth
           error={!amountValid}
           helperText={!amountValid?"Stückzahl darf nicht leer sein":""}

@@ -188,6 +188,9 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
 	}
+  w.Header().Set("Content-Type", "application/json")
+  articlestring, _ := json.Marshal(article)
+  w.Write(articlestring)
 	action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":%v}", string(marshaledArticle))
 	s.SendToWebSockets([]byte(action))
 }
@@ -386,12 +389,12 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var inventoryData InventoryData
-	json.Unmarshal(reqBody, &inventoryData)
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
 
+	var inventoryData InventoryData
+	json.Unmarshal(reqBody, &inventoryData)
 	s.Db.UpdateInventoryData(inventoryData)
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
 	if marshalErr != nil {
