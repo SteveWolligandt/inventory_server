@@ -235,10 +235,17 @@ export default function Companies({
   };
   const renderDataGrid = () => {
     if (isLoading) { return null; }
-    return (<DataGrid rows={companies}
-                      columns={columns(onCompanySelected, setDeleteArguments)}
-                      processRowUpdate={processRowUpdate}
-                      experimentalFeatures={{ newEditingApi: true }}/>);
+    return (
+      <DataGrid
+        initialState={{
+          sorting: {
+            sortModel: [{ field: 'name', sort: 'desc' }],
+          },
+        }}
+        rows={companies}
+        columns={columns(onCompanySelected, setDeleteArguments)}
+        processRowUpdate={processRowUpdate}
+        experimentalFeatures={{ newEditingApi: true }}/>);
   }
   return (
     <Paper
