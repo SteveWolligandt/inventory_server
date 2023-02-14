@@ -239,7 +239,7 @@ export default function Companies({
       <DataGrid
         initialState={{
           sorting: {
-            sortModel: [{ field: 'name', sort: 'desc' }],
+            sortModel: [{ field: 'name', sort: 'asc' }],
           },
         }}
         rows={companies}
