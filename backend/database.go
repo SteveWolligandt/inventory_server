@@ -641,6 +641,31 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) []Article
 	rows.Close()
 	return articles
 }
+// ------------------------------------------------------------------------------
+func (db *Database) InventoryOfCompanyWithAmountCheck(inventoryId int, companyId int) []ArticleWithInventoryData {
+	q := fmt.Sprintf(
+		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v AND inventoryData.amount > 0",
+		inventoryId, companyId)
+
+	rows, err := db.db.Query(q)
+	if err != nil {
+		rows.Close()
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	var articles []ArticleWithInventoryData
+	for rows.Next() {
+		var article ArticleWithInventoryData
+		// for each row, scan the result into our tag composite object
+		err = rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.ArticleNumber, &article.Amount, &article.Notes)
+		if err != nil {
+			panic(err.Error()) // proper error handling instead of panic in your app
+		}
+		article.ComputeSellingPrice()
+		articles = append(articles, article)
+	}
+	rows.Close()
+	return articles
+}
 
 // ------------------------------------------------------------------------------
 func (db *Database) Close() {

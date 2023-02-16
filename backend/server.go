@@ -761,7 +761,7 @@ func (s *Server) HandleRequests() {
 
 	// pdf
 	s.Router.HandleFunc(
-		"/pdf/{id}", s.GetPdf).
+		"/api/pdf/{id}", s.GetPdf).
 		Methods("GET")
 
 	// company-related
