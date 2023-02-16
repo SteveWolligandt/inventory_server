@@ -21,7 +21,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   const [articleNumberValid, setArticleNumberValid] = React.useState(false);
 
   const purchasePrice = React.useRef();
-  const [purchasePriceValid, setPurchasePriceValid] = React.useState(false);
+  const [purchasePriceValid, setPurchasePriceValid] = React.useState(true);
 
   const percentage = React.useRef();
   const [percentageValid, setPercentageValid] = React.useState(true);
@@ -97,22 +97,25 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
     sellingPrice.current.value = purchasePrice.current.value / (1 - percentage.current.value/100);
   }
   const onPurchasePriceChange = () => {
-    const empty = purchasePrice.current.value === '';
-    setPurchasePriceValid(!empty);
-    if (empty || !percentageValid){ return; }
+    const purchasePriceEmpty = purchasePrice.current.value === '';
+    setPurchasePriceValid(!purchasePriceEmpty);
+    if (purchasePriceEmpty || !percentageValid){ return; }
     updateSellingPrice();
+    setSellingPriceValid(!purchasePriceEmpty);
   };
   const onPercentageChange = () => {
     const empty = percentage.current.value === '';
     setPercentageValid(!empty);
     if (empty || !sellingPriceValid){ return; }
     updatePurchasePrice();
+    setPurchasePriceValid(!empty);
   };
   const onSellingPriceChange = () => {
     const empty = sellingPrice.current.value === '';
     setSellingPriceValid(!empty);
     if (empty || !percentageValid){ return; }
     updatePurchasePrice();
+    setPurchasePriceValid(!empty);
   };
 
   return (
@@ -158,6 +161,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           disabled={isLoading}
           label="EK"
           type="number"
+          defaultValue={0}
           onChange={onPurchasePriceChange}
           error={!purchasePriceValid}
           helperText={!purchasePriceValid?"EK darf nicht leer sein":""}
@@ -213,7 +217,12 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
         <DialogActions>
           <Button onClick={handleClose}>Abbrechen</Button>
           <Button 
-            disabled={!nameValid || !articleNumberValid}
+            disabled={!nameValid ||
+                      !articleNumberValid ||
+                      !purchasePriceValid ||
+                      !percentageValid ||
+                      !sellingPriceValid ||
+                      !amountValid}
             onClick={handleCreate}>Erstellen</Button>
         </DialogActions>
       </Dialog>

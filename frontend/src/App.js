@@ -16,12 +16,30 @@ import Alert from '@mui/material/Alert';
 import GlobalStyles from "@mui/material/GlobalStyles";
 import { ThemeProvider } from "@mui/material/styles";
 import { Theme } from "./Theme";
+import fetchWithToken from "./jwtFetch.js";
 
 const State = {
   Companies : 'companies',
   Articles : 'articles',
   AdminArea : 'adminarea',
 };
+
+async function createPdf(activeInventory, userToken, setUserToken, setSnackbar) {
+  const url = '/api/pdf/' + activeInventory.id;
+  const response = await fetchWithToken(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', token:userToken}
+  }, userToken, setUserToken, setSnackbar);
+  if (response.ok) {
+    setSnackbar({ children: 'pdf erstellt', severity: 'success' });
+  } else {
+    setSnackbar({ children: 'da lief was schief', severity: 'error' });
+  }
+  const blob = await response.blob(); 
+  const _url = window.URL.createObjectURL(blob);
+  window.open(_url, '_blank');
+}
+
 export default function App() {
   const [snackbar, setSnackbar] = React.useState(null);
   const [leftDrawerOpen, setLeftDrawerOpen] = React.useState(false);
@@ -103,6 +121,7 @@ export default function App() {
       title             = {title}
       setUserToken      = {setUserToken}
       onInventorySelect = {() => { setShowInventories(true); }} 
+      onPdfSelect       = {() => { createPdf(activeInventory, userToken, setUserToken, setSnackbar); }} 
       isAdmin           = {isAdmin}
       showAdminArea     = {showAdminArea}
       onFullValue       = {onFullValue}

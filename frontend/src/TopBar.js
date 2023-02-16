@@ -5,6 +5,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import MenuIcon from '@mui/icons-material/Menu';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AppBar from '@mui/material/AppBar';
 import IconButton from '@mui/material/IconButton';
@@ -20,6 +21,7 @@ export default function TopBar({
   title,
   isAdmin,
   onInventorySelect,
+  onPdfSelect,
   showAdminArea,
   setUserToken,
   renderContext,
@@ -102,6 +104,10 @@ export default function TopBar({
                 <MenuItem key='chooseInventory' onClick={()=>{onInventorySelect();handleClose();}}>
                   <ListItemIcon><InventoryIcon/></ListItemIcon>
                   Inventur Auswählen
+                </MenuItem>
+                <MenuItem key='createPdf' onClick={()=>{onPdfSelect();handleClose();}}>
+                  <ListItemIcon><PictureAsPdfIcon/></ListItemIcon>
+                  Pdf erstellen
                 </MenuItem>
                 { isAdmin ? renderAdminButton() : null }
               </Menu>
