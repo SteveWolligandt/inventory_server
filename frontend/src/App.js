@@ -4,6 +4,7 @@ import React from 'react';
 import useStickyState from './useStickyState.js';
 
 import Articles from './ArticlesTable.js';
+import BarcodeScanner from './BarcodeScanner.js';
 import InventoryValueDialog from './InventoryValue.js';
 import Companies from './CompaniesTable.js';
 import AdminArea from './AdminArea.js';
@@ -49,6 +50,7 @@ export default function App() {
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [topBarContext, setTopBarContext] = React.useState([]);
+  const [scannerOpen, setScannerOpen] = React.useState(true);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
   var [isAdmin, setIsAdmin] = useStickyState(null, 'isAdmin');
@@ -115,6 +117,7 @@ export default function App() {
 
   return (
     <>
+    <BarcodeScanner open={scannerOpen} setOpen={setScannerOpen} setSnackbar={setSnackbar}/>
     <GlobalStyles styles={{body: { backgroundColor: "#E8EBF0" }}}/>
     <ThemeProvider theme={Theme}>
     <TopBar
@@ -150,7 +153,7 @@ export default function App() {
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
-    <Companies
+    {/*<Companies
       open              = {isLoggedIn &&  currentState === State.Companies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
@@ -179,7 +182,7 @@ export default function App() {
       setSnackbar={setSnackbar}
       setTopBarContext={setTopBarContext}
       showCompanies={showCompanies}
-    />
+    />*/}
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
