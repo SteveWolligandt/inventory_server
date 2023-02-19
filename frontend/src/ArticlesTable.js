@@ -72,60 +72,60 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
 
-  const ws = React.useRef(new WebSocket(websocketAddr()));
-  ws.current.onopen = (event) => {
-    ws.current.send(JSON.stringify({token:userToken}));
-  };
-  ws.current.onmessage =  async (event) => {
-    if (activeCompany != null) {
-      let msg = JSON.parse(event.data);
-      let action = msg.action;
-      if (action === 'authorized') {
-      } else if (action === 'newArticle') {
-        let newArticle = msg.data;
-        if (newArticle.companyId !== activeCompany.id) { return; }
-        const foundArticle = articles.find(article => article.id === newArticle.id);
-        if (foundArticle !== undefined) {console.log('stop'); return; }
-
-        const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
-                    newArticle.id;
-        const response = await fetchWithToken(url, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json', token:userToken}
-        }, userToken, setUserToken, setSnackbar);
-        const inventoryData = await response.json();
-        newArticle.purchasePrice = inventoryData.purchasePrice;
-        newArticle.percentage    = inventoryData.percentage;
-        newArticle.sellingPrice  = inventoryData.sellingPrice;
-        newArticle.notes         = inventoryData.notes;
-        newArticle.amount        = inventoryData.amount;
-        setArticles(articles => articles.concat(newArticle));
-      } else if (action === 'updateArticle') {
-        let updatedArticle = msg.data;
-        setArticles(articles => articles.map((article, j) => {
-          return updatedArticle.id === article.id ? updatedArticle : article;
-        }));
-
-      } else if (action === 'deleteArticle') {
-        let deletedArticle = msg.data;
-        setArticles(articles => articles.filter(article => article.id !==
-                                                           deletedArticle.id));
-      } else if (action === 'updateInventoryData') {
-        let updatedInventoryData = msg.data;
-        setArticles(articles => articles.map((article, j) => {
-          if (updatedInventoryData.inventoryId === activeInventory.id &&
-              updatedInventoryData.articleId === article.id) {
-            article.amount = updatedInventoryData.amount;
-            article.purchasePrice = updatedInventoryData.purchasePrice;
-            article.percentage = updatedInventoryData.percentage;
-            article.sellingPrice = updatedInventoryData.sellingPrice;
-            article.notes = updatedInventoryData.notes;
-          }
-          return article;
-        }));
-      }
-    }
-  };
+  //const ws = React.useRef(new WebSocket(websocketAddr()));
+  //ws.current.onopen = (event) => {
+  //  ws.current.send(JSON.stringify({token:userToken}));
+  //};
+  //ws.current.onmessage =  async (event) => {
+  //  if (activeCompany != null) {
+  //    let msg = JSON.parse(event.data);
+  //    let action = msg.action;
+  //    if (action === 'authorized') {
+  //    } else if (action === 'newArticle') {
+  //      let newArticle = msg.data;
+  //      if (newArticle.companyId !== activeCompany.id) { return; }
+  //      const foundArticle = articles.find(article => article.id === newArticle.id);
+  //      if (foundArticle !== undefined) {console.log('stop'); return; }
+  //
+  //      const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
+  //                  newArticle.id;
+  //      const response = await fetchWithToken(url, {
+  //        method: 'GET',
+  //        headers: { 'Content-Type': 'application/json', token:userToken}
+  //      }, userToken, setUserToken, setSnackbar);
+  //      const inventoryData = await response.json();
+  //      newArticle.purchasePrice = inventoryData.purchasePrice;
+  //      newArticle.percentage    = inventoryData.percentage;
+  //      newArticle.sellingPrice  = inventoryData.sellingPrice;
+  //      newArticle.notes         = inventoryData.notes;
+  //      newArticle.amount        = inventoryData.amount;
+  //      setArticles(articles => articles.concat(newArticle));
+  //    } else if (action === 'updateArticle') {
+  //      let updatedArticle = msg.data;
+  //      setArticles(articles => articles.map((article, j) => {
+  //        return updatedArticle.id === article.id ? updatedArticle : article;
+  //      }));
+  //
+  //    } else if (action === 'deleteArticle') {
+  //      let deletedArticle = msg.data;
+  //      setArticles(articles => articles.filter(article => article.id !==
+  //                                                         deletedArticle.id));
+  //    } else if (action === 'updateInventoryData') {
+  //      let updatedInventoryData = msg.data;
+  //      setArticles(articles => articles.map((article, j) => {
+  //        if (updatedInventoryData.inventoryId === activeInventory.id &&
+  //            updatedInventoryData.articleId === article.id) {
+  //          article.amount = updatedInventoryData.amount;
+  //          article.purchasePrice = updatedInventoryData.purchasePrice;
+  //          article.percentage = updatedInventoryData.percentage;
+  //          article.sellingPrice = updatedInventoryData.sellingPrice;
+  //          article.notes = updatedInventoryData.notes;
+  //        }
+  //        return article;
+  //      }));
+  //    }
+  //  }
+  //};
 
   // initial get
   const initialGet = () => {

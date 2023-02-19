@@ -30,25 +30,25 @@ export default function Inventories(
   var [createOpen, setCreateOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
 
-  const ws = React.useRef(new WebSocket(websocketAddr()));
-  ws.current.onopen = (event) => {
-    ws.current.send(JSON.stringify({token:userToken}));
-  };
-  ws.current.onmessage =  async (event) => {
-    let msg = JSON.parse(event.data);
-    if (msg.action === 'newInventory') {
-      let newInventory = msg.data;
-      setInventories(inventories => inventories.concat(newInventory));
-    } else if (msg.action === 'updateInventory') {
-      let updatedInventory = msg.data;
-      setInventories(inventories => inventories.map((inventory, j) => {
-        return updatedInventory.id === inventory.id ? updatedInventory : inventory;
-      }));
-    } else if (msg.action === 'deleteInventory') {
-      let deletedInventory = msg.data;
-    setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
-    }
-  };
+  //const ws = React.useRef(new WebSocket(websocketAddr()));
+  //ws.current.onopen = (event) => {
+  //  ws.current.send(JSON.stringify({token:userToken}));
+  //};
+  //ws.current.onmessage =  async (event) => {
+  //  let msg = JSON.parse(event.data);
+  //  if (msg.action === 'newInventory') {
+  //    let newInventory = msg.data;
+  //    setInventories(inventories => inventories.concat(newInventory));
+  //  } else if (msg.action === 'updateInventory') {
+  //    let updatedInventory = msg.data;
+  //    setInventories(inventories => inventories.map((inventory, j) => {
+  //      return updatedInventory.id === inventory.id ? updatedInventory : inventory;
+  //    }));
+  //  } else if (msg.action === 'deleteInventory') {
+  //    let deletedInventory = msg.data;
+  //  setInventories(inventories => inventories.filter(inventory => inventory.id !== deletedInventory.id));
+  //  }
+  //};
   const loadInventories = () => {
     if (!open)             { setInventories([]); return; }
     if (userToken == null) { return; }

@@ -16,6 +16,36 @@
 .App-link {
   color: #61dafb;
 }
-.d-flex{
-   display: flex
+@media (prefers-reduced-motion: no-preference) {
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
+}@media(max-width: 640px) {
+    #html5qr-code-full-region {
+        width: 300px;
+    }
+}
+
+@media(min-width: 640px) {
+    #html5qr-code-full-region {
+        width: 600px;
+    }
+}
+#html5qr-code-full-region {
+    background-color: #adb5bd;
+    color: #282c34;
+    font-size: 12pt;
+}
+.Result-container {
+    min-width: 600px;
+    margin: auto;
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.Result-header {
+    font-size: 16pt;
+    margin-bottom: 20px;
 }

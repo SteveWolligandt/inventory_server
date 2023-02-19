@@ -5,6 +5,7 @@ import useStickyState from './useStickyState.js';
 
 import Articles from './ArticlesTable.js';
 import BarcodeScanner from './BarcodeScanner.js';
+import BarcodeResult from './BarcodeResult.js';
 import InventoryValueDialog from './InventoryValue.js';
 import Companies from './CompaniesTable.js';
 import AdminArea from './AdminArea.js';
@@ -50,7 +51,9 @@ export default function App() {
   var [showInventoryValue, setShowInventoryValue] = useStickyState(false, 'showInventoryValue');
   var [activeCompany, setActiveCompany] = useStickyState(null, 'activeCompany');
   var [topBarContext, setTopBarContext] = React.useState([]);
-  const [scannerOpen, setScannerOpen] = React.useState(true);
+  const [showBarcodeScanner, setShowBarcodeScanner] = React.useState(false);
+  const [showBarcodeResult, setShowBarcodeResult] = React.useState(false);
+  const [lastScannedBarcode, setLastScannedBarcode] = React.useState(null);
 
   var [userToken, setUserToken] = useStickyState(null, 'userToken');
   var [isAdmin, setIsAdmin] = useStickyState(null, 'isAdmin');
@@ -59,30 +62,30 @@ export default function App() {
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
 
-  React.useEffect(() => {
-    document.title = 'Inventur';
-
-    if (userToken != null) {
-      const renew = async () => {
-        try {
-          const renewResponse = await fetch('/api/renew', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json', token:userToken}
-          });
-          const renewJson = await renewResponse.json();
-          if (renewJson.status === 400) {
-            setUserToken(null);
-            setSnackbar({ children: 'Session beendet', severity: 'warning' });
-            return;
-            setUserToken(renewJson.token);
-          }
-        } catch(e) {
-          console.error(e);
-          setSnackbar({ children: e.message, severity: 'error' });
-        }
-      }; renew();
-    }
-  }, []);
+  //React.useEffect(() => {
+  //  document.title = 'Inventur';
+  //
+  //  if (userToken != null) {
+  //    const renew = async () => {
+  //      try {
+  //        const renewResponse = await fetch('/api/renew', {
+  //          method: 'GET',
+  //          headers: { 'Content-Type': 'application/json', token:userToken}
+  //        });
+  //        const renewJson = await renewResponse.json();
+  //        if (renewJson.status === 400) {
+  //          setUserToken(null);
+  //          setSnackbar({ children: 'Session beendet', severity: 'warning' });
+  //          return;
+  //          setUserToken(renewJson.token);
+  //        }
+  //      } catch(e) {
+  //        console.error(e);
+  //        setSnackbar({ children: e.message, severity: 'error' });
+  //      }
+  //    }; renew();
+  //  }
+  //}, []);
   React.useEffect(()=>{
     const f = async() => {
       setIsLoggedIn(userToken != null);
@@ -101,6 +104,12 @@ export default function App() {
   };
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
+  const onBarcodeScanned = (barcode) => {
+    setShowBarcodeScanner(false);
+    setShowBarcodeResult(true);
+    setLastScannedBarcode(barcode);
+  }
+
   const onFullValue   = () => setShowInventoryValue(true);
   const showAdminArea = () => setCurrentState(State.AdminArea);
   const showCompanies = () => setCurrentState(State.Companies);
@@ -117,7 +126,6 @@ export default function App() {
 
   return (
     <>
-    <BarcodeScanner open={scannerOpen} setOpen={setScannerOpen} setSnackbar={setSnackbar}/>
     <GlobalStyles styles={{body: { backgroundColor: "#E8EBF0" }}}/>
     <ThemeProvider theme={Theme}>
     <TopBar
@@ -129,8 +137,12 @@ export default function App() {
       showAdminArea     = {showAdminArea}
       onFullValue       = {onFullValue}
       renderContext     = {topBarContext}
-      setLeftDrawerOpen = {setLeftDrawerOpen}/>
+      setLeftDrawerOpen = {setLeftDrawerOpen}
+      setShowBarcodeScanner = {setShowBarcodeScanner}
+    />
     <div style={{marginBottom: '90px'}}/>
+    <BarcodeScanner open={showBarcodeScanner} setOpen={setShowBarcodeScanner} onBarcodeScanned={onBarcodeScanned}/>
+    <BarcodeResult open={showBarcodeResult} setOpen={setShowBarcodeResult} barcode={lastScannedBarcode}/>
     <LoginScreen open    = {!isLoggedIn}
                  onLogin = {onLogin}
                  setSnackbar = {setSnackbar}/>
@@ -153,7 +165,7 @@ export default function App() {
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
-    {/*<Companies
+    <Companies
       open              = {isLoggedIn &&  currentState === State.Companies}
       activeCompany     = {activeCompany}
       userToken         = {userToken}
@@ -182,13 +194,13 @@ export default function App() {
       setSnackbar={setSnackbar}
       setTopBarContext={setTopBarContext}
       showCompanies={showCompanies}
-    />*/}
+    />
+    <LeftDrawer open={leftDrawerOpen} setOpen={setLeftDrawerOpen} onLogout={onLogout}/>
     {!!snackbar && (
       <Snackbar open onClose={handleCloseSnackbar} autoHideDuration={6000}>
         <Alert {...snackbar} onClose={handleCloseSnackbar} />
       </Snackbar>
     )}
-    <LeftDrawer open={leftDrawerOpen} setOpen={setLeftDrawerOpen} onLogout={onLogout}/>
     </ThemeProvider>
     </>
   );

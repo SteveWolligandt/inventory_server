@@ -26,7 +26,8 @@ export default function TopBar({
   setUserToken,
   renderContext,
   onFullValue,
-  setLeftDrawerOpen
+  setLeftDrawerOpen,
+  setShowBarcodeScanner
 }) {
 
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -48,6 +49,7 @@ export default function TopBar({
   };
   return (
       <AppBar position="fixed">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
         <Toolbar>
           <IconButton
             size="large"
@@ -64,6 +66,15 @@ export default function TopBar({
           </Typography>
 
 
+          <IconButton color="inherit" onClick={
+            ()=>{
+              console.log("scan");
+              setShowBarcodeScanner(true);
+            }}>
+          <span className="material-symbols-outlined">
+            barcode_scanner
+          </span>
+          </IconButton>
           <IconButton
               color="inherit"
               aria-label="more"

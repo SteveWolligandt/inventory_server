@@ -39,7 +39,7 @@ export default function LeftDrawer({open, setOpen, onLogout}) {
         onOpen={toggleDrawer(true)}
       >
     <Box
-      sx={500}
+      sx={{ width:500 }}
       role="presentation"
       onClick={toggleDrawer(false)}
       onKeyDown={toggleDrawer(false)}>
