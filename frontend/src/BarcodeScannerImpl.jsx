@@ -21,7 +21,7 @@ const createConfig = (props) => {
     return config;
 };
 
-const BarcodeScannerImpl = (props) => {
+export default function BarcodeScannerImpl(props) {
     useEffect(() => {
       // when component mounts
       const config = createConfig(props);
@@ -41,9 +41,5 @@ const BarcodeScannerImpl = (props) => {
       };
     }, []);
 
-    return (
-        <div id={qrcodeRegionId} />
-    );
+    return (<div id={qrcodeRegionId} />);
 };
-
-export default BarcodeScannerImpl;

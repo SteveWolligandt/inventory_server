@@ -53,7 +53,7 @@ func (db *Database) Article(id int) *Article {
 	for rows.Next() {
 		var article Article
 		// for each row, scan the result into our tag composite object
-		err = rows.Scan(&article.Id, &article.Name, &article.ArticleNumber)
+		err = rows.Scan(&article.Id, &article.Name, &article.ArticleNumber, article.Barcode)
 		if err != nil {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
@@ -65,12 +65,25 @@ func (db *Database) Article(id int) *Article {
 }
 
 // -----------------------------------------------------------------------------
+func (db *Database) ArticleFromBarcode(barcode string, inventoryId int) *ArticleWithCompanyNameAndAmount {
+	q := fmt.Sprintf("SELECT articles.id, articles.name, articles.articleNumber, companies.name, inventoryData.amount FROM articles JOIN companies ON articles.companyId = companies.id JOIN inventoryData ON inventoryData.articleId = articles.id WHERE barcode = %v", barcode)
+
+	var article ArticleWithCompanyNameAndAmount
+	article.Barcode = &barcode
+	err := db.db.QueryRow(q).Scan(&article.Id, &article.Name, &article.ArticleNumber, &article.CompanyName, &article.Amount)
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+	return &article
+}
+
+// -----------------------------------------------------------------------------
 func (db *Database) User(name string) User {
 	user := User{Name: name}
 	q := fmt.Sprintf("SELECT isAdmin FROM users WHERE name = '%s'", name)
 	err := db.db.QueryRow(q).Scan(&user.IsAdmin)
 	if err != nil {
-          panic(err)
+		panic(err)
 	}
 	return user
 }
@@ -173,12 +186,16 @@ func (db *Database) UpdateUserIsAdmin(oldName string, isAdmin bool) error {
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) CreateArticle(name string, companyId int, articleNumber string) Article {
+func (db *Database) CreateArticle(name string, companyId int, articleNumber string, barcode string) Article {
 	var article Article
 	// create new article in database
-	dbErr := db.db.QueryRow(
-		fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber) VALUES ('%v', %v, '%v') RETURNING id",
-			name, companyId, articleNumber)).Scan(&article.Id)
+  var query string
+  if (len(barcode) == 0) {
+    query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber) VALUES ('%v', %v, '%v') RETURNING id", name, companyId, articleNumber)
+  } else {
+    query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber, barcode) VALUES ('%v',%v,'%v','%v') RETURNING id", name, companyId, articleNumber, barcode)
+  }
+	dbErr := db.db.QueryRow(query).Scan(&article.Id)
 	if dbErr != nil {
 		panic(dbErr.Error()) // proper error handling instead of panic in your app
 	}
@@ -431,6 +448,20 @@ func (db *Database) UpdateInventoryData(inventoryData InventoryData) {
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
+}
+
+// ------------------------------------------------------------------------------
+// Updates amount of an article
+func (db *Database) UpdateAmount(amount InventoryDataJustAmount) InventoryData {
+	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v WHERE articleId = %v AND inventoryId = %v", amount.Amount, amount.ArticleId, amount.InventoryId)
+
+	rows, err := db.db.Query(q)
+	rows.Close()
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
+  inventoryData := db.InventoryDataOfArticle(amount.InventoryId, amount.ArticleId);
+  return inventoryData
 }
 
 // ------------------------------------------------------------------------------
@@ -832,7 +863,7 @@ func (db *Database) ArticlesTableCreated() bool {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateArticlesTable() {
-	rows, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,imagePath varchar(255),barcode int,FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id))")
+	rows, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,imagePath varchar(255),barcode varchar(255),FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id), unique(barcode))")
 	if err == nil {
     rows.Close()
   } else {

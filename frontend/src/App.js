@@ -141,11 +141,22 @@ export default function App() {
       setShowBarcodeScanner = {setShowBarcodeScanner}
     />
     <div style={{marginBottom: '90px'}}/>
-    <BarcodeScanner open={showBarcodeScanner} setOpen={setShowBarcodeScanner} onBarcodeScanned={onBarcodeScanned}/>
-    <BarcodeResult open={showBarcodeResult} setOpen={setShowBarcodeResult} barcode={lastScannedBarcode}/>
-    <LoginScreen open    = {!isLoggedIn}
-                 onLogin = {onLogin}
-                 setSnackbar = {setSnackbar}/>
+    <BarcodeScanner
+      open             = {showBarcodeScanner}
+      setOpen          = {setShowBarcodeScanner}
+      onBarcodeScanned = {onBarcodeScanned}/>
+    <BarcodeResult
+      open         = {showBarcodeResult}
+      setOpen      = {setShowBarcodeResult}
+      barcode      = {lastScannedBarcode}
+      userToken    = {userToken}
+      setUserToken = {setUserToken}
+      activeInventory = {activeInventory}
+      setSnackbar  = {setSnackbar}/>
+    <LoginScreen
+      open        = {!isLoggedIn}
+      onLogin     = {onLogin}
+      setSnackbar = {setSnackbar}/>
     <Inventories
       setSnackbar = {setSnackbar}
       userToken = {userToken}

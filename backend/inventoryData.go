@@ -11,6 +11,13 @@ type InventoryData struct {
 	Notes         string  `json:"notes"`
 	Amount        int     `json:"amount"`
 }
+// ------------------------------------------------------------------------------
+// Inventory Data per article per inventory
+type InventoryDataJustAmount struct {
+	ArticleId     int     `json:"articleId"`
+	InventoryId   int     `json:"inventoryId"`
+	Amount        int     `json:"amount"`
+}
 
 func (i *InventoryData) ComputeSellingPrice() {
 	i.SellingPrice = i.PurchasePrice * (1 - i.Percentage)

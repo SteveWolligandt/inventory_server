@@ -9,7 +9,8 @@ import DialogContent from '@mui/material/DialogContent';
 import TextField from '@mui/material/TextField';
 import DialogTitle from '@mui/material/DialogTitle';
 import fetchWithToken from './jwtFetch.js'
-
+import BarcodeScannerImpl from './BarcodeScannerImpl.jsx'
+import Barcode from 'react-barcode';
 
 export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar, setArticles, activeInventory}) {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -32,6 +33,16 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   const amount = React.useRef();
   const [amountValid, setAmountValid] = React.useState(true);
 
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = React.useState(false);
+  const [scannedBarcode, setScannedBarcode] = React.useState(null);
+
+  React.useEffect(() => {
+    if (open) {
+      setScannedBarcode(null)
+      setBarcodeScannerOpen(false)
+    }
+  }, [open]);
+
   const handleClose     = () => { setOpen(false); };
   const handleCreate    = async () => {
     const data = {
@@ -39,6 +50,9 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
       companyId : activeCompany.id,
       articleNumber : articleNumber.current.value,
     };
+    if (scannedBarcode !== null) {
+      data.barcode = scannedBarcode;
+    }
 
     setIsLoading(true);
     try{
@@ -117,6 +131,34 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
     updatePurchasePrice();
     setPurchasePriceValid(!empty);
   };
+
+  const renderBarcodeScanner = () => {
+    if (barcodeScannerOpen) {
+      return (<>
+        <BarcodeScannerImpl 
+          fps={10}
+          qrbox={250}
+          verbose={true}
+          disableFlip={false}
+          qrCodeSuccessCallback={
+            barcode=>{
+              setScannedBarcode(barcode)
+              setBarcodeScannerOpen(false);
+            }
+          }/>
+      </>);
+    }
+    return null;
+  }
+
+  const renderScannedBarcode = () => {
+    if (scannedBarcode) {
+      return (<>
+        <Barcode value={scannedBarcode}/>
+      </>);
+    }
+    return null;
+  }
 
   return (
     <>
@@ -213,6 +255,9 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           variant="standard"
           inputRef={amount}
         />
+        <Button onClick={()=>setBarcodeScannerOpen(!barcodeScannerOpen)}>Toggle Scanner</Button>
+        {renderBarcodeScanner()}
+        {renderScannedBarcode()}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Abbrechen</Button>

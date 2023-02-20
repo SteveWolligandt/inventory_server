@@ -1,18 +1,30 @@
 package main
 
 // ------------------------------------------------------------------------------
-// Article
 type Article struct {
-	Id            int    `json:"id"`
-	CompanyId     int    `json:"companyId"`
-	Name          string `json:"name"`
-	ImagePath     string `json:"-"`
-	Barcode       *int   `json:"barcode"`
-	ArticleNumber string `json:"articleNumber"`
+	Id            int     `json:"id"`
+	CompanyId     int     `json:"companyId"`
+	Name          string  `json:"name"`
+	ImagePath     string  `json:"-"`
+	Barcode       *string `json:"barcode"`
+	ArticleNumber string  `json:"articleNumber"`
 }
 
 // ------------------------------------------------------------------------------
-// Article
+type ArticleWithCompanyName struct {
+	Article
+
+	CompanyName string `json:"companyName"`
+}
+
+// ------------------------------------------------------------------------------
+type ArticleWithCompanyNameAndAmount struct {
+	ArticleWithCompanyName
+
+	Amount int `json:"amount"`
+}
+
+// ------------------------------------------------------------------------------
 type ArticleWithInventoryData struct {
 	Article
 

@@ -425,7 +425,7 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
   }
   return (<>
     <Paper
-      elevation="5"
+      elevation={5}
       sx={{overflow: 'hidden',
            'marginTop':'150px',
            'marginLeft':'20px',
@@ -465,11 +465,17 @@ export default function Articles({open, activeCompany, activeInventory, onBack, 
 function columns(setDeleteArguments, userToken, setUserToken) {
   return [
     { field: 'name',
-      flex: 1,
+      //flex: 1,
       align:'center',
       headerAlign:'center',
       headerName: 'Name',
-      width: 1000,
+      width: 200,
+      editable: true },
+    { field: 'articleNumber',
+      align:'center',
+      headerAlign:'center',
+      headerName: 'Artikelnummer',
+      width: 200,
       editable: true },
     { field: 'purchasePrice',
       type: 'number',
@@ -514,13 +520,6 @@ function columns(setDeleteArguments, userToken, setUserToken) {
         return `${valueFormatted} €`;
       },
     },
-    { field: 'articleNumber',
-      flex: 1,
-      align:'center',
-      headerAlign:'center',
-      headerName: 'Artikelnummer',
-      width: 10,
-      editable: true },
     { field: 'amount',
       type: 'number',
       headerAlign:'center',

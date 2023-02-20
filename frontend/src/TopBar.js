@@ -41,7 +41,7 @@ export default function TopBar({
 
   const renderAdminButton = () => {
     return (
-      <MenuItem key='chooseInventory' onClick={()=>{showAdminArea();handleClose();}}>
+      <MenuItem key='admin' onClick={()=>{showAdminArea();handleClose();}}>
         <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
         Admin Panel
       </MenuItem>

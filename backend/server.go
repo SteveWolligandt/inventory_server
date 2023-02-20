@@ -173,6 +173,22 @@ func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
+func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorized(w, r) {
+		return
+	}
+	vars := mux.Vars(r)
+	articleBarcode := vars["barcode"]
+  inventoryIdStr := r.Header.Get("inventoryId")
+	inventoryId, err := strconv.Atoi(inventoryIdStr)
+	if err != nil {
+		panic(err.Error())
+	}
+	article := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
+	json.NewEncoder(w).Encode(article)
+}
+
+// ------------------------------------------------------------------------------
 func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
@@ -183,7 +199,11 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &article)
 
 	// create new article in database
-	article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber)
+  if (article.Barcode != nil) {
+    article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber, *article.Barcode)
+  } else {
+    article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber, "")
+  }
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
 		panic(marshalErr.Error()) // proper error handling instead of panic in your app
@@ -406,7 +426,24 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
-// inventory-related
+func (s *Server) UpdateAmount(w http.ResponseWriter, r *http.Request) {
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	if !s.CheckAuthorized(w, r) {
+		return
+	}
+
+	var amount InventoryDataJustAmount
+	json.Unmarshal(reqBody, &amount)
+  inventoryData := s.Db.UpdateAmount(amount)
+	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
+	if marshalErr != nil {
+		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+	}
+	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
+
+	s.SendToWebSockets([]byte(action))
+}
+
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
@@ -842,13 +879,22 @@ func (s *Server) HandleRequests() {
 		s.GetArticle).
 		Methods("GET")
 
+	s.Router.HandleFunc(
+		"/api/article/from-barcode/{barcode}",
+		s.GetArticleFromBarcode).
+		Methods("GET")
+
 	// inventoryData-related
 	s.Router.HandleFunc(
 		"/api/inventorydata",
 		s.UpdateInventoryData).
 		Methods("PUT")
 
-	// inventory-related
+	s.Router.HandleFunc(
+		"/api/amount",
+		s.UpdateAmount).
+		Methods("PUT")
+
 	s.Router.HandleFunc(
 		"/api/inventories",
 		s.GetInventories).
