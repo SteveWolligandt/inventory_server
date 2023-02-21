@@ -36,26 +36,26 @@ export default function CompaniesTable({
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
   
-  //const ws = React.useRef(new WebSocket(websocketAddr()));
-  //const authorizeWebSocket = ()      =>  ws.current.send(JSON.stringify({token:userToken}));
-  //ws.current.onopen        = (event) => authorizeWebSocket();
-  //ws.current.onmessage     = async (event) => {
-  //  let msg = JSON.parse(event.data);
-  //  let action = msg.action;
-  //  if (action === 'newCompany') {
-  //    let newCompany = msg.data;
-  //    setCompanies(companies => companies.concat(newCompany));
-  //  } else if (action === 'updateCompany') {
-  //    let updatedCompany = msg.data;
-  //    setCompanies(companies => companies.map((company, j) => {
-  //      return updatedCompany.id === company.id ? updatedCompany : company;
-  //    }));
-  //  } else if (action === 'deleteCompany') {
-  //    let deletedCompany = msg.data;
-  //    setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
-  //  }
-  //};
-  //React.useEffect(() => {if (ws.readyState === WebSocket.OPEN) {authorizeWebSocket();}}, [userToken]);
+  const ws = React.useRef(new WebSocket(websocketAddr()));
+  const authorizeWebSocket = ()      =>  ws.current.send(JSON.stringify({token:userToken}));
+  ws.current.onopen        = (event) => authorizeWebSocket();
+  ws.current.onmessage     = async (event) => {
+    let msg = JSON.parse(event.data);
+    let action = msg.action;
+    if (action === 'newCompany') {
+      let newCompany = msg.data;
+      setCompanies(companies => companies.concat(newCompany));
+    } else if (action === 'updateCompany') {
+      let updatedCompany = msg.data;
+      setCompanies(companies => companies.map((company, j) => {
+        return updatedCompany.id === company.id ? updatedCompany : company;
+      }));
+    } else if (action === 'deleteCompany') {
+      let deletedCompany = msg.data;
+      setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
+    }
+  };
+  React.useEffect(() => {if (ws.readyState === WebSocket.OPEN) {authorizeWebSocket();}}, [userToken]);
 
   const loadCompanies = () => {
     if (!open)             { setCompanies([]); return; }
