@@ -11,6 +11,12 @@ type Article struct {
 }
 
 // ------------------------------------------------------------------------------
+type ArticleWithBarcodeOnly struct {
+	Id      int    `json:"id"`
+	Barcode string `json:"barcode"`
+}
+
+// ------------------------------------------------------------------------------
 type ArticleWithCompanyName struct {
 	Article
 

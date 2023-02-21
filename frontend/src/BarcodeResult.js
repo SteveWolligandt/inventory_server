@@ -10,29 +10,49 @@ import fetchWithToken from './jwtFetch.js';
 import CircularProgress from '@mui/material/CircularProgress';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CompaniesList from './CompaniesList.js';
+import ArticlesList from './ArticlesList.js';
 
 export default function BarcodeResult(
     {open, setOpen, barcode, userToken, setUserToken, setSnackbar, activeInventory}) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [article, setArticle] = React.useState(null);
   const [currentAmount, setCurrentAmount] = React.useState(0);
+  const [showCompaniesList, setShowCompaniesList] = React.useState(false);
+  const selectedCompany = React.useRef(null);
+  const [showArticlesList, setShowArticlesList] = React.useState(false);
+  const [showMessageAssignToArticle, setShowMessageAssignToArticle] = React.useState(false);
+  const [showCountDialog, setShowCountDialog] = React.useState(false);
   React.useEffect(() => {
     const f = async () => {
-      if (open && barcode !== null) {
-        setIsLoading(true);
-        const url = '/api/article/from-barcode/' + barcode;
-        const response = await fetchWithToken(url,
-          { method: 'GET',
-            headers: { 'Content-Type': 'application/json', token:userToken , inventoryId:activeInventory.id},
-          }, userToken, setUserToken, setSnackbar
-        )
-        if (!response.ok) {
-          console.log('error');
+      if (open) {
+        if (barcode !== null) {
+          setIsLoading(true);
+          const url = '/api/article/from-barcode/' + barcode;
+          const response = await fetchWithToken(url,
+            { method: 'GET',
+              headers: { 'Content-Type': 'application/json', token:userToken , inventoryId:activeInventory.id},
+            }, userToken, setUserToken, setSnackbar
+          )
+          if (!response.ok) {
+            console.log('error');
+          }
+          const json = await response.json();
+          console.log(json)
+          if (json.success) {
+            setCurrentAmount(json.article.amount);
+            setArticle(json.article);
+            setShowCountDialog(true);
+          } else {
+            setShowMessageAssignToArticle(true);
+          }
+          setIsLoading(false);
         }
-        const json = await response.json();
-        setCurrentAmount(json.amount);
-        setArticle(json);
-        setIsLoading(false);
+      } else {
+        setShowCountDialog(false);
+        setShowMessageAssignToArticle(false);
+        setShowCompaniesList(false);
+        setShowCompaniesList(false);
       }
     }; f();
   }, [open, barcode])
@@ -55,11 +75,13 @@ export default function BarcodeResult(
       headers : {'Content-Type' : 'application/json', token:userToken},
       body : body
     }, userToken, setUserToken, setSnackbar)
+    setShowCountDialog(false);
     setOpen(false);
     setIsLoading(false);
   };
-  return (
-    <Dialog open={open} onClose={()=>{}}>
+  if (!open) { return null; }
+  return (<>
+    <Dialog open={showCountDialog}>
       <DialogTitle>
       {article === null ? 'Laden' : article.name} {renderLoading()}
       </DialogTitle>
@@ -74,8 +96,64 @@ export default function BarcodeResult(
       </IconButton>  
       </DialogContent>
       <DialogActions>
-      <Button disabled={isLoading} onClick={()=>setOpen(false)}>Abbrechen</Button>
-      <Button disabled={isLoading} onClick={sendAmount}>Senden</Button>
+        <Button disabled={isLoading} onClick={()=>{
+          setShowCountDialog(false);
+          setOpen(false);
+        }}>Abbrechen</Button>
+        <Button disabled={isLoading} onClick={sendAmount}>Senden</Button>
       </DialogActions>
-    </Dialog>)
+    </Dialog>
+
+    <Dialog open={showMessageAssignToArticle}>
+      <DialogTitle>
+        Barcode keinem Artikel zugewiesen
+      </DialogTitle>
+      <DialogContent>
+        Soll der Barcode einem Artikel zugewiesen werden?
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={()=>setOpen(false)}>Abbrechen</Button>
+        <Button onClick={()=>{
+          setShowCompaniesList(true);
+          setShowMessageAssignToArticle(false);
+        }}>Zuweisen</Button>
+      </DialogActions>
+    </Dialog>
+
+    <CompaniesList
+      open              = {showCompaniesList}
+      userToken         = {userToken}
+      setUserToken      = {setUserToken}
+      setSnackbar       = {setSnackbar}
+      onCompanySelected = {(company) => {
+        setShowCompaniesList(false);
+        setShowArticlesList(true);
+        selectedCompany.current=company;
+      }}/>
+    <ArticlesList
+      open              = {showArticlesList}
+      company           = {selectedCompany.current}
+      userToken         = {userToken}
+      setUserToken      = {setUserToken}
+      setSnackbar       = {setSnackbar}
+      onArticleSelected = {async (article) => {
+        setShowArticlesList(false);
+        const url = '/api/article/' + article.id + '/barcode';
+        const response = await fetchWithToken(url,
+          { method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              token:userToken,
+              barcode:barcode
+            },
+          }, userToken, setUserToken, setSnackbar
+        )
+        if (!response.ok) {
+          console.log('error');
+        } else {
+          setSnackbar({ children: 'Barcode hinzugefügt', severity: 'success' });
+        }
+        setOpen(false);
+      }}/>
+    </>)
 }

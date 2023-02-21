@@ -3,11 +3,11 @@ import './App.css';
 import React from 'react';
 import useStickyState from './useStickyState.js';
 
-import Articles from './ArticlesTable.js';
+import ArticlesTable from './ArticlesTable.js';
 import BarcodeScanner from './BarcodeScanner.js';
 import BarcodeResult from './BarcodeResult.js';
 import InventoryValueDialog from './InventoryValue.js';
-import Companies from './CompaniesTable.js';
+import CompaniesTable from './CompaniesTable.js';
 import AdminArea from './AdminArea.js';
 import Inventories from './InventoriesList.js';
 import LoginScreen from './LoginScreen.js';
@@ -176,9 +176,8 @@ export default function App() {
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
       activeInventory   = {activeInventory}/>
-    <Companies
+    <CompaniesTable
       open              = {isLoggedIn &&  currentState === State.Companies}
-      activeCompany     = {activeCompany}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
@@ -188,7 +187,7 @@ export default function App() {
         showArticles();
       }}
       setTopBarContext  = {setTopBarContext}/>
-    <Articles
+    <ArticlesTable
       open            = {isLoggedIn && currentState === State.Articles}
       userToken       = {userToken}
       setUserToken    = {setUserToken}

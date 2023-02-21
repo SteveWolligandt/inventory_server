@@ -72,10 +72,24 @@ func (db *Database) ArticleFromBarcode(barcode string, inventoryId int) *Article
 	article.Barcode = &barcode
 	err := db.db.QueryRow(q).Scan(&article.Id, &article.Name, &article.ArticleNumber, &article.CompanyName, &article.Amount)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		return nil
 	}
 	return &article
 }
+
+// ------------------------------------------------------------------------------
+// Updates amount of an article
+func (db *Database) UpdateBarcode(article ArticleWithBarcodeOnly) error {
+  fmt.Println(article)
+	rows, err := db.db.Query("UPDATE articles SET barcode = ? WHERE id = ?", article.Barcode, article.Id)
+  if (err != nil) {
+    panic(err)
+  } else {
+    rows.Close()
+  }
+  return err
+}
+
 
 // -----------------------------------------------------------------------------
 func (db *Database) User(name string) User {

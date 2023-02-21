@@ -179,13 +179,26 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	articleBarcode := vars["barcode"]
-  inventoryIdStr := r.Header.Get("inventoryId")
+	inventoryIdStr := r.Header.Get("inventoryId")
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
 	if err != nil {
 		panic(err.Error())
 	}
 	article := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
-	json.NewEncoder(w).Encode(article)
+	if article != nil {
+		type Response struct {
+			Success bool `json:"success"`
+      Article ArticleWithCompanyNameAndAmount `json:"article"`
+		}
+    response := Response{Success:true, Article:*article}
+		json.NewEncoder(w).Encode(response)
+	} else {
+		type Response struct {
+			Success bool `json:"success"`
+		}
+    response := Response{Success:false}
+		json.NewEncoder(w).Encode(response)
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -442,6 +455,29 @@ func (s *Server) UpdateAmount(w http.ResponseWriter, r *http.Request) {
 	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
 
 	s.SendToWebSockets([]byte(action))
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) UpdateBarcode(w http.ResponseWriter, r *http.Request) {
+	if !s.CheckAuthorized(w, r) {
+		return
+	}
+
+	vars := mux.Vars(r)
+	articleIdStr := vars["id"]
+	articleId, err := strconv.Atoi(articleIdStr)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var article ArticleWithBarcodeOnly
+  article.Id = articleId 
+  article.Barcode = r.Header.Get("barcode") 
+  err = s.Db.UpdateBarcode(article)
+
+	if err != nil {
+		panic(err.Error()) // proper error handling instead of panic in your app
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -812,7 +848,6 @@ func (s *Server) HandleRequests() {
 		s.GetCompaniesWithValue).
 		Methods("GET")
 
-	// company-related
 	s.Router.HandleFunc(
 		"/api/companies/inventory/{inventoryId}",
 		s.GetCompaniesWithInventory).
@@ -867,6 +902,11 @@ func (s *Server) HandleRequests() {
 	s.Router.HandleFunc(
 		"/api/article/{id}",
 		s.UpdateArticle).
+		Methods("PUT")
+
+	s.Router.HandleFunc(
+		"/api/article/{id}/barcode",
+		s.UpdateBarcode).
 		Methods("PUT")
 
 	s.Router.HandleFunc(

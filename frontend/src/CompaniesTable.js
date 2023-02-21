@@ -23,7 +23,7 @@ function computeMutation(newRow, oldRow) {
   return null;
 }
 
-export default function Companies({
+export default function CompaniesTable({
   open,
   onCompanySelected,
   userToken,
