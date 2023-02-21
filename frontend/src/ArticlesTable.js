@@ -443,7 +443,6 @@ export default function ArticlesTable({open, activeCompany, activeInventory, onB
                          setUserToken={setUserToken}
                          activeCompany={activeCompany}
                          setSnackbar={setSnackbar}
-                         setArticles={setArticles}
                          activeInventory={activeInventory}/>
     <Zoom in={open}>
       <Fab color='secondary'

@@ -12,17 +12,20 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import CompaniesList from './CompaniesList.js';
 import ArticlesList from './ArticlesList.js';
+import CreateArticleDialog from './CreateArticleDialog.js';
 
 export default function BarcodeResult(
     {open, setOpen, barcode, userToken, setUserToken, setSnackbar, activeInventory}) {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [article, setArticle] = React.useState(null);
-  const [currentAmount, setCurrentAmount] = React.useState(0);
-  const [showCompaniesList, setShowCompaniesList] = React.useState(false);
-  const selectedCompany = React.useRef(null);
-  const [showArticlesList, setShowArticlesList] = React.useState(false);
+  const [isLoading,                  setIsLoading]                  = React.useState(false);
+  const [article,                    setArticle]                    = React.useState(null);
+  const [currentAmount,              setCurrentAmount]              = React.useState(0);
+  const [showCreateArticle,          setShowCreateArticle]          = React.useState(false);
+  const [showCompaniesList,          setShowCompaniesList]          = React.useState(false);
+  const [showArticlesList,           setShowArticlesList]           = React.useState(false);
   const [showMessageAssignToArticle, setShowMessageAssignToArticle] = React.useState(false);
-  const [showCountDialog, setShowCountDialog] = React.useState(false);
+  const [showCountDialog,            setShowCountDialog]            = React.useState(false);
+  const selectedCompany                                             = React.useRef(null);
+  const stateAfterCompanyPicker                                     = React.useRef(null);
   React.useEffect(() => {
     const f = async () => {
       if (open) {
@@ -38,7 +41,6 @@ export default function BarcodeResult(
             console.log('error');
           }
           const json = await response.json();
-          console.log(json)
           if (json.success) {
             setCurrentAmount(json.article.amount);
             setArticle(json.article);
@@ -49,10 +51,10 @@ export default function BarcodeResult(
           setIsLoading(false);
         }
       } else {
-        setShowCountDialog(false);
-        setShowMessageAssignToArticle(false);
-        setShowCompaniesList(false);
-        setShowCompaniesList(false);
+        //setShowCountDialog(false);
+        //setShowMessageAssignToArticle(false);
+        //setShowCompaniesList(false);
+        //setShowCompaniesList(false);
       }
     }; f();
   }, [open, barcode])
@@ -116,20 +118,45 @@ export default function BarcodeResult(
         <Button onClick={()=>{
           setShowCompaniesList(true);
           setShowMessageAssignToArticle(false);
+          stateAfterCompanyPicker.current = 'create';
+        }}>Neuer Artikel</Button>
+        <Button onClick={()=>{
+          setShowCompaniesList(true);
+          setShowMessageAssignToArticle(false);
+          stateAfterCompanyPicker.current = 'assign';
         }}>Zuweisen</Button>
       </DialogActions>
     </Dialog>
+
+    <CreateArticleDialog
+      open={showCreateArticle}
+      setOpen={setShowCreateArticle}
+      userToken={userToken}
+      setUserToken={setUserToken}
+      activeCompany={selectedCompany.current}
+      setSnackbar={setSnackbar}
+      activeInventory={activeInventory}
+      defaultBarcode={barcode}
+      onCreate={()=>{
+        setShowCreateArticle(false);
+        setOpen(false);
+      }}/>
 
     <CompaniesList
       open              = {showCompaniesList}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
-      onCompanySelected = {(company) => {
+      onCompanySelected = { (company) => {
+        selectedCompany.current = company;
         setShowCompaniesList(false);
-        setShowArticlesList(true);
-        selectedCompany.current=company;
+        if (stateAfterCompanyPicker.current === 'assign') {
+          setShowArticlesList(true);
+        } else if (stateAfterCompanyPicker.current === 'create') {
+          setShowCreateArticle(true);
+        }
       }}/>
+
     <ArticlesList
       open              = {showArticlesList}
       company           = {selectedCompany.current}

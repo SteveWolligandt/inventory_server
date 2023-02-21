@@ -12,7 +12,17 @@ import fetchWithToken from './jwtFetch.js'
 import BarcodeScannerImpl from './BarcodeScannerImpl.jsx'
 import Barcode from 'react-barcode';
 
-export default function CreateArticleDialog({open, setOpen, activeCompany, userToken, setUserToken, setSnackbar, setArticles, activeInventory}) {
+export default function CreateArticleDialog({
+  open,
+  setOpen,
+  activeCompany,
+  userToken,
+  setUserToken,
+  setSnackbar,
+  activeInventory,
+  defaultBarcode,
+  onCreate,
+}) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const name = React.useRef();
@@ -34,15 +44,16 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   const [amountValid, setAmountValid] = React.useState(true);
 
   const [barcodeScannerOpen, setBarcodeScannerOpen] = React.useState(false);
-  const [scannedBarcode, setScannedBarcode] = React.useState(null);
+  const [scannedBarcode, setScannedBarcode] = React.useState(defaultBarcode);
 
   React.useEffect(() => {
     if (open) {
-      setScannedBarcode(null)
       setBarcodeScannerOpen(false)
+      setScannedBarcode(defaultBarcode)
     }
   }, [open]);
 
+  if (!open) { return null }
   const handleClose     = () => { setOpen(false); };
   const handleCreate    = async () => {
     const data = {
@@ -79,7 +90,6 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
         amount : Number(amount.current.value),
         notes: ''
       };
-      console.log(inventoryData);
       const response2 = await fetchWithToken(
         '/api/inventorydata',{
         method: "PUT",
@@ -89,6 +99,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
         },
         body: JSON.stringify(inventoryData)}, userToken, setUserToken, setSnackbar
       )
+      if (onCreate !== null) { onCreate() }
     } catch(e) {
      console.log(e);
     }
@@ -163,7 +174,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
   return (
     <>
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>Neuer Artikel {renderLoading()}</DialogTitle>
+        <DialogTitle>Neuer Artikel in {activeCompany.name} {renderLoading()}</DialogTitle>
         <DialogContent>
         <TextField
           autoFocus
@@ -255,7 +266,7 @@ export default function CreateArticleDialog({open, setOpen, activeCompany, userT
           variant="standard"
           inputRef={amount}
         />
-        <Button onClick={()=>setBarcodeScannerOpen(!barcodeScannerOpen)}>Toggle Scanner</Button>
+        <Button onClick={()=>setBarcodeScannerOpen(!barcodeScannerOpen)}>Barcode umschalten</Button>
         {renderBarcodeScanner()}
         {renderScannedBarcode()}
         </DialogContent>

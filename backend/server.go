@@ -721,7 +721,7 @@ func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GenerateJWT(username string, isAdmin bool) (string, error) {
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := time.Now().Add(30 * time.Minute)
 	claims := &Claims{
 		Username: username,
 		IsAdmin:  isAdmin,
@@ -797,7 +797,7 @@ func (s *Server) Renew(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if time.Until(claims.ExpiresAt.Time) < -time.Second*60 {
+	if time.Until(claims.ExpiresAt.Time) < -time.Minute*15 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
