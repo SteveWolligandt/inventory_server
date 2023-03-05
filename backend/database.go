@@ -353,7 +353,7 @@ func (db *Database) ValueOfCompany(companyId int, inventoryId int) (float32, err
 		return 0, err
 	}
 	if value.Valid == false {
-		return 0, fmt.Errorf("Value is not valid")
+		return 0, nil
 	}
 	return float32(value.Float64), nil
 }
