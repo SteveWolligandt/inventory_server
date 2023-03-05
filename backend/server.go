@@ -139,10 +139,17 @@ func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
-	filename := buildPdf(s.Db, inventoryId)
+	filename, buildErr := buildPdf(s.Db, inventoryId)
+	if buildErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	fileBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	w.Write(fileBytes)
 	w.Header().Set("Content-Type", "application/pdf")
@@ -153,7 +160,11 @@ func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	articles := s.Db.Articles()
+	articles, err := s.Db.Articles()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -164,11 +175,18 @@ func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	articleIdStr := vars["id"]
-	articleId, err := strconv.Atoi(articleIdStr)
-	if err != nil {
-		panic(err.Error())
+	articleId, strconvErr := strconv.Atoi(articleIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	article := s.Db.Article(articleId)
+	article, err := s.Db.Article(articleId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(article)
 }
 
@@ -180,23 +198,30 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	articleBarcode := vars["barcode"]
 	inventoryIdStr := r.Header.Get("inventoryId")
-	inventoryId, err := strconv.Atoi(inventoryIdStr)
-	if err != nil {
-		panic(err.Error())
+	inventoryId, strconvErr := strconv.Atoi(inventoryIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	article := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
+	article, err := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if article != nil {
 		type Response struct {
-			Success bool `json:"success"`
-      Article ArticleWithCompanyNameAndAmount `json:"article"`
+			Success bool                            `json:"success"`
+			Article ArticleWithCompanyNameAndAmount `json:"article"`
 		}
-    response := Response{Success:true, Article:*article}
+		response := Response{Success: true, Article: *article}
 		json.NewEncoder(w).Encode(response)
 	} else {
 		type Response struct {
 			Success bool `json:"success"`
 		}
-    response := Response{Success:false}
+		response := Response{Success: false}
 		json.NewEncoder(w).Encode(response)
 	}
 }
@@ -208,22 +233,25 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	// extract article from json response
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
+	var unmarshaledArticle Article
+	json.Unmarshal(reqBody, &unmarshaledArticle)
 
 	// create new article in database
-  if (article.Barcode != nil) {
-    article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber, *article.Barcode)
-  } else {
-    article = s.Db.CreateArticle(article.Name, article.CompanyId, article.ArticleNumber, "")
-  }
+	article, err := s.Db.CreateArticle(unmarshaledArticle.Name, unmarshaledArticle.CompanyId, unmarshaledArticle.ArticleNumber, unmarshaledArticle.Barcode)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
-		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-  w.Header().Set("Content-Type", "application/json")
-  articlestring, _ := json.Marshal(article)
-  w.Write(articlestring)
+	w.Header().Set("Content-Type", "application/json")
+	articlestring, _ := json.Marshal(article)
+	w.Write(articlestring)
 	action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":%v}", string(marshaledArticle))
 	s.SendToWebSockets([]byte(action))
 }
@@ -241,13 +269,22 @@ func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 	var strConvErr error
 	article.Id, strConvErr = strconv.Atoi(vars["id"])
 	if strConvErr != nil {
-		panic(strConvErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	s.Db.UpdateArticle(article)
+	_, err := s.Db.UpdateArticle(article)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	marshaledArticle, marshalErr := json.Marshal(article)
 	if marshalErr != nil {
-		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":%v}", string(marshaledArticle))
 	s.SendToWebSockets([]byte(action))
@@ -262,9 +299,16 @@ func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	articleIdStr := vars["id"]
 	articleId, err := strconv.Atoi(articleIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	s.Db.DeleteArticle(articleId)
+	err = s.Db.DeleteArticle(articleId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", articleId)
 	s.SendToWebSockets([]byte(action))
 }
@@ -274,7 +318,12 @@ func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	companies := s.Db.Companies()
+	companies, err := s.Db.Companies()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -287,9 +336,16 @@ func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
 	inventoryIdStr := vars["inventoryId"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	companies := s.Db.CompaniesWithValue(inventoryId)
+	companies, companiesErr := s.Db.CompaniesWithValue(inventoryId)
+	if companiesErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -298,7 +354,12 @@ func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Reques
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	companies := s.Db.Companies()
+	companies, err := s.Db.Companies()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(companies)
 }
 
@@ -309,11 +370,18 @@ func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["id"]
-	companyId, err := strconv.Atoi(companyIdStr)
-	if err != nil {
-		panic(err.Error())
+	companyId, strconvErr := strconv.Atoi(companyIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	articles := s.Db.ArticlesOfCompany(companyId)
+	articles, err := s.Db.ArticlesOfCompany(companyId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -324,12 +392,19 @@ func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["id"]
-	companyId, err := strconv.Atoi(companyIdStr)
-	if err != nil {
-		panic(err.Error())
+	companyId, strconvErr := strconv.Atoi(companyIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	company := s.Db.Company(companyId)
+	company, err := s.Db.Company(companyId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(company)
 }
 
@@ -340,17 +415,27 @@ func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
 	}
 	vars := mux.Vars(r)
 	companyIdStr := vars["companyId"]
-	companyId, err := strconv.Atoi(companyIdStr)
-	if err != nil {
-		panic(err.Error())
+	companyId, strconvCompanyErr := strconv.Atoi(companyIdStr)
+	if strconvCompanyErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	inventoryIdStr := vars["inventoryId"]
-	inventoryId, err := strconv.Atoi(inventoryIdStr)
-	if err != nil {
-		panic(err.Error())
+	inventoryId, strconvInventoryErr := strconv.Atoi(inventoryIdStr)
+	if strconvInventoryErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	company := s.Db.CompanyWithValue(companyId, inventoryId)
+	company, err := s.Db.CompanyWithValue(companyId, inventoryId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	json.NewEncoder(w).Encode(company)
 }
 
@@ -361,17 +446,25 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 	}
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	fmt.Printf("client: response body: %s\n", reqBody)
-	var company Company
-	json.Unmarshal(reqBody, &company)
-	fmt.Println(company)
+	var unmarshaledCompany Company
+	json.Unmarshal(reqBody, &unmarshaledCompany)
 
-	company = s.Db.CreateCompany(company.Name)
+	company, err := s.Db.CreateCompany(unmarshaledCompany.Name)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	marshaledCompany, marshalErr := json.Marshal(company)
 	if marshalErr != nil {
-		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	action := fmt.Sprintf("{\"action\":\"newCompany\", \"data\":%v}", string(marshaledCompany))
 	s.SendToWebSockets([]byte(action))
@@ -391,7 +484,9 @@ func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
 	var err error
 	company.Id, err = strconv.Atoi(companyIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	s.Db.UpdateCompany(company)
@@ -410,7 +505,9 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 	companyIdStr := vars["id"]
 	companyId, err := strconv.Atoi(companyIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	s.Db.DeleteCompany(companyId)
 	action := fmt.Sprintf("{\"action\":\"deleteCompany\", \"data\":{\"id\":%v}}", companyId)
@@ -431,7 +528,9 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 	s.Db.UpdateInventoryData(inventoryData)
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
 	if marshalErr != nil {
-		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
 
@@ -447,10 +546,17 @@ func (s *Server) UpdateAmount(w http.ResponseWriter, r *http.Request) {
 
 	var amount InventoryDataJustAmount
 	json.Unmarshal(reqBody, &amount)
-  inventoryData := s.Db.UpdateAmount(amount)
+	inventoryData, err := s.Db.UpdateAmount(amount)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
 	if marshalErr != nil {
-		panic(marshalErr.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	action := fmt.Sprintf("{\"action\":\"updateInventoryData\", \"data\":%v}", string(marshaledInventoryData))
 
@@ -467,16 +573,20 @@ func (s *Server) UpdateBarcode(w http.ResponseWriter, r *http.Request) {
 	articleIdStr := vars["id"]
 	articleId, err := strconv.Atoi(articleIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	var article ArticleWithBarcodeOnly
-  article.Id = articleId 
-  article.Barcode = r.Header.Get("barcode") 
-  err = s.Db.UpdateBarcode(article)
+	article.Id = articleId
+	article.Barcode = r.Header.Get("barcode")
+	err = s.Db.UpdateBarcode(article)
 
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -485,7 +595,12 @@ func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	inventories := s.Db.Inventories()
+	inventories, err := s.Db.Inventories()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(inventories)
 }
 
@@ -498,22 +613,34 @@ func (s *Server) GetInventory(w http.ResponseWriter, r *http.Request) {
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	inventory := s.Db.Inventory(inventoryId)
+	inventory, err := s.Db.Inventory(inventoryId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(inventory)
 }
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var inventory Inventory
-	json.Unmarshal(reqBody, &inventory)
+	var unmarshaledInventory Inventory
+	json.Unmarshal(reqBody, &unmarshaledInventory)
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
 
-	inventory = s.Db.CreateInventory(inventory.Name)
+	inventory, err := s.Db.CreateInventory(unmarshaledInventory.Name)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(inventory)
 
 	action := fmt.Sprintf(
@@ -536,7 +663,9 @@ func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &inventory)
 	inventory.Id, err = strconv.Atoi(idStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	s.Db.UpdateInventory(inventory)
@@ -556,7 +685,9 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 	inventoryIdStr := vars["id"]
 	inventoryId, err := strconv.Atoi(inventoryIdStr)
 	if err != nil {
-		panic(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	s.Db.DeleteInventory(inventoryId)
@@ -575,16 +706,25 @@ func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Reques
 	inventoryIdStr := vars["inventoryId"]
 	inventoryId, inventoryErr := strconv.Atoi(inventoryIdStr)
 	if inventoryErr != nil {
-		panic(inventoryErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	articleIdStr := vars["articleId"]
 	articleId, articleErr := strconv.Atoi(articleIdStr)
 	if articleErr != nil {
-		panic(articleErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	inventoryData := s.Db.InventoryDataOfArticle(inventoryId, articleId)
+	inventoryData, err := s.Db.InventoryDataOfArticle(inventoryId, articleId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(inventoryData)
 }
 
@@ -598,16 +738,25 @@ func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 	companyIdStr := vars["companyId"]
 	companyId, companyErr := strconv.Atoi(companyIdStr)
 	if companyErr != nil {
-		panic(companyErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	inventoryIdStr := vars["inventoryId"]
 	inventoryId, inventoryErr := strconv.Atoi(inventoryIdStr)
 	if inventoryErr != nil {
-		panic(inventoryErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	articles := s.Db.InventoryOfCompany(inventoryId, companyId)
+	articles, err := s.Db.InventoryOfCompany(inventoryId, companyId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -626,14 +775,26 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 	idStr := vars["id"]
 	inventoryId, idErr := strconv.Atoi(idStr)
 	if idErr != nil {
-		panic(idErr.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	var totalValue float32
-	companies := s.Db.Companies()
+	companies, err := s.Db.Companies()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	for _, company := range companies {
-		value := s.Db.ValueOfCompany(company.Id, inventoryId)
+		value, err := s.Db.ValueOfCompany(company.Id, inventoryId)
+		if err != nil {
+			// TODO send message with error
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		var companyWithValue CompanyWithValue
 		companyWithValue.Company = company
 		companyWithValue.Value = value
@@ -650,7 +811,13 @@ func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request)
 	if !s.CheckAuthorized(w, r) {
 		return
 	}
-	json.NewEncoder(w).Encode(s.Db.InventoriesWithValue())
+	inventories, err := s.Db.InventoriesWithValue()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(inventories)
 }
 
 // ------------------------------------------------------------------------------
@@ -664,13 +831,18 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAdmin, err := strconv.ParseBool(r.Header.Get("isAdmin"))
-	if err != nil {
+	isAdmin, parseErr := strconv.ParseBool(r.Header.Get("isAdmin"))
+	if parseErr != nil {
 		isAdmin = false
 	}
 	user := UserWithPassword{User: User{Name: username, IsAdmin: isAdmin}, Password: password}
 
-	s.Db.CreateUser(user.Name, user.Password, user.IsAdmin)
+	_, err := s.Db.CreateUser(user.Name, user.Password, user.IsAdmin)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 // ------------------------------------------------------------------------------
@@ -716,7 +888,13 @@ func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if !s.CheckAuthorizedAdmin(w, r) {
 		return
 	}
-	json.NewEncoder(w).Encode(s.Db.Users())
+	users, err := s.Db.Users()
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(users)
 }
 
 // ------------------------------------------------------------------------------
@@ -741,7 +919,12 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		WriteUnauthorizedToResponse(&w)
 		return
 	}
-	user := s.Db.UserWithHashedPassword(username)
+	user, err := s.Db.UserWithHashedPassword(username)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	success := VerifyPassword(user.HashedPassword, password)
 
 	if success {
@@ -1116,13 +1299,13 @@ func (s *Server) Close() {
 	s.Db.Close()
 }
 
-func CreateOrReadJWTSecret(n int, path string) {
+func CreateOrReadJWTSecret(n int, path string) error {
 	jwtSecret = make([]byte, n)
 	if _, statErr := os.Stat(path); statErr == nil {
 		var e error
 		jwtSecret, e = os.ReadFile(path)
 		if e != nil {
-			panic(e)
+			return e
 		}
 	} else {
 		// create random string
@@ -1134,13 +1317,14 @@ func CreateOrReadJWTSecret(n int, path string) {
 		}
 		err := os.WriteFile(path, jwtSecret, 0644)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+  return nil
 }
 
 // ------------------------------------------------------------------------------
-func NewServer() *Server {
+func NewServer() (*Server, error) {
 	CreateOrReadJWTSecret(128, "jwtsecret")
 
 	flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
@@ -1148,7 +1332,12 @@ func NewServer() *Server {
 
 	fmt.Println("Creating Server...")
 	s := new(Server)
-	s.Db = NewDatabase()
+  db, err := NewDatabase()
+
+  if (err != nil) {
+    return nil, err
+  }
+	s.Db = db
 	fmt.Println("Creating Router...")
 	s.Router = mux.NewRouter().StrictSlash(true)
 
@@ -1158,5 +1347,5 @@ func NewServer() *Server {
 	s.HandleRequests()
 	fmt.Println("Creating REST API... done!")
 	fmt.Println("Creating Server... done!")
-	return s
+	return s, nil
 }

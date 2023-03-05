@@ -1,6 +1,9 @@
 package main
 func main() {
-  s := NewServer()
+  s, err := NewServer()
+  if (err != nil) {
+    panic(err)
+  }
   s.Start()
   defer s.Close()
 }
