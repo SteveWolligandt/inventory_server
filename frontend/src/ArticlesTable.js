@@ -544,20 +544,20 @@ function columns(setDeleteArguments, userToken, setUserToken) {
       width: 100,
       sortable: false,
       editable: true },
-    { field: 'delete',
-      editable: false,
-      //type: 'action',
-      headerName: '',
-      align: 'center',
-      width: 60,
-      sortable: false,
-      renderCell: (params) => {
-        return <IconButton size="small"
-                           aria-label="deleteCompany"
-                           onClick={() => { setDeleteArguments(params.row); }}>
-                 <DeleteIcon fontSize = "small" />
-               </IconButton>;
-      }
-    },
+    //{ field: 'delete',
+    //  editable: false,
+    //  //type: 'action',
+    //  headerName: '',
+    //  align: 'center',
+    //  width: 60,
+    //  sortable: false,
+    //  renderCell: (params) => {
+    //    return <IconButton size="small"
+    //                       aria-label="deleteCompany"
+    //                       onClick={() => { setDeleteArguments(params.row); }}>
+    //             <DeleteIcon fontSize = "small" />
+    //           </IconButton>;
+    //  }
+    //},
   ];
 }
