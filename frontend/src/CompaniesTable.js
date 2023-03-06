@@ -257,26 +257,6 @@ export default function CompaniesTable({
         experimentalFeatures={{ newEditingApi: true }}/>);
   }
 
-  //return (
-  //  <Paper
-  //    elevation={5}
-  //    sx={{overflow:'hidden',
-  //         'marginLeft':'20px',
-  //         'marginRight':'20px',
-  //         height:'calc(100vh - 110px)'
-  //       }}>
-  //  {renderLoading()}
-  //  {renderDataGrid()}
-  //  {renderChangeConfirmDialog()}
-  //  {renderDeleteConfirmDialog()}
-  //  <CreateCompanyDialog open={createDialogOpen}
-  //                       setOpen={setCreateDialogOpen}
-  //                       userToken={userToken}
-  //                       setUserToken={setUserToken}
-  //                       setSnackbar={setSnackbar}/>
-  //  </Paper>
-  //);
-
   const CompanyCard = (props) => {
     const { company } = props;
     return (<Card sx={{p: 1,m: 1, width:'200px'}} >
@@ -318,60 +298,4 @@ export default function CompaniesTable({
                          setSnackbar={setSnackbar}/>
     </>
   );
-}
-
-function columns(onCompanySelected, setDeleteArguments) {
-  return [
-    { field: 'name', align:'center', headerAlign:'center', headerName: 'Name', flex: 1, editable: true },
-    { field: 'value', align:'center', headerAlign:'center', headerName: 'Warenwert', flex: 1, editable: false,
-      valueFormatter: (params) => {
-        if (params.value == null) {
-          return '';
-        }
-
-        const valueFormatted = params.value.toFixed(2).toLocaleString();
-        return `${valueFormatted} €`;
-      } },
-    { field: 'delete',
-      editable: false,
-      headerName: '',
-      align: 'center',
-      width: 60,
-      sortable: false,
-      renderCell: (params) => {
-        const onClick = (e) => {
-          e.stopPropagation(); // don't select this row after clicking
-          setDeleteArguments(params.row);
-        };
-
-        return (<IconButton size="small"
-                           aria-label="deleteCompany"
-                           onClick={onClick}>
-                 <DeleteIcon fontSize="small" />
-               </IconButton>);
-      }
-    },
-    { field: 'open',
-      editable: false,
-      headerName: '',
-      align: 'center',
-      width: 60,
-      sortable: false,
-      renderCell: (params) => {
-        const onClick = (e) => {
-          e.stopPropagation(); // don't select this row after clicking
-          const company = params.row;
-
-
-          onCompanySelected(company);
-        };
-
-        return <IconButton size="small"
-                           aria-label="gotoCompany"
-                           onClick={onClick}>
-                 <ArrowForwardIosIcon fontSize="small" />
-               </IconButton>;
-      }
-    }
-  ];
 }
