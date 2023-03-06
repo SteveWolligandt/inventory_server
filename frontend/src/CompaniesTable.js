@@ -2,6 +2,13 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardHeader from '@mui/material/CardHeader';
+import CardMedia from '@mui/material/CardMedia';
+import CardActions from '@mui/material/CardActions';
+import Divider from '@mui/material/Divider';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -12,9 +19,12 @@ import Paper from '@mui/material/Paper';
 import {DataGrid} from '@mui/x-data-grid';
 import React from 'react';
 
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import { experimentalStyled as styled } from '@mui/material/styles';
+
 import CreateCompanyDialog from './CreateCompanyDialog.js';
 import fetchWithToken from './jwtFetch.js';
-import websocketAddr from './websocketAddress.js';
 
 function computeMutation(newRow, oldRow) {
   if (newRow.name !== oldRow.name) {
@@ -30,17 +40,18 @@ export default function CompaniesTable({
   setUserToken,
   setSnackbar,
   setTopBarContext,
-  activeInventory
+  activeInventory,
+  lastMessage
 }) {
   var [companies, setCompanies] = React.useState([]);
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
   
-  const ws = React.useRef(new WebSocket(websocketAddr()));
-  const authorizeWebSocket = ()      =>  ws.current.send(JSON.stringify({token:userToken}));
-  ws.current.onopen        = (event) => authorizeWebSocket();
-  ws.current.onmessage     = async (event) => {
-    let msg = JSON.parse(event.data);
+  React.useEffect(() => {
+    if (lastMessage === null) {
+      return;
+    }
+    const msg = JSON.parse(lastMessage.data);
     let action = msg.action;
     if (action === 'newCompany') {
       let newCompany = msg.data;
@@ -54,8 +65,7 @@ export default function CompaniesTable({
       let deletedCompany = msg.data;
       setCompanies(companies => companies.filter(company => company.id !== deletedCompany.id));
     }
-  };
-  React.useEffect(() => {if (ws.readyState === WebSocket.OPEN) {authorizeWebSocket();}}, [userToken]);
+  }, [lastMessage]);
 
   const loadCompanies = () => {
     if (!open)             { setCompanies([]); return; }
@@ -246,24 +256,67 @@ export default function CompaniesTable({
         processRowUpdate={processRowUpdate}
         experimentalFeatures={{ newEditingApi: true }}/>);
   }
+
+  //return (
+  //  <Paper
+  //    elevation={5}
+  //    sx={{overflow:'hidden',
+  //         'marginLeft':'20px',
+  //         'marginRight':'20px',
+  //         height:'calc(100vh - 110px)'
+  //       }}>
+  //  {renderLoading()}
+  //  {renderDataGrid()}
+  //  {renderChangeConfirmDialog()}
+  //  {renderDeleteConfirmDialog()}
+  //  <CreateCompanyDialog open={createDialogOpen}
+  //                       setOpen={setCreateDialogOpen}
+  //                       userToken={userToken}
+  //                       setUserToken={setUserToken}
+  //                       setSnackbar={setSnackbar}/>
+  //  </Paper>
+  //);
+
+  const CompanyCard = (props) => {
+    const { company } = props;
+    return (<Card sx={{p: 1,m: 1, width:'200px'}} >
+      <CardHeader
+        title={company.name}
+        action={
+          <IconButton aria-label="settings">
+            <MoreVertIcon />
+          </IconButton>
+        }
+      />
+      <CardMedia
+        component="img"
+        height="200"
+        image="https://upload.wikimedia.org/wikipedia/commons/6/69/WMF-Logo.svg"
+        alt="Paella dish"
+      />
+      <Divider/>
+      <CardActions disableSpacing>
+        <IconButton 
+          sx={{marginLeft: "auto"}}
+          onClick={()=>onCompanySelected(company)}
+        >
+          <KeyboardArrowRightIcon/>
+        </IconButton>
+      </CardActions>
+      </Card>);
+  }
+
   return (
-    <Paper
-      elevation={5}
-      sx={{overflow:'hidden',
-           'marginLeft':'20px',
-           'marginRight':'20px',
-           height:'calc(100vh - 110px)'
-         }}>
-    {renderLoading()}
-    {renderDataGrid()}
-    {renderChangeConfirmDialog()}
-    {renderDeleteConfirmDialog()}
+    <><Box sx={{display: 'flex', flexWrap: 'wrap'}}>
+      {companies.map(company => { return (<CompanyCard key={company.id} company={company} />)})}
+    </Box>
+
     <CreateCompanyDialog open={createDialogOpen}
                          setOpen={setCreateDialogOpen}
                          userToken={userToken}
                          setUserToken={setUserToken}
                          setSnackbar={setSnackbar}/>
-    </Paper>
+    </>
   );
 }
 

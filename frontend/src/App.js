@@ -19,6 +19,8 @@ import GlobalStyles from "@mui/material/GlobalStyles";
 import { ThemeProvider } from "@mui/material/styles";
 import { Theme } from "./Theme";
 import fetchWithToken from "./jwtFetch.js";
+import websocketAddr from './websocketAddress.js';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const State = {
   Companies : 'companies',
@@ -61,6 +63,13 @@ export default function App() {
   var [title, setTitle] = useStickyState('Firmen', 'title');
   var [activeInventory, setActiveInventory] =
       useStickyState(null, 'activeInventory');
+  const { sendMessage, lastMessage, readyState } = useWebSocket(websocketAddr());
+
+  React.useEffect(() => {
+    if (readyState === ReadyState.OPEN) {
+      sendMessage(JSON.stringify({token:userToken}))
+    }
+  }, [readyState, userToken, sendMessage])
 
   //React.useEffect(() => {
   //  document.title = 'Inventur';
@@ -186,17 +195,20 @@ export default function App() {
         setActiveCompany(company);
         showArticles();
       }}
-      setTopBarContext  = {setTopBarContext}/>
+      setTopBarContext  = {setTopBarContext}
+      lastMessage = {lastMessage}
+    />
     <ArticlesTable
-      open            = {isLoggedIn && currentState === State.Articles}
-      userToken       = {userToken}
-      setUserToken    = {setUserToken}
-      activeCompany   = {activeCompany}
-      activeInventory = {activeInventory}
-      updateTitle     = {updateTitle}
-      setSnackbar     = {setSnackbar}
-      onBack          = {onArticleBackButtonClick}
-      setTopBarContext  = {setTopBarContext}/>
+      open             = {isLoggedIn && currentState === State.Articles}
+      userToken        = {userToken}
+      setUserToken     = {setUserToken}
+      activeCompany    = {activeCompany}
+      activeInventory  = {activeInventory}
+      updateTitle      = {updateTitle}
+      setSnackbar      = {setSnackbar}
+      onBack           = {onArticleBackButtonClick}
+      lastMessage      = {lastMessage}
+      setTopBarContext = {setTopBarContext}/>
     <AdminArea
       open = {isLoggedIn && currentState === State.AdminArea} 
       userToken={userToken}

@@ -525,7 +525,13 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 
 	var inventoryData InventoryData
 	json.Unmarshal(reqBody, &inventoryData)
-	s.Db.UpdateInventoryData(inventoryData)
+  err := s.Db.UpdateInventoryData(inventoryData)
+  if (err != nil) {
+    fmt.Println(err.Error())
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+  }
 	marshaledInventoryData, marshalErr := json.Marshal(inventoryData)
 	if marshalErr != nil {
 		// TODO send message with error
@@ -1188,9 +1194,8 @@ func (s *Server) HandleWebsocket(w http.ResponseWriter, r *http.Request) {
 	conn, _ := upgrader.Upgrade(w, r, nil)
 	fmt.Println("new connection")
 
-	// initally set this to false which marks the connection unauthorized
-
 	s.ClientsMutex.Lock()
+	// initally set this to false which marks the connection unauthorized
 	s.Clients[conn] = false
 	s.ClientsMutex.Unlock()
 
