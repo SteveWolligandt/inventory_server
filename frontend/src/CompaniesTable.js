@@ -242,20 +242,6 @@ export default function CompaniesTable({
       <div style={{display: 'flex',  justifyContent:'center', alignItems:'center', height: '100px'}}>
       <CircularProgress /></div>);
   };
-  const renderDataGrid = () => {
-    if (isLoading) { return null; }
-    return (
-      <DataGrid
-        initialState={{
-          sorting: {
-            sortModel: [{ field: 'name', sort: 'asc' }],
-          },
-        }}
-        rows={companies}
-        columns={columns(onCompanySelected, setDeleteArguments)}
-        processRowUpdate={processRowUpdate}
-        experimentalFeatures={{ newEditingApi: true }}/>);
-  }
 
   const CompanyCard = (props) => {
     const { company } = props;
@@ -286,8 +272,9 @@ export default function CompaniesTable({
       </Card>);
   }
 
-  return (
-    <><Box sx={{display: 'flex', flexWrap: 'wrap'}}>
+  return (<>
+    {renderLoading()}
+    <Box sx={{display: 'flex', flexWrap: 'wrap'}}>
       {companies.map(company => { return (<CompanyCard key={company.id} company={company} />)})}
     </Box>
 
