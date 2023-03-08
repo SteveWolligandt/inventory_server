@@ -750,7 +750,9 @@ func (db *Database) NumberOfCompanies() (int, error) {
 // ------------------------------------------------------------------------------
 func (db *Database) CompaniesTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM companies")
-	rows.Close()
+  if (err == nil) {
+    rows.Close()
+  }
 	return err == nil
 }
 
@@ -764,21 +766,28 @@ func (db *Database) CreateCompaniesTable() error {
 // ------------------------------------------------------------------------------
 func (db *Database) CompanyLogosTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM companyLogos")
-	rows.Close()
+  if (err == nil) {
+    rows.Close()
+  }
 	return err == nil
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompanyLogosTable() error {
+  fmt.Println("4")
 	rows, err := db.db.Query("CREATE TABLE companyLogos(companyId int not null unique, img longblob not null)")
+  fmt.Println("5")
 	rows.Close()
+  fmt.Println("6")
 	return err
 }
 
 // ------------------------------------------------------------------------------
 func (db *Database) UsersTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM users")
-	rows.Close()
+  if (err == nil) {
+    rows.Close()
+  }
 	return err == nil
 }
 
@@ -824,7 +833,9 @@ func (db *Database) CreateUsersTable() error {
 // ------------------------------------------------------------------------------
 func (db *Database) InventoriesTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventories")
-	rows.Close()
+  if (err == nil) {
+    rows.Close()
+  }
 	return err == nil
 }
 
@@ -838,7 +849,9 @@ func (db *Database) CreateInventoriesTable() error {
 // ------------------------------------------------------------------------------
 func (db *Database) InventoryDataTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM inventoryData")
-	rows.Close()
+  if (err == nil) {
+    rows.Close()
+  }
 	return err == nil
 }
 
