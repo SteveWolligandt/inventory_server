@@ -1,6 +1,7 @@
 package main
 
 import (
+  b64 "encoding/base64"
 	"crypto/tls"
 	"encoding/json"
 	"flag"
@@ -406,6 +407,58 @@ func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(company)
+}
+
+// ------------------------------------------------------------------------------
+func (s *Server) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+	//if !s.CheckAuthorized(w, r) {
+	//	return
+	//}
+	vars := mux.Vars(r)
+  companyIdStr := vars["id"]
+	companyId, strconvErr := strconv.Atoi(companyIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+  logo, err := s.Db.GetCompanyLogo(companyId)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+  sDec, _ := b64.StdEncoding.DecodeString(string(logo))
+  w.Header().Set("Content-Type", "image/jpeg")
+  w.Write(sDec)
+}
+// ------------------------------------------------------------------------------
+func (s *Server) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+	//if !s.CheckAuthorized(w, r) {
+	//	return
+	//}
+
+	vars := mux.Vars(r)
+  companyIdStr := vars["id"]
+	companyId, strconvErr := strconv.Atoi(companyIdStr)
+	if strconvErr != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+  
+	type Img struct {
+		Data string `json:"data"`
+	}
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		// TODO send message with error
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	var img Img
+	json.Unmarshal(reqBody, &img)
+  s.Db.AddCompanyLogo(companyId, []byte(img.Data))
 }
 
 // ------------------------------------------------------------------------------
@@ -1052,6 +1105,16 @@ func (s *Server) HandleRequests() {
 		"/api/company/{id}",
 		s.GetCompany).
 		Methods("GET")
+
+	s.Router.HandleFunc(
+		"/api/company/{id}/logo",
+		s.GetCompanyLogo).
+		Methods("GET")
+
+	s.Router.HandleFunc(
+		"/api/company/{id}/logo",
+		s.SetCompanyLogo).
+		Methods("POST")
 
 	s.Router.HandleFunc(
 		"/api/company/{companyId}/value/{inventoryId}",

@@ -411,6 +411,26 @@ func (db *Database) DeleteCompany(id int) error {
 }
 
 // ------------------------------------------------------------------------------
+func (db *Database) AddCompanyLogo(id int, logo []byte) error {
+	rows, err := db.db.Query("INSERT INTO companyLogos (companyId, img) VALUES (?,?)", id, logo)
+  rows.Close()
+  if (err != nil) {
+    return err
+  }
+	return nil
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) GetCompanyLogo(id int) ([]byte, error) {
+  var logo []byte
+	err := db.db.QueryRow("SELECT img FROM companyLogos WHERE companyId = ?", id).Scan(&logo)
+  if (err != nil) {
+    return nil, err
+  }
+	return logo, nil
+}
+
+// ------------------------------------------------------------------------------
 // Updates amount of an article
 func (db *Database) UpdateInventoryData(inventoryData InventoryData) error {
 	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v, purchasePrice = %v, percentage = %v, notes = '%v' WHERE articleId = %v AND inventoryId = %v", inventoryData.Amount, inventoryData.PurchasePrice, inventoryData.Percentage, inventoryData.Notes, inventoryData.ArticleId, inventoryData.InventoryId)
@@ -692,6 +712,9 @@ func (db *Database) Initialize() error {
 	if !db.CompaniesTableCreated() {
 		db.CreateCompaniesTable()
 	}
+	if !db.CompanyLogosTableCreated() {
+		db.CreateCompanyLogosTable()
+	}
 	if !db.ArticlesTableCreated() {
 		db.CreateArticlesTable()
 	}
@@ -734,6 +757,20 @@ func (db *Database) CompaniesTableCreated() bool {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompaniesTable() error {
 	rows, err := db.db.Query("CREATE TABLE companies(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, imagePath varchar(255), primary key (id))")
+	rows.Close()
+	return err
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) CompanyLogosTableCreated() bool {
+	rows, err := db.db.Query("SELECT COUNT(*) as count FROM companyLogos")
+	rows.Close()
+	return err == nil
+}
+
+// ------------------------------------------------------------------------------
+func (db *Database) CreateCompanyLogosTable() error {
+	rows, err := db.db.Query("CREATE TABLE companyLogos(companyId int not null unique, img longblob not null)")
 	rows.Close()
 	return err
 }
