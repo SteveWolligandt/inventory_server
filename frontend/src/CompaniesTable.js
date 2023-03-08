@@ -398,7 +398,14 @@ export default function CompaniesTable({
           Löschen
         </MenuItem>
       </Menu>
-      <EditCompany open={companyToEdit !== null} company={companyToEdit} setCompany={setCompanyToEdit}/>
+      <EditCompany
+        open={companyToEdit !== null}
+        company={companyToEdit}
+        setCompany={setCompanyToEdit}
+        userToken={userToken}
+        setUserToken={setUserToken}
+        setSnackbar={setSnackbar}
+      />
     </>
   );
 }

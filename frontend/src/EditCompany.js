@@ -1,5 +1,6 @@
 import React from 'react';
 import ImageCropper from './ImageCropper.js';
+import fetchWithToken from './jwtFetch.js';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
@@ -9,7 +10,10 @@ import Button from '@mui/material/Button';
 export default function EditCompany({
   open,
   company,
-  setCompany
+  setCompany,
+  userToken,
+  setUserToken,
+  setSnackbar
 }) {
   const [image, setImage] = React.useState();
   const [currentPage, setCurrentPage] = React.useState("");
@@ -119,16 +123,15 @@ export default function EditCompany({
         </Button>
         <Button
           onClick={async () => {
-            //const response = await fetchWithToken(
-            const response = await fetch(
+            const response = await fetchWithToken(
               '/api/company/'+company.id+'/logo',{
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                //token:userToken
+                token:userToken
               },
                 body: JSON.stringify({data:imgAfterCrop.substring(imgAfterCrop.indexOf(",") + 1)})}
-              //, userToken, setUserToken, setSnackbar
+              , userToken, setUserToken, setSnackbar
             )
           }}
         >Upload

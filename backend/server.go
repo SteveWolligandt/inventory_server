@@ -434,9 +434,9 @@ func (s *Server) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
 }
 // ------------------------------------------------------------------------------
 func (s *Server) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
-	//if !s.CheckAuthorized(w, r) {
-	//	return
-	//}
+	if !s.CheckAuthorized(w, r) {
+		return
+	}
 
 	vars := mux.Vars(r)
   companyIdStr := vars["id"]
