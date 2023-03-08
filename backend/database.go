@@ -774,11 +774,8 @@ func (db *Database) CompanyLogosTableCreated() bool {
 
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompanyLogosTable() error {
-  fmt.Println("4")
 	rows, err := db.db.Query("CREATE TABLE companyLogos(companyId int not null unique, img longblob not null)")
-  fmt.Println("5")
 	rows.Close()
-  fmt.Println("6")
 	return err
 }
 
