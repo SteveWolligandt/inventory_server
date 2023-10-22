@@ -41,11 +41,12 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		dirCache, ok := certManager.Cache.(autocert.DirCache)
 		if !ok {
-			dirCache = "certs"
+			//dirCache = "certs"
+			dirCache = "/etc/letsencrypt/live/raspi.rxolz1gejc8ooda3.myfritz.net"
 		}
 
-		keyFile := filepath.Join(string(dirCache), hello.ServerName+".key")
-		crtFile := filepath.Join(string(dirCache), hello.ServerName+".crt")
+		crtFile := filepath.Join(string(dirCache), "fullchain.pem")
+		keyFile := filepath.Join(string(dirCache), "privkey.pem")
 		certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
 		if err != nil {
 			return certManager.GetCertificate(hello)
@@ -1356,8 +1357,8 @@ func (s *Server) Start() {
 		Handler:   s.Router,
 		TLSConfig: tlsConfig,
 	}
-	go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
-	fmt.Println("Server listening on", server.Addr)
+	//go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
+	//fmt.Println("Server listening on", server.Addr)
 	if err := server.ListenAndServeTLS("", ""); err != nil {
 		fmt.Println(err)
 	}
