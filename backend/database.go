@@ -710,22 +710,40 @@ func (db *Database) Close() {
 // ------------------------------------------------------------------------------
 func (db *Database) Initialize() error {
 	if !db.CompaniesTableCreated() {
-		db.CreateCompaniesTable()
+    err := db.CreateCompaniesTable()
+    if err != nil {
+      return err
+    }
 	}
 	if !db.CompanyLogosTableCreated() {
-		db.CreateCompanyLogosTable()
+    err := db.CreateCompanyLogosTable()
+    if err != nil {
+      return err
+    }
 	}
 	if !db.ArticlesTableCreated() {
-		db.CreateArticlesTable()
+    err := db.CreateArticlesTable()
+    if err != nil {
+      return err
+    }
 	}
 	if !db.InventoriesTableCreated() {
-		db.CreateInventoriesTable()
+    err := db.CreateInventoriesTable()
+    if err != nil {
+      return err
+    }
 	}
 	if !db.InventoryDataTableCreated() {
-		db.CreateInventoryDataTable()
+    err := db.CreateInventoryDataTable()
+    if err != nil {
+      return err
+    }
 	}
 	if !db.UsersTableCreated() {
-		db.CreateUsersTable()
+    err := db.CreateUsersTable()
+    if err != nil {
+      return err
+    }
 	}
 	var count int
 	err := db.db.QueryRow("SELECT COUNT(*) as count FROM users").Scan(&count)
@@ -759,7 +777,9 @@ func (db *Database) CompaniesTableCreated() bool {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompaniesTable() error {
 	rows, err := db.db.Query("CREATE TABLE companies(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, imagePath varchar(255), primary key (id))")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err
 }
 
@@ -775,7 +795,9 @@ func (db *Database) CompanyLogosTableCreated() bool {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateCompanyLogosTable() error {
 	rows, err := db.db.Query("CREATE TABLE companyLogos(companyId int not null unique, img longblob not null)")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err
 }
 
@@ -823,7 +845,9 @@ func (db *Database) CreateAdminUser() {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateUsersTable() error {
 	rows, err := db.db.Query("CREATE TABLE users (name varchar(255) NOT NULL, hashedPassword varchar(255) NOT NULL, isAdmin BOOLEAN NOT NULL, PRIMARY KEY (name), UNIQUE(name))")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err
 }
 
@@ -839,7 +863,9 @@ func (db *Database) InventoriesTableCreated() bool {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoriesTable() error {
 	rows, err := db.db.Query("CREATE TABLE inventories (id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY (id))")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err
 }
 
@@ -855,7 +881,9 @@ func (db *Database) InventoryDataTableCreated() bool {
 // ------------------------------------------------------------------------------
 func (db *Database) CreateInventoryDataTable() error {
 	rows, err := db.db.Query("CREATE TABLE inventoryData (articleId int NOT NULL,inventoryId int NOT NULL,amount int DEFAULT 0,purchasePrice float DEFAULT 0,percentage float DEFAULT 0,notes varchar(255) DEFAULT '', FOREIGN KEY (articleId) REFERENCES articles(id),FOREIGN KEY (inventoryId) REFERENCES inventories(id))")
-	rows.Close()
+  if err == nil {
+    rows.Close()
+  }
 	return err
 }
 

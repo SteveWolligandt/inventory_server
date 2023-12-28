@@ -852,6 +852,7 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 		value, err := s.Db.ValueOfCompany(company.Id, inventoryId)
 		if err != nil {
       fmt.Println("Error when getting value of company")
+      fmt.Println(err.Error())
 			// TODO send message with error
 			w.WriteHeader(http.StatusInternalServerError)
 			return
