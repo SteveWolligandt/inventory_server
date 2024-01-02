@@ -4,7 +4,6 @@
 // CREATE USER inventory IDENTIFIED BY '';
 // GRANT ALL PRIVILEGES ON inventory.* TO inventory;
 // FLUSH PRIVILEGES;
-// USE inventory;
 
 package main
 
