@@ -2,9 +2,6 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "devDependecies": {
-    "react-scripts": "^5.0.1"
-  },
   "dependencies": {
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
@@ -19,6 +16,9 @@
     "react-easy-crop": "^4.7.4",
     "react-use-websocket": "^3.0.0",
     "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "react-scripts": "^5.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
