@@ -95,6 +95,7 @@ export default function App() {
   //    }; renew();
   //  }
   //}, []);
+  
   React.useEffect(()=>{
     const f = async() => {
       setIsLoggedIn(userToken != null);
@@ -114,9 +115,9 @@ export default function App() {
   React.useEffect(updateTitle, [activeInventory, activeCompany, setTitle]);
 
   const onBarcodeScanned = (barcode) => {
+    setLastScannedBarcode(barcode);
     setShowBarcodeScanner(false);
     setShowBarcodeResult(true);
-    setLastScannedBarcode(barcode);
   }
 
   const onFullValue   = () => setShowInventoryValue(true);
@@ -133,10 +134,11 @@ export default function App() {
     setIsAdmin(isAd);
   }
 
-  return (
-    <>
+  return (<>
     <GlobalStyles styles={{body: { backgroundColor: "#E8EBF0" }}}/>
+
     <ThemeProvider theme={Theme}>
+
     <TopBar
       title             = {title}
       setUserToken      = {setUserToken}
@@ -149,11 +151,14 @@ export default function App() {
       setLeftDrawerOpen = {setLeftDrawerOpen}
       setShowBarcodeScanner = {setShowBarcodeScanner}
     />
+
     <div style={{marginBottom: '90px'}}/>
+
     <BarcodeScanner
       open             = {showBarcodeScanner}
       setOpen          = {setShowBarcodeScanner}
       onBarcodeScanned = {onBarcodeScanned}/>
+
     <BarcodeResult
       open         = {showBarcodeResult}
       setOpen      = {setShowBarcodeResult}
@@ -162,10 +167,12 @@ export default function App() {
       setUserToken = {setUserToken}
       activeInventory = {activeInventory}
       setSnackbar  = {setSnackbar}/>
+
     <LoginScreen
       open        = {!isLoggedIn}
       onLogin     = {onLogin}
       setSnackbar = {setSnackbar}/>
+    
     <Inventories
       setSnackbar = {setSnackbar}
       userToken = {userToken}
@@ -224,6 +231,5 @@ export default function App() {
       </Snackbar>
     )}
     </ThemeProvider>
-    </>
-  );
+  </>);
 }

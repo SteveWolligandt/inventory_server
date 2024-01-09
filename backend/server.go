@@ -1,15 +1,17 @@
 package main
 
 import (
-  b64 "encoding/base64"
 	"crypto/tls"
+	"database/sql"
+	b64 "encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	"io/ioutil"
 	"sync"
 	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 
 	"log"
 	"math/rand"
@@ -28,6 +30,8 @@ import (
 
 var (
 	domain    string
+  port      int
+  useSSL    bool
 	jwtSecret []byte
 )
 
@@ -41,8 +45,7 @@ func getSelfSignedOrLetsEncryptCert(certManager *autocert.Manager) func(hello *t
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		dirCache, ok := certManager.Cache.(autocert.DirCache)
 		if !ok {
-			//dirCache = "certs"
-			dirCache = "/etc/letsencrypt/live/raspi.rxolz1gejc8ooda3.myfritz.net"
+			dirCache = autocert.DirCache("/etc/letsencrypt/live/" + domain)
 		}
 
 		crtFile := filepath.Join(string(dirCache), "fullchain.pem")
@@ -202,30 +205,41 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 	inventoryIdStr := r.Header.Get("inventoryId")
 	inventoryId, strconvErr := strconv.Atoi(inventoryIdStr)
 	if strconvErr != nil {
+    fmt.Println(strconvErr.Error())
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+  fmt.Println("inventoryId: " + inventoryIdStr)
 	article, err := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
 	if err != nil {
-		// TODO send message with error
-		w.WriteHeader(http.StatusInternalServerError)
+    if err == sql.ErrNoRows {
+      type Response struct {
+        Success bool `json:"success"`
+      }
+      response := Response{Success: false}
+      json.NewEncoder(w).Encode(response)
+    } else {
+      fmt.Println("Database.ArticleFromBarcode got an error:"  + err.Error())
+      // TODO send message with error
+      w.WriteHeader(http.StatusInternalServerError)
+    }
 		return
 	}
-	if article != nil {
-		type Response struct {
-			Success bool                            `json:"success"`
-			Article ArticleWithCompanyNameAndAmount `json:"article"`
-		}
-		response := Response{Success: true, Article: *article}
-		json.NewEncoder(w).Encode(response)
-	} else {
+	if article == nil {
 		type Response struct {
 			Success bool `json:"success"`
 		}
 		response := Response{Success: false}
 		json.NewEncoder(w).Encode(response)
+    return
 	}
+  type Response struct {
+    Success bool                            `json:"success"`
+    Article ArticleWithCompanyNameAndAmount `json:"article"`
+  }
+  response := Response{Success: true, Article: *article}
+  json.NewEncoder(w).Encode(response)
 }
 
 // ------------------------------------------------------------------------------
@@ -1343,26 +1357,30 @@ func stripPort(hostport string) string {
 
 // ------------------------------------------------------------------------------
 func (s *Server) Start() {
-	fmt.Println("TLS domain", domain)
-
-	certManager := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domain),
-		Cache:      autocert.DirCache("certs"),
-	}
-
-	tlsConfig := certManager.TLSConfig()
-	tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
-	server := http.Server{
-		Addr:      ":443",
-		Handler:   s.Router,
-		TLSConfig: tlsConfig,
-	}
-	//go http.ListenAndServe(":80", http.HandlerFunc(redirectHTTP))
-	//fmt.Println("Server listening on", server.Addr)
-	if err := server.ListenAndServeTLS("", ""); err != nil {
-		fmt.Println(err)
-	}
+  if useSSL {
+    fmt.Println("TLS domain", domain)
+    certManager := autocert.Manager{
+      Prompt:     autocert.AcceptTOS,
+      HostPolicy: autocert.HostWhitelist(domain),
+      Cache:      autocert.DirCache("certs"),
+    }
+    tlsConfig := certManager.TLSConfig()
+    tlsConfig.GetCertificate = getSelfSignedOrLetsEncryptCert(&certManager)
+    server := http.Server{
+    	Addr:      ":" + strconv.Itoa(port),
+    	Handler:   s.Router,
+    	TLSConfig: tlsConfig,
+    }
+    if err := server.ListenAndServeTLS("", ""); err != nil {
+      fmt.Println(err)
+    }
+  } else {
+    server := http.Server{
+    	Addr:      ":" + strconv.Itoa(port),
+    	Handler:   s.Router,
+    }
+    server.ListenAndServe()
+  }
 }
 
 // ------------------------------------------------------------------------------
@@ -1399,6 +1417,8 @@ func NewServer() (*Server, error) {
 	CreateOrReadJWTSecret(128, "jwtsecret")
 
 	flag.StringVar(&domain, "domain", "", "domain name to request your certificate")
+	flag.IntVar(&port, "port", 8080, "port to request your certificate")
+  flag.BoolVar(&useSSL, "useSSL", false, "")
 	flag.Parse()
 
 	fmt.Println("Creating Server...")

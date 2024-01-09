@@ -30,25 +30,30 @@ export default function BarcodeResult(
     const f = async () => {
       if (open) {
         if (barcode !== null) {
+          console.log(barcode)
           setIsLoading(true);
           const url = '/api/article/from-barcode/' + barcode;
+          console.log("waiting for response")
           const response = await fetchWithToken(url,
             { method: 'GET',
               headers: { 'Content-Type': 'application/json', token:userToken , inventoryId:activeInventory.id},
             }, userToken, setUserToken, setSnackbar
           )
-          if (!response.ok) {
+          setIsLoading(false);
+          console.log('got response');
+          if (response.ok) {
+            const json = await response.json();
+            console.log(json)
+            if (json.success) {
+              setCurrentAmount(json.article.amount);
+              setArticle(json.article);
+              setShowCountDialog(true);
+            } else {
+              setShowMessageAssignToArticle(true);
+            }
+          } else {
             console.log('error');
           }
-          const json = await response.json();
-          if (json.success) {
-            setCurrentAmount(json.article.amount);
-            setArticle(json.article);
-            setShowCountDialog(true);
-          } else {
-            setShowMessageAssignToArticle(true);
-          }
-          setIsLoading(false);
         }
       } else {
         //setShowCountDialog(false);
@@ -85,18 +90,20 @@ export default function BarcodeResult(
   return (<>
     <Dialog open={showCountDialog}>
       <DialogTitle>
-      {article === null ? 'Laden' : article.name} {renderLoading()}
+        {article === null ? 'Laden' : article.name} {renderLoading()}
       </DialogTitle>
+
       <DialogContent>
-      {article === null ? null : 'Firma: ' + article.companyName} <br/><br/>
-      <IconButton onClick={()=>setCurrentAmount(Math.max(0,currentAmount-1))}>
-        <RemoveCircleOutlineIcon/>
-      </IconButton>  
-      {currentAmount}
-      <IconButton onClick={()=>setCurrentAmount(Math.max(currentAmount+1))}>
-        <AddCircleOutlineIcon/>
-      </IconButton>  
+        {article === null ? null : 'Firma: ' + article.companyName} <br/><br/>
+        <IconButton onClick={()=>setCurrentAmount(Math.max(0,currentAmount-1))}>
+          <RemoveCircleOutlineIcon/>
+        </IconButton>  
+        {currentAmount}
+        <IconButton onClick={()=>setCurrentAmount(Math.max(currentAmount+1))}>
+          <AddCircleOutlineIcon/>
+        </IconButton>  
       </DialogContent>
+
       <DialogActions>
         <Button disabled={isLoading} onClick={()=>{
           setShowCountDialog(false);
@@ -104,15 +111,18 @@ export default function BarcodeResult(
         }}>Abbrechen</Button>
         <Button disabled={isLoading} onClick={sendAmount}>Senden</Button>
       </DialogActions>
+
     </Dialog>
 
     <Dialog open={showMessageAssignToArticle}>
       <DialogTitle>
         Barcode keinem Artikel zugewiesen
       </DialogTitle>
+
       <DialogContent>
         Soll der Barcode einem Artikel zugewiesen werden?
       </DialogContent>
+
       <DialogActions>
         <Button onClick={()=>setOpen(false)}>Abbrechen</Button>
         <Button onClick={()=>{

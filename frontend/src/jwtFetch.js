@@ -16,10 +16,10 @@ export default async function fetchWithToken(addr, fields, userToken, setUserTok
         fields.headers.token = renewJson.token;
         response = await fetch(addr, fields);
       }
-    } else {
-      setUserToken(null);
-      setSnackbar({ children: 'Irgendwas lief da schief', severity: 'error' });
-      return null;
+    // } else {
+    //   setUserToken(null);
+    //   setSnackbar({ children: 'Irgendwas lief da schief', severity: 'error' });
+    //   return null;
     }
   }
   return response;
