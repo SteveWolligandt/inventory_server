@@ -440,10 +440,10 @@ export default function ArticlesTable({
     <Paper
       elevation={5}
       sx={{overflow: 'hidden',
-           'marginTop':'150px',
+           'marginTop':'100px',
            'marginLeft':'20px',
            'marginRight':'20px',
-           height:'calc(100vh - 160px)'
+           height:'calc(100vh - 120px)'
          }}>
       {renderConfirmChangeDialog()}
       {renderConfirmDeleteDialog()}
@@ -461,7 +461,7 @@ export default function ArticlesTable({
       <Fab color='secondary'
            aria-label="add"
            style={{margin: '0 auto',
-                   top: 80,
+                   top: 60,
                    right: 'auto',
                    bottom: 'auto',
                    left: 10,
