@@ -20,7 +20,7 @@ import CreateArticleDialog from './CreateArticleDialog.js';
 
 function computeMutationAmount(newRow, oldRow) {
   if (newRow.amount !== oldRow.amount) {
-    return (<>Anzahl von <i><b>{oldRow.name}</b></i> auf <i><b>{newRow.amount}</b></i> setzen?</>);
+    return (<>Anzahl von <i><b>{oldRow.amount}</b></i> auf <i><b>{newRow.amount}</b></i> setzen?</>);
   }
   return null;
 }
@@ -192,18 +192,18 @@ export default function ArticlesTable({
   },[open, setTopBarContext])
 
   const mutateRow = React.useCallback(
-      (article) => new Promise(
-          (resolve, reject) => setTimeout(
-              () => {
-                if (article.name?.trim() === '') {
-                  reject();
-                } else {
-                  resolve(article);
-                }
-              },
-              200),
-          ),
-      [],
+    (article) => new Promise(
+      (resolve, reject) => setTimeout(
+        () => {
+          if (article.name?.trim() === '') {
+            reject();
+          } else {
+            resolve(article);
+          }
+        },
+        200),
+      ),
+    [],
   );
   const noButtonRef = React.useRef(null);
   const [changeArguments, setChangeArguments] = React.useState(null);
@@ -211,15 +211,17 @@ export default function ArticlesTable({
 
   const processRowUpdate = React.useCallback(
       (newRow, oldRow) => new Promise((resolve, reject) => {
-        const mutationName = computeMutationName(newRow, oldRow);
+        const mutationName =
+          computeMutationName(newRow, oldRow);
         const mutationArticleNumber =
-            computeMutationArticleNumber(newRow, oldRow);
+          computeMutationArticleNumber(newRow, oldRow);
         const mutationPrice =
-            computeMutationPricing(newRow, oldRow);
+          computeMutationPricing(newRow, oldRow);
         const mutationAmount =
-            computeMutationAmount(newRow, oldRow);
+          computeMutationAmount(newRow, oldRow);
         const mutationNotes =
-            computeMutationNotes(newRow, oldRow);
+          computeMutationNotes(newRow, oldRow);
+
         if (mutationPrice) {
           if (newRow.purchasePrice !== oldRow.purchasePrice) {
             newRow.sellingPrice =
@@ -233,31 +235,9 @@ export default function ArticlesTable({
           }
         }
         if (mutationName || mutationArticleNumber) {
-          setChangeArguments({resolve, reject, newRow, oldRow});
-
-        } else if (mutationAmount || mutationPrice || mutationNotes) {
-          if (activeInventory) {
-            const url = '/api/inventorydata/';
-            const body = JSON.stringify({
-              articleId : newRow.id,
-              inventoryId : activeInventory.id,
-              amount : newRow.amount,
-              purchasePrice : newRow.purchasePrice,
-              percentage : newRow.percentage,
-              sellingPrice : newRow.sellingPrice,
-              notes : newRow.notes,
-            });
-            const headers = {'Content-Type' : 'application/json', token:userToken};
-            fetchWithToken(url, {
-              method : 'PUT',
-              headers : headers,
-              body : body
-            }, userToken, setUserToken, setSnackbar)
-            setSnackbar(
-                {children : 'Inventurdaten geändert', severity : 'success'});
-            resolve(newRow);
-            setChangeArguments(null);
-          }
+          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes});
+        } else if (activeInventory && (mutationAmount || mutationPrice || mutationNotes)) {
+          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes});
         } else {
           resolve(oldRow); // Nothing was changed
         }
@@ -267,36 +247,37 @@ export default function ArticlesTable({
 
   const handleChangeNo = () => {
     const {oldRow, resolve} = changeArguments;
-    resolve(
-        oldRow); // Resolve with the old row to not update the internal state
+    resolve(oldRow); // Resolve with the old row to not update the internal state
     setChangeArguments(null);
   };
 
   const handleChangeYes = async () => {
-    const {newRow, oldRow, reject, resolve} = changeArguments;
+    const {newRow, oldRow, reject, resolve, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes} = changeArguments;
 
     try {
-      const url = '/api/article/' + newRow.id;
-        const body = JSON.stringify({
-          articleId : newRow.id,
-          name : newRow.name,
-          articleNumber : newRow.articleNumber,
-        });
-      await fetchWithToken(url, {
-        method : 'PUT',
-        headers : {'Content-Type' : 'application/json', token:userToken},
-        body : body
-      }, userToken, setUserToken, setSnackbar);
+      if (mutationName || mutationArticleNumber) {
+        const url = '/api/article/' + newRow.id;
+          const body = JSON.stringify({
+            articleId     : newRow.id,
+            name          : newRow.name,
+            articleNumber : newRow.articleNumber,
+          });
+        await fetchWithToken(url, {
+          method : 'PUT',
+          headers : {'Content-Type' : 'application/json', token:userToken},
+          body : body
+        }, userToken, setUserToken, setSnackbar);
+      }
 
-      if (activeInventory) {
+      if (activeInventory && (mutationPrice || mutationAmount || mutationNotes)) {
         const url = '/api/inventorydata/';
         const body = JSON.stringify({
-          articleId : newRow.id,
-          inventoryId : activeInventory.id,
-          amount : newRow.amount,
+          articleId     : newRow.id,
+          inventoryId   : activeInventory.id,
+          amount        : newRow.amount,
           purchasePrice : newRow.purchasePrice,
-          percentage : newRow.percentage,
-          notes : newRow.notes,
+          percentage    : newRow.percentage,
+          notes         : newRow.notes,
         });
         await fetchWithToken(url, {
           method : 'PUT',
@@ -306,8 +287,10 @@ export default function ArticlesTable({
       }
 
       const response = await mutateRow(newRow);
-      setSnackbar(
-          {children : 'Artikel geändert', severity : 'success'});
+      setSnackbar({
+        children : 'Artikel geändert',
+        severity : 'success'
+      });
       resolve(response);
       setChangeArguments(null);
     } catch (error) {
@@ -351,57 +334,65 @@ export default function ArticlesTable({
       return null;
     }
 
-    const {newRow, oldRow} = changeArguments;
-    const mutationName =
-        computeMutationName(newRow, oldRow);
-    const mutationArticleNumber =
-        computeMutationArticleNumber(newRow, oldRow);
-    const mutationPrice =
-        computeMutationPricing(newRow, oldRow);
-    const mutationNotes =
-        computeMutationNotes(newRow, oldRow);
+    const {newRow, oldRow}      = changeArguments;
+    const mutationName          = computeMutationName(newRow, oldRow);
+    const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
+    const mutationAmount        = computeMutationAmount(newRow, oldRow);
+    const mutationPrice         = computeMutationPricing(newRow, oldRow);
+    const mutationNotes         = computeMutationNotes(newRow, oldRow);
 
     return (
-      <Dialog maxWidth = "xs"
-              TransitionProps = {
-                { onEntered: handleEntered }
-              } open = {!!changeArguments}>
-      <DialogTitle>Artikel wirklich ändern? </DialogTitle>
+      <Dialog maxWidth        = "xs"
+              TransitionProps = {{onEntered:handleEntered}}
+              open            = {!!changeArguments}>
+        <DialogTitle>
+          Artikel wirklich ändern?
+        </DialogTitle>
         <DialogContent dividers>
           {mutationName}
           {mutationArticleNumber}
+          {mutationAmount}
           {mutationPrice}
           {mutationNotes}
         </DialogContent>
         <DialogActions>
-        <Button ref = {noButtonRef} onClick = {handleChangeNo}>Nein<
-            /Button>
-          <Button onClick={handleChangeYes}>Ja</Button>
+          <Button ref = {noButtonRef} onClick = {handleChangeNo}>
+            Nein
+          </Button>
+          <Button onClick={handleChangeYes}>
+            Ja
+          </Button>
         </DialogActions>
-      </Dialog>);
+      </Dialog>
+    );
   };
+
   const renderConfirmDeleteDialog = () => {
     if (!deleteArguments) {
       return null;
     }
 
     return (
-      <Dialog
-    maxWidth = "xs"
-    TransitionProps =
-    {
-      { onEntered: handleEntered }
-    } open = {!!deleteArguments} > <DialogTitle>Artikel wirklich löschen
-        ? </DialogTitle>
+      <Dialog maxWidth = "xs"
+              TransitionProps = {{onEntered: handleEntered}}
+              open = {!!deleteArguments}>
+        <DialogTitle>
+          Artikel wirklich löschen?
+        </DialogTitle>
         <DialogContent dividers>
-          Artikel <i><b>{deleteArguments.name}</b>
-        </i> wirlich löschen?
-        </DialogContent><DialogActions>
-        <Button ref = {noButtonRef} onClick = {handleDeleteNo}>Nein<
-            /Button>
-          <Button onClick={handleDeleteYes}>Ja</Button>
+          Artikel <i><b>{deleteArguments.name}</b></i> wirlich löschen?
+        </DialogContent>
+        <DialogActions>
+          <Button ref     = {noButtonRef}
+                  onClick = {handleDeleteNo}>
+            Nein
+          </Button>
+          <Button onClick={handleDeleteYes}>
+            Ja
+          </Button>
         </DialogActions>
-      </Dialog>);
+      </Dialog>
+    );
   };
 
   if (!open) { return null; }

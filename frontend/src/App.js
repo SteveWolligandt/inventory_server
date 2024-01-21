@@ -57,7 +57,7 @@ export default function App() {
   const [showBarcodeResult, setShowBarcodeResult] = React.useState(false);
   const [lastScannedBarcode, setLastScannedBarcode] = React.useState(null);
 
-  var [userToken, setUserToken] = useStickyState(null, 'userToken');
+  var [userToken, setUserToken] = React.useState(null);
   var [isAdmin, setIsAdmin] = useStickyState(null, 'isAdmin');
   var [isLoggedIn, setIsLoggedIn] = useStickyState(false, 'isLoggedIn');
   var [title, setTitle] = useStickyState('Firmen', 'title');

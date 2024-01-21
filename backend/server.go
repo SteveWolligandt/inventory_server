@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -74,7 +75,7 @@ var upgrader = websocket.Upgrader{
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
+func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) error {
 	tokenString := r.Header.Get("token")
 	claims := &Claims{}
 
@@ -82,18 +83,19 @@ func (s *Server) CheckAuthorized(w http.ResponseWriter, r *http.Request) bool {
 		return jwtSecret, nil
 	})
 	if err != nil {
+    fmt.Println("Check Authorized error: (", err,")" , err.Error())
 		if err == jwt.ErrSignatureInvalid {
 			w.WriteHeader(http.StatusUnauthorized)
-			return false
+			return err
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		return false
+		return err
 	}
 	if !tkn.Valid {
 		w.WriteHeader(http.StatusUnauthorized)
-		return false
+		return errors.New("Token invalid")
 	}
-	return true
+	return nil
 }
 
 // ------------------------------------------------------------------------------
@@ -138,7 +140,8 @@ func (s *Server) CheckAuthorizedAdmin(w http.ResponseWriter, r *http.Request) bo
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -162,7 +165,8 @@ func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	articles, err := s.Db.Articles()
@@ -175,7 +179,8 @@ func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -197,7 +202,8 @@ func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -244,7 +250,8 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	// extract article from json response
@@ -274,7 +281,8 @@ func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
@@ -308,7 +316,8 @@ func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -331,7 +340,8 @@ func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	companies, err := s.Db.Companies()
@@ -345,7 +355,8 @@ func (s *Server) GetCompanies(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -367,7 +378,8 @@ func (s *Server) GetCompaniesWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	companies, err := s.Db.Companies()
@@ -381,7 +393,8 @@ func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Reques
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -403,7 +416,8 @@ func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -426,9 +440,10 @@ func (s *Server) GetCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
-	//if !s.CheckAuthorized(w, r) {
-	//	return
-	//}
+	// errAuth := s.CheckAuthorized(w, r) 
+ //  if errAuth != nil {
+	// 	return
+	// }
 	vars := mux.Vars(r)
   companyIdStr := vars["id"]
 	companyId, strconvErr := strconv.Atoi(companyIdStr)
@@ -449,7 +464,8 @@ func (s *Server) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
 }
 // ------------------------------------------------------------------------------
 func (s *Server) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 
@@ -478,7 +494,8 @@ func (s *Server) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -509,7 +526,8 @@ func (s *Server) GetCompanyWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -540,7 +558,8 @@ func (s *Server) CreateCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
@@ -566,7 +585,8 @@ func (s *Server) UpdateCompany(w http.ResponseWriter, r *http.Request) {
 // server-related
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -586,12 +606,13 @@ func (s *Server) DeleteCompany(w http.ResponseWriter, r *http.Request) {
 // inventoryData-related
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 
 	var inventoryData InventoryData
+	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &inventoryData)
   err := s.Db.UpdateInventoryData(inventoryData)
   if (err != nil) {
@@ -613,12 +634,13 @@ func (s *Server) UpdateInventoryData(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateAmount(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 
 	var amount InventoryDataJustAmount
+	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &amount)
 	inventoryData, err := s.Db.UpdateAmount(amount)
 	if err != nil {
@@ -639,7 +661,8 @@ func (s *Server) UpdateAmount(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateBarcode(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 
@@ -666,7 +689,8 @@ func (s *Server) UpdateBarcode(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	inventories, err := s.Db.Inventories()
@@ -680,7 +704,8 @@ func (s *Server) GetInventories(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -702,13 +727,14 @@ func (s *Server) GetInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
-	reqBody, _ := ioutil.ReadAll(r.Body)
-	var unmarshaledInventory Inventory
-	json.Unmarshal(reqBody, &unmarshaledInventory)
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 
+	reqBody, _ := ioutil.ReadAll(r.Body)
+	var unmarshaledInventory Inventory
+	json.Unmarshal(reqBody, &unmarshaledInventory)
 	inventory, err := s.Db.CreateInventory(unmarshaledInventory.Name)
 	if err != nil {
 		// TODO send message with error
@@ -725,7 +751,8 @@ func (s *Server) CreateInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -752,7 +779,8 @@ func (s *Server) UpdateInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -773,7 +801,8 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -804,7 +833,8 @@ func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Reques
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
@@ -836,7 +866,8 @@ func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	type Return struct {
@@ -884,7 +915,8 @@ func (s *Server) GetInventoryWithValue(w http.ResponseWriter, r *http.Request) {
 
 // ------------------------------------------------------------------------------
 func (s *Server) GetInventoriesWithValue(w http.ResponseWriter, r *http.Request) {
-	if !s.CheckAuthorized(w, r) {
+	errAuth := s.CheckAuthorized(w, r) 
+  if errAuth != nil {
 		return
 	}
 	inventories, err := s.Db.InventoriesWithValue()
