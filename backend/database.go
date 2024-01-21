@@ -20,57 +20,57 @@ type Database struct {
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) Articles() ([]Article, error) {
+func (db *Database) Products() ([]Product, error) {
 	// Execute the query
 	rows, err := db.db.Query("SELECT id, name, articleNumber FROM articles")
 	if err != nil {
 		return nil, err
 	}
 
-	var articles []Article
+	var products []Product
 	for rows.Next() {
-		var article Article
+		var product Product
 		// for each row, scan the result into our tag composite object
-		if err = rows.Scan(&article.Id, &article.Name, &article.ArticleNumber); err != nil {
+		if err = rows.Scan(&product.Id, &product.Name, &product.ProductNumber); err != nil {
 			return nil, err
 		}
 		// and then print out the tag's Name attribute
-		articles = append(articles, article)
+		products = append(products, product)
 	}
 	rows.Close()
-	return articles, nil
+	return products, nil
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) Article(id int) (*Article, error) {
+func (db *Database) Product(id int) (*Product, error) {
 	q := fmt.Sprintf("SELECT id, name, articleNumber FROM articles WHERE id = %v", id)
 
-	var article Article
-	err := db.db.QueryRow(q).Scan(&article.Id, &article.Name, &article.ArticleNumber, article.Barcode)
+	var product Product
+	err := db.db.QueryRow(q).Scan(&product.Id, &product.Name, &product.ProductNumber, product.Barcode)
 	if err != nil {
 		return nil, err
 	}
-	return &article, nil
+	return &product, nil
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) ArticleFromBarcode(barcode string, inventoryId int) (*ArticleWithCompanyNameAndAmount, error) {
+func (db *Database) ProductFromBarcode(barcode string, inventoryId int) (*ProductWithCompanyNameAndAmount, error) {
 	q := fmt.Sprintf("SELECT articles.id, articles.name, articles.articleNumber, companies.name, inventoryData.amount FROM articles JOIN companies ON articles.companyId = companies.id JOIN inventoryData ON inventoryData.articleId = articles.id WHERE barcode = %v", barcode)
 
-	var article ArticleWithCompanyNameAndAmount
-	article.Barcode = &barcode
-	err := db.db.QueryRow(q).Scan(&article.Id, &article.Name, &article.ArticleNumber, &article.CompanyName, &article.Amount)
+	var product ProductWithCompanyNameAndAmount
+	product.Barcode = &barcode
+	err := db.db.QueryRow(q).Scan(&product.Id, &product.Name, &product.ProductNumber, &product.CompanyName, &product.Amount)
 	if err != nil {
 		return nil, err
 	}
-	return &article, nil
+	return &product, nil
 }
 
 // ------------------------------------------------------------------------------
-// Updates amount of an article
-func (db *Database) UpdateBarcode(article ArticleWithBarcodeOnly) error {
-	fmt.Println(article)
-	rows, err := db.db.Query("UPDATE articles SET barcode = ? WHERE id = ?", article.Barcode, article.Id)
+// Updates amount of an product
+func (db *Database) UpdateBarcode(product ProductWithBarcodeOnly) error {
+	fmt.Println(product)
+	rows, err := db.db.Query("UPDATE articles SET barcode = ? WHERE id = ?", product.Barcode, product.Id)
 	if err != nil {
 		panic(err)
 	} else {
@@ -145,7 +145,7 @@ func (db *Database) CreateUser(name string, password string, isAdmin bool) (*Use
 		return nil, hashErr
 	}
 	user := UserWithHashedPassword{User: User{Name: name, IsAdmin: isAdmin}, HashedPassword: hashedPassword}
-	// create new article in database
+	// create new product in database
 	q := fmt.Sprintf("INSERT INTO users (name, hashedPassword, isAdmin) VALUES ('%v','%v', %v)",
 		name, hashedPassword, isAdmin)
 	rows, err := db.db.Query(q)
@@ -188,56 +188,56 @@ func (db *Database) UpdateUserIsAdmin(oldName string, isAdmin bool) error {
 }
 
 // -----------------------------------------------------------------------------
-func (db *Database) CreateArticle(name string, companyId int, articleNumber string, barcode *string) (*Article, error) {
-	var article Article
-	// create new article in database
+func (db *Database) CreateProduct(name string, companyId int, productNumber string, barcode *string) (*Product, error) {
+	var product Product
+	// create new product in database
 	var query string
 	if barcode == nil {
-		query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber) VALUES ('%v', %v, '%v') RETURNING id", name, companyId, articleNumber)
+		query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber) VALUES ('%v', %v, '%v') RETURNING id", name, companyId, productNumber)
 	} else {
-		query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber, barcode) VALUES ('%v',%v,'%v','%v') RETURNING id", name, companyId, articleNumber, *barcode)
+		query = fmt.Sprintf("INSERT INTO articles (name, companyId, articleNumber, barcode) VALUES ('%v',%v,'%v','%v') RETURNING id", name, companyId, productNumber, *barcode)
 	}
-	dbErr := db.db.QueryRow(query).Scan(&article.Id)
+	dbErr := db.db.QueryRow(query).Scan(&product.Id)
 	if dbErr != nil {
 		return nil, dbErr
 	}
-	// create new inventory data for new articles in database
-	rows, dbErr := db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT ? as articleId, id as inventoryId FROM inventories", article.Id)
+	// create new inventory data for new products in database
+	rows, dbErr := db.db.Query("INSERT INTO inventoryData (productId, inventoryId) SELECT ? as productId, id as inventoryId FROM inventories", product.Id)
 	rows.Close()
 	if dbErr != nil {
 		return nil, dbErr
 	}
 
-	article.Name = name
-	article.CompanyId = companyId
-	article.ArticleNumber = articleNumber
-	return &article, nil
+	product.Name = name
+	product.CompanyId = companyId
+	product.ProductNumber = productNumber
+	return &product, nil
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) UpdateArticle(article Article) (*Article, error) {
-	q := fmt.Sprintf("UPDATE articles SET name = '%v', articleNumber = '%v' WHERE id = %v", article.Name, article.ArticleNumber, article.Id)
+func (db *Database) UpdateProduct(product Product) (*Product, error) {
+	q := fmt.Sprintf("UPDATE articles SET name = '%v', articleNumber = '%v' WHERE id = %v", product.Name, product.ProductNumber, product.Id)
 
 	rows, err := db.db.Query(q)
 	rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	return &article, nil
+	return &product, nil
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) DeleteArticle(id int) error {
-	// delete inventory data of article
+func (db *Database) DeleteProduct(id int) error {
+	// delete inventory data of product
 	rows, deleteInventoryDataErr := db.db.Query("DELETE FROM inventoryData WHERE articleId = ?", id)
 	rows.Close()
 	if deleteInventoryDataErr != nil {
 		return deleteInventoryDataErr
 	}
-	rows2, deleteArticlesErr := db.db.Query("DELETE FROM articles WHERE id = ?", id)
+	rows2, deleteProductsErr := db.db.Query("DELETE FROM articles WHERE id = ?", id)
 	rows2.Close()
-	if deleteArticlesErr != nil {
-		return deleteArticlesErr
+	if deleteProductsErr != nil {
+		return deleteProductsErr
 	}
 	return nil
 }
@@ -295,25 +295,25 @@ func (db *Database) CompaniesWithValue(inventoryId int) ([]CompanyWithValue, err
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) ArticlesOfCompany(companyId int) ([]Article, error) {
+func (db *Database) ProductsOfCompany(companyId int) ([]Product, error) {
 	q := fmt.Sprintf("SELECT id, name, articleNumber FROM articles WHERE companyId = %v", companyId)
 	rows, err := db.db.Query(q)
 	if err != nil {
 		rows.Close()
 		return nil, err
 	}
-	var articles []Article
+	var products []Product
 	for rows.Next() {
-		var article Article
+		var product Product
 		// for each row, scan the result into our tag composite object
-		err := rows.Scan(&article.Id, &article.Name, &article.ArticleNumber)
+		err := rows.Scan(&product.Id, &product.Name, &product.ProductNumber)
 		if err != nil {
 			return nil, err
 		}
-		articles = append(articles, article)
+		products = append(products, product)
 	}
 	rows.Close()
-	return articles, nil
+	return products, nil
 }
 
 // ------------------------------------------------------------------------------
@@ -385,7 +385,7 @@ func (db *Database) UpdateCompany(company Company) error {
 
 // ------------------------------------------------------------------------------
 func (db *Database) DeleteCompany(id int) error {
-	// delete all inventory data of all articles of company
+	// delete all inventory data of all products of company
 	rows0, inventoryDataDeleteErr := db.db.Query(
 		fmt.Sprintf(
 			"DELETE inventoryData FROM articles JOIN inventoryData ON inventoryData.articleId = articles.id WHERE companyId = %v",
@@ -394,11 +394,11 @@ func (db *Database) DeleteCompany(id int) error {
 	if inventoryDataDeleteErr != nil {
 		return inventoryDataDeleteErr
 	}
-	rows1, articlesDeleteErr := db.db.Query(
+	rows1, productsDeleteErr := db.db.Query(
 		fmt.Sprintf("DELETE FROM articles WHERE companyId =%v", id))
 	rows1.Close()
-	if articlesDeleteErr != nil {
-		return articlesDeleteErr
+	if productsDeleteErr != nil {
+		return productsDeleteErr
 	}
 	rows2, companiesDeleteErr := db.db.Query(
 		fmt.Sprintf("DELETE FROM companies WHERE id = %v", id))
@@ -430,9 +430,9 @@ func (db *Database) GetCompanyLogo(id int) ([]byte, error) {
 }
 
 // ------------------------------------------------------------------------------
-// Updates amount of an article
+// Updates amount of an product
 func (db *Database) UpdateInventoryData(inventoryData InventoryData) error {
-	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v, purchasePrice = %v, percentage = %v, notes = '%v' WHERE articleId = %v AND inventoryId = %v", inventoryData.Amount, inventoryData.PurchasePrice, inventoryData.Percentage, inventoryData.Notes, inventoryData.ArticleId, inventoryData.InventoryId)
+	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v, purchasePrice = %v, percentage = %v, notes = '%v' WHERE articleId = %v AND inventoryId = %v", inventoryData.Amount, inventoryData.PurchasePrice, inventoryData.Percentage, inventoryData.Notes, inventoryData.ProductId, inventoryData.InventoryId)
 
 	rows, err := db.db.Query(q)
 	rows.Close()
@@ -443,16 +443,16 @@ func (db *Database) UpdateInventoryData(inventoryData InventoryData) error {
 }
 
 // ------------------------------------------------------------------------------
-// Updates amount of an article
+// Updates amount of an product
 func (db *Database) UpdateAmount(amount InventoryDataJustAmount) (*InventoryData, error) {
-	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v WHERE articleId = %v AND inventoryId = %v", amount.Amount, amount.ArticleId, amount.InventoryId)
+	q := fmt.Sprintf("UPDATE inventoryData SET amount = %v WHERE articleId = %v AND inventoryId = %v", amount.Amount, amount.ProductId, amount.InventoryId)
 
 	rows, err := db.db.Query(q)
 	rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	inventoryData, err := db.InventoryDataOfArticle(amount.InventoryId, amount.ArticleId)
+	inventoryData, err := db.InventoryDataOfProduct(amount.InventoryId, amount.ProductId)
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +532,7 @@ func (db *Database) InventoriesWithValue() ([]InventoryWithValue, error) {
 // ------------------------------------------------------------------------------
 func (db *Database) ValueOfInventory(id int) (float32, error) {
 	value := float32(0)
-	if db.NumberOfArticles() == 0 {
+	if db.NumberOfProducts() == 0 {
 		return value, nil
 	}
 	q := fmt.Sprintf("SELECT SUM(amount * purchasePrice) FROM inventoryData WHERE inventoryId=%v", id)
@@ -554,7 +554,7 @@ func (db *Database) CreateInventory(name string) (*Inventory, error) {
 		return nil, dbErr
 	}
 
-	// create new inventory data for present articles in database
+	// create new inventory data for present products in database
 	rows, dbErr := db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT id as articleId, ? as inventoryId FROM articles", inventory.Id)
 	rows.Close()
 	if dbErr != nil {
@@ -607,7 +607,7 @@ func (db *Database) InventoryData(id int) ([]InventoryData, error) {
 	for rows.Next() {
 		var inventoryDate InventoryData
 		// for each row, scan the result into our tag composite object
-		if err = rows.Scan(&inventoryDate.ArticleId, &inventoryDate.InventoryId, &inventoryDate.Amount); err != nil {
+		if err = rows.Scan(&inventoryDate.ProductId, &inventoryDate.InventoryId, &inventoryDate.Amount); err != nil {
 			return nil, err
 		}
 		// and then print out the tag's Name attribute
@@ -618,13 +618,13 @@ func (db *Database) InventoryData(id int) ([]InventoryData, error) {
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) (*InventoryData, error) {
+func (db *Database) InventoryDataOfProduct(inventoryId int, productId int) (*InventoryData, error) {
 	var data InventoryData
-	data.ArticleId = articleId
+	data.ProductId = productId
 	data.InventoryId = inventoryId
 	q := fmt.Sprintf(
 		"SELECT amount, purchasePrice, percentage, notes FROM inventoryData WHERE inventoryId=%v AND articleId=%v",
-		inventoryId, articleId)
+		inventoryId, productId)
 	err := db.db.QueryRow(q).Scan(&data.Amount, &data.PurchasePrice, &data.Percentage, &data.Notes)
 	if err != nil {
 		return nil, err
@@ -634,21 +634,21 @@ func (db *Database) InventoryDataOfArticle(inventoryId int, articleId int) (*Inv
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) InventoryOfArticle(inventoryId int, articleId int) (*ArticleWithInventoryData, error) {
+func (db *Database) InventoryOfProduct(inventoryId int, productId int) (*ProductWithInventoryData, error) {
 	q := fmt.Sprintf(
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND article.id = %v",
-		inventoryId, articleId)
+		inventoryId, productId)
 
-	var article ArticleWithInventoryData
-	err := db.db.QueryRow(q).Scan(&article.Id, article.Name, article.PurchasePrice, article.Percentage, article.Barcode, article.ArticleNumber, article.Amount)
+	var product ProductWithInventoryData
+	err := db.db.QueryRow(q).Scan(&product.Id, product.Name, product.PurchasePrice, product.Percentage, product.Barcode, product.ProductNumber, product.Amount)
 	if err != nil {
 		return nil, err
 	}
-	return &article, nil
+	return &product, nil
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) InventoryOfCompany(inventoryId int, companyId int) ([]ArticleWithInventoryData, error) {
+func (db *Database) InventoryOfCompany(inventoryId int, companyId int) ([]ProductWithInventoryData, error) {
 	q := fmt.Sprintf(
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v",
 		inventoryId, companyId)
@@ -658,24 +658,24 @@ func (db *Database) InventoryOfCompany(inventoryId int, companyId int) ([]Articl
 		rows.Close()
 		return nil, err
 	}
-	var articles []ArticleWithInventoryData
+	var products []ProductWithInventoryData
 	for rows.Next() {
-		var article ArticleWithInventoryData
+		var product ProductWithInventoryData
 		// for each row, scan the result into our tag composite object
-		err = rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.ArticleNumber, &article.Amount, &article.Notes)
+		err = rows.Scan(&product.Id, &product.Name, &product.PurchasePrice, &product.Percentage, &product.Barcode, &product.ProductNumber, &product.Amount, &product.Notes)
 		if err != nil {
 			rows.Close()
 			return nil, err
 		}
-		article.ComputeSellingPrice()
-		articles = append(articles, article)
+		product.ComputeSellingPrice()
+		products = append(products, product)
 	}
 	rows.Close()
-	return articles, nil
+	return products, nil
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) InventoryOfCompanyWithAmountCheck(inventoryId int, companyId int) ([]ArticleWithInventoryData, error) {
+func (db *Database) InventoryOfCompanyWithAmountCheck(inventoryId int, companyId int) ([]ProductWithInventoryData, error) {
 	q := fmt.Sprintf(
 		"SELECT articles.id, articles.name, inventoryData.purchasePrice, inventoryData.percentage, articles.barcode, articles.articleNumber, inventoryData.amount, inventoryData.notes FROM inventoryData JOIN articles ON inventoryData.articleId = articles.id JOIN companies ON articles.companyId = companies.id JOIN inventories ON inventories.id = inventoryData.inventoryId WHERE inventories.id = %v AND companies.id = %v AND inventoryData.amount > 0",
 		inventoryId, companyId)
@@ -685,20 +685,20 @@ func (db *Database) InventoryOfCompanyWithAmountCheck(inventoryId int, companyId
 		rows.Close()
 		return nil, err
 	}
-	var articles []ArticleWithInventoryData
+	var products []ProductWithInventoryData
 	for rows.Next() {
-		var article ArticleWithInventoryData
+		var product ProductWithInventoryData
 		// for each row, scan the result into our tag composite object
-		err = rows.Scan(&article.Id, &article.Name, &article.PurchasePrice, &article.Percentage, &article.Barcode, &article.ArticleNumber, &article.Amount, &article.Notes)
+		err = rows.Scan(&product.Id, &product.Name, &product.PurchasePrice, &product.Percentage, &product.Barcode, &product.ProductNumber, &product.Amount, &product.Notes)
 		if err != nil {
 			rows.Close()
 			return nil, err
 		}
-		article.ComputeSellingPrice()
-		articles = append(articles, article)
+		product.ComputeSellingPrice()
+		products = append(products, product)
 	}
 	rows.Close()
-	return articles, nil
+	return products, nil
 }
 
 // ------------------------------------------------------------------------------
@@ -720,8 +720,8 @@ func (db *Database) Initialize() error {
       return err
     }
 	}
-	if !db.ArticlesTableCreated() {
-    err := db.CreateArticlesTable()
+	if !db.ProductsTableCreated() {
+    err := db.CreateProductsTable()
     if err != nil {
       return err
     }
@@ -887,7 +887,7 @@ func (db *Database) CreateInventoryDataTable() error {
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) NumberOfArticles() int {
+func (db *Database) NumberOfProducts() int {
 	var count int
 	err := db.db.QueryRow("SELECT COUNT(*) as count FROM articles").Scan(&count)
 	if err != nil {
@@ -897,7 +897,7 @@ func (db *Database) NumberOfArticles() int {
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) ArticlesTableCreated() bool {
+func (db *Database) ProductsTableCreated() bool {
 	rows, err := db.db.Query("SELECT COUNT(*) as count FROM articles")
 	if err == nil {
 		rows.Close()
@@ -906,7 +906,7 @@ func (db *Database) ArticlesTableCreated() bool {
 }
 
 // ------------------------------------------------------------------------------
-func (db *Database) CreateArticlesTable() error {
+func (db *Database) CreateProductsTable() error {
 	rows, err := db.db.Query("CREATE TABLE articles (id int NOT NULL AUTO_INCREMENT,companyId int NOT NULL,name varchar(255) NOT NULL,articleNumber varchar(255) NOT NULL,barcode varchar(255),FOREIGN KEY (companyId) REFERENCES companies(id),primary key (id), unique(barcode))")
 	if err == nil {
 		rows.Close()

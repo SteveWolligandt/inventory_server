@@ -15,42 +15,42 @@ import React from 'react';
 
 import fetchWithToken from './jwtFetch.js';
 
-export default function ArticlesList({
+export default function ProductsList({
   open,
-  onArticleSelected,
+  onProductSelected,
   userToken,
   setUserToken,
   company,
   setSnackbar,
 }) {
-  const [allArticles, setAllArticles] = React.useState([]);
-  const [filteredArticles, setFilteredArticles] = React.useState([]);
+  const [allProducts, setAllProducts] = React.useState([]);
+  const [filteredProducts, setFilteredProducts] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const searched = React.useRef("");
   
-  const loadArticles = () => {
-    if (!open)             { setAllArticles([]);setFilteredArticles([]); return; }
+  const loadProducts = () => {
+    if (!open)             { setAllProducts([]);setFilteredProducts([]); return; }
     if (userToken == null) {return;}
     const loadData = async() => {
       setIsLoading(true);
       try {
         const response = await fetchWithToken(
-          '/api/company/' + company.id + '/articles', {
+          '/api/company/' + company.id + '/products', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json', token:userToken},
         }, userToken, setUserToken, setSnackbar)
         if (!response.ok) {
           console.log('nich ok');
           return;}
-        const articles = await response.json();
-        console.log(articles);
-        articles.sort((article1, article2) => {
-          const name1 = article1.name.toUpperCase();
-          const name2 = article2.name.toUpperCase();
+        const products = await response.json();
+        console.log(products);
+        products.sort((product1, product2) => {
+          const name1 = product1.name.toUpperCase();
+          const name2 = product2.name.toUpperCase();
           return (name1 < name2) ? -1 : (name1 > name2) ? 1 : 0;
         });
-        setAllArticles(articles);
-        setFilteredArticles(articles);
+        setAllProducts(products);
+        setFilteredProducts(products);
       } catch (error) {
         console.error(error);
       }
@@ -58,7 +58,7 @@ export default function ArticlesList({
     };
     loadData();
   };
-  React.useEffect(loadArticles, [open, userToken]);
+  React.useEffect(loadProducts, [open, userToken]);
 
   if (!open) {return null;}
 
@@ -69,12 +69,12 @@ export default function ArticlesList({
       <CircularProgress /></div>);
   };
   const requestSearch = (event) => {
-    const filteredItems = allArticles.filter((article) => {
-      console.log(article);
+    const filteredItems = allProducts.filter((product) => {
+      console.log(product);
       //return true
-      return article.name.toUpperCase().includes(searched.current.value.toUpperCase());
+      return product.name.toUpperCase().includes(searched.current.value.toUpperCase());
     });
-    setFilteredArticles(filteredItems);
+    setFilteredProducts(filteredItems);
   };
 
   return (
@@ -89,15 +89,15 @@ export default function ArticlesList({
         placeholder="Suchen"
       />
       <List sx={{ pt: 0 }}>
-        {filteredArticles.map((article) => (
-          <ListItem key={article.id} disableGutters>
-            <ListItemButton onClick={() => onArticleSelected(article)} key={article.id}>
+        {filteredProducts.map((product) => (
+          <ListItem key={product.id} disableGutters>
+            <ListItemButton onClick={() => onProductSelected(product)} key={product.id}>
               <ListItemAvatar>
                 <Avatar sx={{ bgcolor: blue[100], color: blue[600] }}>
                   <ApartmentIcon />
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText primary={article.name} />
+              <ListItemText primary={product.name} />
             </ListItemButton>
           </ListItem>
         ))}

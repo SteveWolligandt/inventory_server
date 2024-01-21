@@ -11,18 +11,18 @@ import CircularProgress from '@mui/material/CircularProgress';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import CompaniesList from './CompaniesList.js';
-import ArticlesList from './ArticlesList.js';
-import CreateArticleDialog from './CreateArticleDialog.js';
+import ProductsList from './ProductsList.js';
+import CreateProductDialog from './CreateProductDialog.js';
 
 export default function BarcodeResult(
     {open, setOpen, barcode, userToken, setUserToken, setSnackbar, activeInventory}) {
   const [isLoading,                  setIsLoading]                  = React.useState(false);
-  const [article,                    setArticle]                    = React.useState(null);
+  const [article,                    setProduct]                    = React.useState(null);
   const [currentAmount,              setCurrentAmount]              = React.useState(0);
-  const [showCreateArticle,          setShowCreateArticle]          = React.useState(false);
+  const [showCreateProduct,          setShowCreateProduct]          = React.useState(false);
   const [showCompaniesList,          setShowCompaniesList]          = React.useState(false);
-  const [showArticlesList,           setShowArticlesList]           = React.useState(false);
-  const [showMessageAssignToArticle, setShowMessageAssignToArticle] = React.useState(false);
+  const [showProductsList,           setShowProductsList]           = React.useState(false);
+  const [showMessageAssignToProduct, setShowMessageAssignToProduct] = React.useState(false);
   const [showCountDialog,            setShowCountDialog]            = React.useState(false);
   const selectedCompany                                             = React.useRef(null);
   const stateAfterCompanyPicker                                     = React.useRef(null);
@@ -46,10 +46,10 @@ export default function BarcodeResult(
             console.log(json)
             if (json.success) {
               setCurrentAmount(json.article.amount);
-              setArticle(json.article);
+              setProduct(json.article);
               setShowCountDialog(true);
             } else {
-              setShowMessageAssignToArticle(true);
+              setShowMessageAssignToProduct(true);
             }
           } else {
             console.log('error');
@@ -57,7 +57,7 @@ export default function BarcodeResult(
         }
       } else {
         //setShowCountDialog(false);
-        //setShowMessageAssignToArticle(false);
+        //setShowMessageAssignToProduct(false);
         //setShowCompaniesList(false);
         //setShowCompaniesList(false);
       }
@@ -114,7 +114,7 @@ export default function BarcodeResult(
 
     </Dialog>
 
-    <Dialog open={showMessageAssignToArticle}>
+    <Dialog open={showMessageAssignToProduct}>
       <DialogTitle>
         Barcode keinem Artikel zugewiesen
       </DialogTitle>
@@ -127,20 +127,20 @@ export default function BarcodeResult(
         <Button onClick={()=>setOpen(false)}>Abbrechen</Button>
         <Button onClick={()=>{
           setShowCompaniesList(true);
-          setShowMessageAssignToArticle(false);
+          setShowMessageAssignToProduct(false);
           stateAfterCompanyPicker.current = 'create';
         }}>Neuer Artikel</Button>
         <Button onClick={()=>{
           setShowCompaniesList(true);
-          setShowMessageAssignToArticle(false);
+          setShowMessageAssignToProduct(false);
           stateAfterCompanyPicker.current = 'assign';
         }}>Zuweisen</Button>
       </DialogActions>
     </Dialog>
 
-    <CreateArticleDialog
-      open={showCreateArticle}
-      setOpen={setShowCreateArticle}
+    <CreateProductDialog
+      open={showCreateProduct}
+      setOpen={setShowCreateProduct}
       userToken={userToken}
       setUserToken={setUserToken}
       activeCompany={selectedCompany.current}
@@ -148,7 +148,7 @@ export default function BarcodeResult(
       activeInventory={activeInventory}
       defaultBarcode={barcode}
       onCreate={()=>{
-        setShowCreateArticle(false);
+        setShowCreateProduct(false);
         setOpen(false);
       }}/>
 
@@ -161,20 +161,20 @@ export default function BarcodeResult(
         selectedCompany.current = company;
         setShowCompaniesList(false);
         if (stateAfterCompanyPicker.current === 'assign') {
-          setShowArticlesList(true);
+          setShowProductsList(true);
         } else if (stateAfterCompanyPicker.current === 'create') {
-          setShowCreateArticle(true);
+          setShowCreateProduct(true);
         }
       }}/>
 
-    <ArticlesList
-      open              = {showArticlesList}
+    <ProductsList
+      open              = {showProductsList}
       company           = {selectedCompany.current}
       userToken         = {userToken}
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
-      onArticleSelected = {async (article) => {
-        setShowArticlesList(false);
+      onProductSelected = {async (article) => {
+        setShowProductsList(false);
         const url = '/api/article/' + article.id + '/barcode';
         const response = await fetchWithToken(url,
           { method: 'PUT',

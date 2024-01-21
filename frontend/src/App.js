@@ -3,7 +3,7 @@ import './App.css';
 import React from 'react';
 import useStickyState from './useStickyState.js';
 
-import ArticlesTable from './ArticlesTable.js';
+import ProductsTable from './ProductsTable.js';
 import BarcodeScanner from './BarcodeScanner.js';
 import BarcodeResult from './BarcodeResult.js';
 import InventoryValueDialog from './InventoryValue.js';
@@ -24,7 +24,7 @@ import useWebSocket, { ReadyState } from 'react-use-websocket';
 
 const State = {
   Companies : 'companies',
-  Articles : 'articles',
+  Products : 'products',
   AdminArea : 'adminarea',
 };
 
@@ -123,8 +123,8 @@ export default function App() {
   const onFullValue   = () => setShowInventoryValue(true);
   const showAdminArea = () => setCurrentState(State.AdminArea);
   const showCompanies = () => setCurrentState(State.Companies);
-  const showArticles  = () => setCurrentState(State.Articles);
-  const onArticleBackButtonClick = () => {
+  const showProducts  = () => setCurrentState(State.Products);
+  const onProductBackButtonClick = () => {
     showCompanies();
     setActiveCompany(null);
   };
@@ -200,20 +200,20 @@ export default function App() {
       activeInventory   = {activeInventory}
       onCompanySelected = {(company) => {
         setActiveCompany(company);
-        showArticles();
+        showProducts();
       }}
       setTopBarContext  = {setTopBarContext}
       lastMessage = {lastMessage}
     />
-    <ArticlesTable
-      open             = {isLoggedIn && currentState === State.Articles}
+    <ProductsTable
+      open             = {isLoggedIn && currentState === State.Products}
       userToken        = {userToken}
       setUserToken     = {setUserToken}
       activeCompany    = {activeCompany}
       activeInventory  = {activeInventory}
       updateTitle      = {updateTitle}
       setSnackbar      = {setSnackbar}
-      onBack           = {onArticleBackButtonClick}
+      onBack           = {onProductBackButtonClick}
       lastMessage      = {lastMessage}
       setTopBarContext = {setTopBarContext}/>
     <AdminArea

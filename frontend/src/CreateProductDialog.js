@@ -12,7 +12,7 @@ import fetchWithToken from './jwtFetch.js'
 import BarcodeScannerImpl from './BarcodeScannerImpl.jsx'
 import Barcode from 'react-barcode';
 
-export default function CreateArticleDialog({
+export default function CreateProductDialog({
   open,
   setOpen,
   activeCompany,
@@ -28,8 +28,8 @@ export default function CreateArticleDialog({
   const name = React.useRef();
   const [nameValid, setNameValid] = React.useState(false);
 
-  const articleNumber = React.useRef();
-  const [articleNumberValid, setArticleNumberValid] = React.useState(false);
+  const productNumber = React.useRef();
+  const [productNumberValid, setProductNumberValid] = React.useState(false);
 
   const purchasePrice = React.useRef();
   const [purchasePriceValid, setPurchasePriceValid] = React.useState(true);
@@ -59,7 +59,7 @@ export default function CreateArticleDialog({
     const data = {
       name : name.current.value,
       companyId : activeCompany.id,
-      articleNumber : articleNumber.current.value,
+      productNumber : productNumber.current.value,
     };
     if (scannedBarcode !== null) {
       data.barcode = scannedBarcode;
@@ -79,10 +79,10 @@ export default function CreateArticleDialog({
       if (!response.ok) {
         setSnackbar({ children: 'Fehler beim Erstellen von ', severity: 'error' });
       }
-      const article = await response.json();
+      const product = await response.json();
 
       const inventoryData = {
-        articleId : article.id,
+        productId : product.id,
         inventoryId : activeInventory.id,
         purchasePrice : Number(purchasePrice.current.value),
         sellingPrice : Number(sellingPrice.current.value),
@@ -194,12 +194,12 @@ export default function CreateArticleDialog({
           disabled={isLoading}
           label="Artikelnummer"
           type="string"
-          onChange={()=>setArticleNumberValid(articleNumber.current.value !== '')}
+          onChange={()=>setProductNumberValid(productNumber.current.value !== '')}
           fullWidth
-          error={!articleNumberValid}
-          helperText={!articleNumberValid?"Artikelnummer darf nicht leer sein":""}
+          error={!productNumberValid}
+          helperText={!productNumberValid?"Artikelnummer darf nicht leer sein":""}
           variant="standard"
-          inputRef={articleNumber}
+          inputRef={productNumber}
         />
         <Box
           sx={{
@@ -274,7 +274,7 @@ export default function CreateArticleDialog({
           <Button onClick={handleClose}>Abbrechen</Button>
           <Button 
             disabled={!nameValid ||
-                      !articleNumberValid ||
+                      !productNumberValid ||
                       !purchasePriceValid ||
                       !percentageValid ||
                       !sellingPriceValid ||

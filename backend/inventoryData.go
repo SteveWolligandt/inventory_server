@@ -1,9 +1,9 @@
 package main
 
 // ------------------------------------------------------------------------------
-// Inventory Data per article per inventory
+// Inventory Data per product per inventory
 type InventoryData struct {
-	ArticleId     int     `json:"articleId"`
+	ProductId     int     `json:"productId"`
 	InventoryId   int     `json:"inventoryId"`
 	PurchasePrice float32 `json:"purchasePrice"`
 	Percentage    float32 `json:"percentage"`
@@ -12,9 +12,9 @@ type InventoryData struct {
 	Amount        int     `json:"amount"`
 }
 // ------------------------------------------------------------------------------
-// Inventory Data per article per inventory
+// Inventory Data per product per inventory
 type InventoryDataJustAmount struct {
-	ArticleId     int     `json:"articleId"`
+	ProductId     int     `json:"productId"`
 	InventoryId   int     `json:"inventoryId"`
 	Amount        int     `json:"amount"`
 }

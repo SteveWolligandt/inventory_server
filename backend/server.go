@@ -164,50 +164,50 @@ func (s *Server) GetPdf(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GetArticles(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetProducts(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
-	articles, err := s.Db.Articles()
+	products, err := s.Db.Products()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(articles)
+	json.NewEncoder(w).Encode(products)
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GetArticle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetProduct(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
-	articleIdStr := vars["id"]
-	articleId, strconvErr := strconv.Atoi(articleIdStr)
+	productIdStr := vars["id"]
+	productId, strconvErr := strconv.Atoi(productIdStr)
 	if strconvErr != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	article, err := s.Db.Article(articleId)
+	product, err := s.Db.Product(productId)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(article)
+	json.NewEncoder(w).Encode(product)
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetProductFromBarcode(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
-	articleBarcode := vars["barcode"]
+	productBarcode := vars["barcode"]
 	inventoryIdStr := r.Header.Get("inventoryId")
 	inventoryId, strconvErr := strconv.Atoi(inventoryIdStr)
 	if strconvErr != nil {
@@ -217,7 +217,7 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
   fmt.Println("inventoryId: " + inventoryIdStr)
-	article, err := s.Db.ArticleFromBarcode(articleBarcode, inventoryId)
+	product, err := s.Db.ProductFromBarcode(productBarcode, inventoryId)
 	if err != nil {
     if err == sql.ErrNoRows {
       type Response struct {
@@ -226,13 +226,13 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
       response := Response{Success: false}
       json.NewEncoder(w).Encode(response)
     } else {
-      fmt.Println("Database.ArticleFromBarcode got an error:"  + err.Error())
+      fmt.Println("Database.ProductFromBarcode got an error:"  + err.Error())
       // TODO send message with error
       w.WriteHeader(http.StatusInternalServerError)
     }
 		return
 	}
-	if article == nil {
+	if product == nil {
 		type Response struct {
 			Success bool `json:"success"`
 		}
@@ -242,99 +242,99 @@ func (s *Server) GetArticleFromBarcode(w http.ResponseWriter, r *http.Request) {
 	}
   type Response struct {
     Success bool                            `json:"success"`
-    Article ArticleWithCompanyNameAndAmount `json:"article"`
+    Product ProductWithCompanyNameAndAmount `json:"product"`
   }
-  response := Response{Success: true, Article: *article}
+  response := Response{Success: true, Product: *product}
   json.NewEncoder(w).Encode(response)
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) CreateArticle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
-	// extract article from json response
+	// extract product from json response
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var unmarshaledArticle Article
-	json.Unmarshal(reqBody, &unmarshaledArticle)
+	var unmarshaledProduct Product
+	json.Unmarshal(reqBody, &unmarshaledProduct)
 
-	// create new article in database
-	article, err := s.Db.CreateArticle(unmarshaledArticle.Name, unmarshaledArticle.CompanyId, unmarshaledArticle.ArticleNumber, unmarshaledArticle.Barcode)
+	// create new product in database
+	product, err := s.Db.CreateProduct(unmarshaledProduct.Name, unmarshaledProduct.CompanyId, unmarshaledProduct.ProductNumber, unmarshaledProduct.Barcode)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	marshaledArticle, marshalErr := json.Marshal(article)
+	marshaledProduct, marshalErr := json.Marshal(product)
 	if marshalErr != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	articlestring, _ := json.Marshal(article)
-	w.Write(articlestring)
-	action := fmt.Sprintf("{\"action\":\"newArticle\", \"data\":%v}", string(marshaledArticle))
+	productstring, _ := json.Marshal(product)
+	w.Write(productstring)
+	action := fmt.Sprintf("{\"action\":\"newProduct\", \"data\":%v}", string(marshaledProduct))
 	s.SendToWebSockets([]byte(action))
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) UpdateArticle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
 	reqBody, _ := ioutil.ReadAll(r.Body)
-	var article Article
-	json.Unmarshal(reqBody, &article)
+	var product Product
+	json.Unmarshal(reqBody, &product)
 	vars := mux.Vars(r)
 
 	var strConvErr error
-	article.Id, strConvErr = strconv.Atoi(vars["id"])
+	product.Id, strConvErr = strconv.Atoi(vars["id"])
 	if strConvErr != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	_, err := s.Db.UpdateArticle(article)
+	_, err := s.Db.UpdateProduct(product)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	marshaledArticle, marshalErr := json.Marshal(article)
+	marshaledProduct, marshalErr := json.Marshal(product)
 	if marshalErr != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	action := fmt.Sprintf("{\"action\":\"updateArticle\", \"data\":%v}", string(marshaledArticle))
+	action := fmt.Sprintf("{\"action\":\"updateProduct\", \"data\":%v}", string(marshaledProduct))
 	s.SendToWebSockets([]byte(action))
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) DeleteArticle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
 	}
 	vars := mux.Vars(r)
-	articleIdStr := vars["id"]
-	articleId, err := strconv.Atoi(articleIdStr)
+	productIdStr := vars["id"]
+	productId, err := strconv.Atoi(productIdStr)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = s.Db.DeleteArticle(articleId)
+	err = s.Db.DeleteProduct(productId)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	action := fmt.Sprintf("{\"action\":\"deleteArticle\", \"data\":{\"id\":%v}}", articleId)
+	action := fmt.Sprintf("{\"action\":\"deleteProduct\", \"data\":{\"id\":%v}}", productId)
 	s.SendToWebSockets([]byte(action))
 }
 
@@ -392,7 +392,7 @@ func (s *Server) GetCompaniesWithInventory(w http.ResponseWriter, r *http.Reques
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetProductsOfCompany(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
@@ -405,13 +405,13 @@ func (s *Server) GetArticlesOfCompany(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	articles, err := s.Db.ArticlesOfCompany(companyId)
+	products, err := s.Db.ProductsOfCompany(companyId)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(articles)
+	json.NewEncoder(w).Encode(products)
 }
 
 // ------------------------------------------------------------------------------
@@ -667,18 +667,18 @@ func (s *Server) UpdateBarcode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	articleIdStr := vars["id"]
-	articleId, err := strconv.Atoi(articleIdStr)
+	productIdStr := vars["id"]
+	productId, err := strconv.Atoi(productIdStr)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	var article ArticleWithBarcodeOnly
-	article.Id = articleId
-	article.Barcode = r.Header.Get("barcode")
-	err = s.Db.UpdateBarcode(article)
+	var product ProductWithBarcodeOnly
+	product.Id = productId
+	product.Barcode = r.Header.Get("barcode")
+	err = s.Db.UpdateBarcode(product)
 
 	if err != nil {
 		// TODO send message with error
@@ -800,7 +800,7 @@ func (s *Server) DeleteInventory(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------------------------------------------------------------------
-func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetInventoryDataOfProduct(w http.ResponseWriter, r *http.Request) {
 	errAuth := s.CheckAuthorized(w, r) 
   if errAuth != nil {
 		return
@@ -814,15 +814,15 @@ func (s *Server) GetInventoryDataOfArticle(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	articleIdStr := vars["articleId"]
-	articleId, articleErr := strconv.Atoi(articleIdStr)
-	if articleErr != nil {
+	productIdStr := vars["productId"]
+	productId, productErr := strconv.Atoi(productIdStr)
+	if productErr != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	inventoryData, err := s.Db.InventoryDataOfArticle(inventoryId, articleId)
+	inventoryData, err := s.Db.InventoryDataOfProduct(inventoryId, productId)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
@@ -855,13 +855,13 @@ func (s *Server) GetInventoryOfCompany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	articles, err := s.Db.InventoryOfCompany(inventoryId, companyId)
+	products, err := s.Db.InventoryOfCompany(inventoryId, companyId)
 	if err != nil {
 		// TODO send message with error
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(articles)
+	json.NewEncoder(w).Encode(products)
 }
 
 // ------------------------------------------------------------------------------
@@ -1179,20 +1179,20 @@ func (s *Server) HandleRequests() {
 		s.DeleteCompany).
 		Methods("DELETE")
 
-	// article-related
+	// product-related
 	s.Router.HandleFunc(
-		"/api/articles",
-		s.GetArticles).
+		"/api/products",
+		s.GetProducts).
 		Methods("GET")
 
 	s.Router.HandleFunc(
-		"/api/article",
-		s.CreateArticle).
+		"/api/product",
+		s.CreateProduct).
 		Methods("POST")
 
 	s.Router.HandleFunc(
-		"/api/company/{id}/articles",
-		s.GetArticlesOfCompany).
+		"/api/company/{id}/products",
+		s.GetProductsOfCompany).
 		Methods("GET")
 
 	s.Router.HandleFunc(
@@ -1201,28 +1201,28 @@ func (s *Server) HandleRequests() {
 		Methods("GET")
 
 	s.Router.HandleFunc(
-		"/api/article/{id}",
-		s.UpdateArticle).
+		"/api/product/{id}",
+		s.UpdateProduct).
 		Methods("PUT")
 
 	s.Router.HandleFunc(
-		"/api/article/{id}/barcode",
+		"/api/product/{id}/barcode",
 		s.UpdateBarcode).
 		Methods("PUT")
 
 	s.Router.HandleFunc(
-		"/api/article/{id}",
-		s.DeleteArticle).
+		"/api/product/{id}",
+		s.DeleteProduct).
 		Methods("DELETE")
 
 	s.Router.HandleFunc(
-		"/api/article/{id}",
-		s.GetArticle).
+		"/api/product/{id}",
+		s.GetProduct).
 		Methods("GET")
 
 	s.Router.HandleFunc(
-		"/api/article/from-barcode/{barcode}",
-		s.GetArticleFromBarcode).
+		"/api/product/from-barcode/{barcode}",
+		s.GetProductFromBarcode).
 		Methods("GET")
 
 	// inventoryData-related
@@ -1272,8 +1272,8 @@ func (s *Server) HandleRequests() {
 		Methods("GET")
 
 	s.Router.HandleFunc(
-		"/api/inventory/{inventoryId}/inventorydata/{articleId}",
-		s.GetInventoryDataOfArticle).
+		"/api/inventory/{inventoryId}/inventorydata/{productId}",
+		s.GetInventoryDataOfProduct).
 		Methods("GET")
 
 	s.Router.HandleFunc(

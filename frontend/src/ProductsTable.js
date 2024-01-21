@@ -16,7 +16,7 @@ import {DataGrid, GridToolbarQuickFilter} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
 import fetchWithToken from './jwtFetch.js';
 
-import CreateArticleDialog from './CreateArticleDialog.js';
+import CreateProductDialog from './CreateProductDialog.js';
 
 function computeMutationAmount(newRow, oldRow) {
   if (newRow.amount !== oldRow.amount) {
@@ -30,9 +30,9 @@ function computeMutationName(newRow, oldRow) {
   }
   return null;
 }
-function computeMutationArticleNumber(newRow, oldRow) {
-  if (newRow.articleNumber !== oldRow.articleNumber) {
-    return (<>Artikelnummer von <i><b>{oldRow.articleNumber}</b></i> zu <i><b>{newRow.articleNumber}</b></i> ändern?</>);
+function computeMutationProductNumber(newRow, oldRow) {
+  if (newRow.productNumber !== oldRow.productNumber) {
+    return (<>Artikelnummer von <i><b>{oldRow.productNumber}</b></i> zu <i><b>{newRow.productNumber}</b></i> ändern?</>);
   }
   return null;
 }
@@ -66,7 +66,7 @@ function computeMutationPricing(newRow, oldRow) {
   return null;
 }
 
-export default function ArticlesTable({
+export default function ProductsTable({
   open,
   activeCompany,
   activeInventory,
@@ -78,7 +78,7 @@ export default function ArticlesTable({
   updateTitle,
   lastMessage
 }) {
-  var [articles, setArticles] = React.useState([]);
+  var [products, setProducts] = React.useState([]);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   var [isLoading, setIsLoading] = React.useState(false);
 
@@ -88,47 +88,47 @@ export default function ArticlesTable({
         const msg = JSON.parse(lastMessage.data);
         let action = msg.action;
         if (action === 'authorized') {
-        } else if (action === 'newArticle') {
-          let newArticle = msg.data;
-          if (newArticle.companyId !== activeCompany.id) { return; }
-          const foundArticle = articles.find(article => article.id === newArticle.id);
-          if (foundArticle !== undefined) {console.log('stop'); return; }
+        } else if (action === 'newProduct') {
+          let newProduct = msg.data;
+          if (newProduct.companyId !== activeCompany.id) { return; }
+          const foundProduct = products.find(product => product.id === newProduct.id);
+          if (foundProduct !== undefined) {console.log('stop'); return; }
 
           const url = '/api/inventory/' + activeInventory.id + '/inventorydata/' +
-                      newArticle.id;
+                      newProduct.id;
           const response = await fetchWithToken(url, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json', token:userToken}
           }, userToken, setUserToken, setSnackbar);
           const inventoryData = await response.json();
-          newArticle.purchasePrice = inventoryData.purchasePrice;
-          newArticle.percentage    = inventoryData.percentage;
-          newArticle.sellingPrice  = inventoryData.sellingPrice;
-          newArticle.notes         = inventoryData.notes;
-          newArticle.amount        = inventoryData.amount;
-          setArticles(articles => articles.concat(newArticle));
-        } else if (action === 'updateArticle') {
-          let updatedArticle = msg.data;
-          setArticles(articles => articles.map((article, j) => {
-            return updatedArticle.id === article.id ? updatedArticle : article;
+          newProduct.purchasePrice = inventoryData.purchasePrice;
+          newProduct.percentage    = inventoryData.percentage;
+          newProduct.sellingPrice  = inventoryData.sellingPrice;
+          newProduct.notes         = inventoryData.notes;
+          newProduct.amount        = inventoryData.amount;
+          setProducts(products => products.concat(newProduct));
+        } else if (action === 'updateProduct') {
+          let updatedProduct = msg.data;
+          setProducts(products => products.map((product, j) => {
+            return updatedProduct.id === product.id ? updatedProduct : product;
           }));
 
-        } else if (action === 'deleteArticle') {
-          let deletedArticle = msg.data;
-          setArticles(articles => articles.filter(article => article.id !==
-                                                             deletedArticle.id));
+        } else if (action === 'deleteProduct') {
+          let deletedProduct = msg.data;
+          setProducts(products => products.filter(product => product.id !==
+                                                             deletedProduct.id));
         } else if (action === 'updateInventoryData') {
           let updatedInventoryData = msg.data;
-          setArticles(articles => articles.map((article, j) => {
+          setProducts(products => products.map((product, j) => {
             if (updatedInventoryData.inventoryId === activeInventory.id &&
-                updatedInventoryData.articleId === article.id) {
-              article.amount = updatedInventoryData.amount;
-              article.purchasePrice = updatedInventoryData.purchasePrice;
-              article.percentage = updatedInventoryData.percentage;
-              article.sellingPrice = updatedInventoryData.sellingPrice;
-              article.notes = updatedInventoryData.notes;
+                updatedInventoryData.productId === product.id) {
+              product.amount = updatedInventoryData.amount;
+              product.purchasePrice = updatedInventoryData.purchasePrice;
+              product.percentage = updatedInventoryData.percentage;
+              product.sellingPrice = updatedInventoryData.sellingPrice;
+              product.notes = updatedInventoryData.notes;
             }
-            return article;
+            return product;
           }));
         }
       }
@@ -141,7 +141,7 @@ export default function ArticlesTable({
 
   // initial get
   const initialGet = () => {
-    if (!open)             { setArticles([]); return; }
+    if (!open)             { setProducts([]); return; }
     if (userToken == null) {return;}
     const load = async () => {
       if (userToken == null) {return;}
@@ -151,7 +151,7 @@ export default function ArticlesTable({
         setIsLoading(true);
         const response = await fetchWithToken(activeInventory
                   ? '/api/company/' + activeCompany.id + '/inventory/' + activeInventory.id
-                  : '/api/company/' + activeCompany.id + '/articles',
+                  : '/api/company/' + activeCompany.id + '/products',
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json',token:userToken },
@@ -162,14 +162,14 @@ export default function ArticlesTable({
               {children :'Kein Zugriff', severity : 'error'});
           return;
         }
-        const articlesJson = await response.json();
+        const productsJson = await response.json();
               var cs = [];
-              for (var article in articlesJson) {
-                if (articlesJson.hasOwnProperty(article)) {
-                  cs.push(articlesJson[article]);
+              for (var product in productsJson) {
+                if (productsJson.hasOwnProperty(product)) {
+                  cs.push(productsJson[product]);
                 }
               }
-              setArticles(cs);
+              setProducts(cs);
         setIsLoading(false);
       } catch (error) {
         setSnackbar(
@@ -184,7 +184,7 @@ export default function ArticlesTable({
   React.useEffect(() => {
     if (open) {
       setTopBarContext([{
-        key:'newArticle',
+        key:'newProduct',
         label:'Neuer Artikel',
         icon:()=>(<AddCircleIcon/>),
         onClick:()=>setDialogOpen(true)}]);
@@ -192,13 +192,13 @@ export default function ArticlesTable({
   },[open, setTopBarContext])
 
   const mutateRow = React.useCallback(
-    (article) => new Promise(
+    (product) => new Promise(
       (resolve, reject) => setTimeout(
         () => {
-          if (article.name?.trim() === '') {
+          if (product.name?.trim() === '') {
             reject();
           } else {
-            resolve(article);
+            resolve(product);
           }
         },
         200),
@@ -213,8 +213,8 @@ export default function ArticlesTable({
       (newRow, oldRow) => new Promise((resolve, reject) => {
         const mutationName =
           computeMutationName(newRow, oldRow);
-        const mutationArticleNumber =
-          computeMutationArticleNumber(newRow, oldRow);
+        const mutationProductNumber =
+          computeMutationProductNumber(newRow, oldRow);
         const mutationPrice =
           computeMutationPricing(newRow, oldRow);
         const mutationAmount =
@@ -234,10 +234,10 @@ export default function ArticlesTable({
             console.log(newRow.sellingPrice + ' * (1 - ' + newRow.percentage + ' / 100 = ' + newRow.purchasePrice);
           }
         }
-        if (mutationName || mutationArticleNumber) {
-          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes});
+        if (mutationName || mutationProductNumber) {
+          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationProductNumber, mutationPrice, mutationAmount, mutationNotes});
         } else if (activeInventory && (mutationAmount || mutationPrice || mutationNotes)) {
-          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes});
+          setChangeArguments({resolve, reject, newRow, oldRow, mutationName, mutationProductNumber, mutationPrice, mutationAmount, mutationNotes});
         } else {
           resolve(oldRow); // Nothing was changed
         }
@@ -252,15 +252,15 @@ export default function ArticlesTable({
   };
 
   const handleChangeYes = async () => {
-    const {newRow, oldRow, reject, resolve, mutationName, mutationArticleNumber, mutationPrice, mutationAmount, mutationNotes} = changeArguments;
+    const {newRow, oldRow, reject, resolve, mutationName, mutationProductNumber, mutationPrice, mutationAmount, mutationNotes} = changeArguments;
 
     try {
-      if (mutationName || mutationArticleNumber) {
-        const url = '/api/article/' + newRow.id;
+      if (mutationName || mutationProductNumber) {
+        const url = '/api/product/' + newRow.id;
           const body = JSON.stringify({
-            articleId     : newRow.id,
+            productId     : newRow.id,
             name          : newRow.name,
-            articleNumber : newRow.articleNumber,
+            productNumber : newRow.productNumber,
           });
         await fetchWithToken(url, {
           method : 'PUT',
@@ -272,7 +272,7 @@ export default function ArticlesTable({
       if (activeInventory && (mutationPrice || mutationAmount || mutationNotes)) {
         const url = '/api/inventorydata/';
         const body = JSON.stringify({
-          articleId     : newRow.id,
+          productId     : newRow.id,
           inventoryId   : activeInventory.id,
           amount        : newRow.amount,
           purchasePrice : newRow.purchasePrice,
@@ -304,7 +304,7 @@ export default function ArticlesTable({
 
   const handleDeleteYes = async () => {
     try {
-      const url = '/api/article/' + deleteArguments.id;
+      const url = '/api/product/' + deleteArguments.id;
       await fetchWithToken(url, {
         method : 'DELETE', 
           headers: { 'Content-Type': 'application/json', token:userToken },
@@ -336,7 +336,7 @@ export default function ArticlesTable({
 
     const {newRow, oldRow}      = changeArguments;
     const mutationName          = computeMutationName(newRow, oldRow);
-    const mutationArticleNumber = computeMutationArticleNumber(newRow, oldRow);
+    const mutationProductNumber = computeMutationProductNumber(newRow, oldRow);
     const mutationAmount        = computeMutationAmount(newRow, oldRow);
     const mutationPrice         = computeMutationPricing(newRow, oldRow);
     const mutationNotes         = computeMutationNotes(newRow, oldRow);
@@ -350,7 +350,7 @@ export default function ArticlesTable({
         </DialogTitle>
         <DialogContent dividers>
           {mutationName}
-          {mutationArticleNumber}
+          {mutationProductNumber}
           {mutationAmount}
           {mutationPrice}
           {mutationNotes}
@@ -421,7 +421,7 @@ export default function ArticlesTable({
     return (
       <DataGrid 
         components           = {{Toolbar:QuickSearchToolbar}}
-        rows                 = {articles}
+        rows                 = {products}
         columns              = {columns(setDeleteArguments, userToken, setUserToken)}
         processRowUpdate     = {processRowUpdate}
         experimentalFeatures = {{newEditingApi: true }}
@@ -441,7 +441,7 @@ export default function ArticlesTable({
       {renderLoading()}
       {renderDataGrid()}
     </Paper>
-    <CreateArticleDialog open={dialogOpen}
+    <CreateProductDialog open={dialogOpen}
                          setOpen={setDialogOpen}
                          userToken={userToken}
                          setUserToken={setUserToken}
@@ -475,7 +475,7 @@ function columns(setDeleteArguments, userToken, setUserToken) {
       headerName: 'Name',
       //width: 200,
       editable: true },
-    { field: 'articleNumber',
+    { field: 'productNumber',
       flex: 1,
       minWidth: 200,
       headerAlign:'center',

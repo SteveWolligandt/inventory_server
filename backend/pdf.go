@@ -11,7 +11,7 @@ import (
 )
 
 // ------------------------------------------------------------------------------
-func buildPdfArticlesHeader(m pdf.Maroto) {
+func buildPdfProductsHeader(m pdf.Maroto) {
 	m.Row(8, func() {
 		m.Col(3, func() {
 			m.Text("Artikelbezeichnung", props.Text{
@@ -80,28 +80,28 @@ func buildPdfCompaniesHeader(m pdf.Maroto) {
 }
 
 // -----------------------------------------------------------------------------
-func pdfFillArticlesTable(m pdf.Maroto, db *Database, articles []ArticleWithInventoryData, inventoryId int) float32 {
+func pdfFillProductsTable(m pdf.Maroto, db *Database, products []ProductWithInventoryData, inventoryId int) float32 {
 	p := message.NewPrinter(language.German)
 	totalPrice := float32(0)
-	for _, article := range articles {
+	for _, product := range products {
 		m.Line(1)
 		m.Row(8, func() {
 			m.Col(3, func() {
-				m.Text(article.Name, props.Text{
+				m.Text(product.Name, props.Text{
 					Size: 10,
 					Top:  1,
 				})
 			})
 
 			m.Col(3, func() {
-				m.Text(article.ArticleNumber, props.Text{
+				m.Text(product.ProductNumber, props.Text{
 					Size: 10,
 					Top:  1,
 				})
 			})
 
 			m.Col(2, func() {
-				m.Text(p.Sprintf("%.2f €", article.PurchasePrice), props.Text{
+				m.Text(p.Sprintf("%.2f €", product.PurchasePrice), props.Text{
 					Size:  10,
 					Top:   1,
 					Align: consts.Right,
@@ -109,7 +109,7 @@ func pdfFillArticlesTable(m pdf.Maroto, db *Database, articles []ArticleWithInve
 			})
 
 			m.Col(2, func() {
-				m.Text(fmt.Sprintf("%v", article.Amount), props.Text{
+				m.Text(fmt.Sprintf("%v", product.Amount), props.Text{
 					Size:  10,
 					Top:   1,
 					Align: consts.Right,
@@ -117,13 +117,13 @@ func pdfFillArticlesTable(m pdf.Maroto, db *Database, articles []ArticleWithInve
 			})
 
 			m.Col(2, func() {
-				m.Text(p.Sprintf("%.2f €", float32(article.Amount)*article.PurchasePrice), props.Text{
+				m.Text(p.Sprintf("%.2f €", float32(product.Amount)*product.PurchasePrice), props.Text{
 					Size:  10,
 					Top:   1,
 					Align: consts.Right,
 				})
 			})
-			totalPrice += float32(article.Amount) * article.PurchasePrice
+			totalPrice += float32(product.Amount) * product.PurchasePrice
 		})
 	}
 	m.Line(1)
@@ -220,11 +220,11 @@ func buildPdfCompaniesOverview(m pdf.Maroto, db *Database, inventoryId int) erro
 
 // ------------------------------------------------------------------------------
 func buildPdfCompanyTable(m pdf.Maroto, db *Database, company Company, inventoryId int) error {
-	articles, err := db.InventoryOfCompanyWithAmountCheck(inventoryId, company.Id)
+	products, err := db.InventoryOfCompanyWithAmountCheck(inventoryId, company.Id)
 	if err != nil {
 		return err
 	}
-	if len(articles) == 0 {
+	if len(products) == 0 {
 		return nil
 	}
 	rowHeight := 20.0
@@ -237,8 +237,8 @@ func buildPdfCompanyTable(m pdf.Maroto, db *Database, company Company, inventory
 			})
 		})
 	})
-	buildPdfArticlesHeader(m)
-	totalPrice := pdfFillArticlesTable(m, db, articles, inventoryId)
+	buildPdfProductsHeader(m)
+	totalPrice := pdfFillProductsTable(m, db, products, inventoryId)
 	createTotalPriceRow(m, totalPrice)
 	m.AddPage()
 	return nil
