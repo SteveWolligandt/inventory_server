@@ -68,7 +68,7 @@ export default function CreateProductDialog({
     setIsLoading(true);
     try{
       const response = await fetchWithToken(
-        '/api/article',{
+        '/api/product',{
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -202,11 +202,11 @@ func (db *Database) CreateProduct(name string, companyId int, productNumber stri
 		return nil, dbErr
 	}
 	// create new inventory data for new products in database
-	rows, dbErr := db.db.Query("INSERT INTO inventoryData (productId, inventoryId) SELECT ? as productId, id as inventoryId FROM inventories", product.Id)
-	rows.Close()
+	rows, dbErr := db.db.Query("INSERT INTO inventoryData (articleId, inventoryId) SELECT ? as articleId, id as inventoryId FROM inventories", product.Id)
 	if dbErr != nil {
 		return nil, dbErr
 	}
+	rows.Close()
 
 	product.Name = name
 	product.CompanyId = companyId

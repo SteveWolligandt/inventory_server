@@ -17,7 +17,7 @@ import CreateProductDialog from './CreateProductDialog.js';
 export default function BarcodeResult(
     {open, setOpen, barcode, userToken, setUserToken, setSnackbar, activeInventory}) {
   const [isLoading,                  setIsLoading]                  = React.useState(false);
-  const [article,                    setProduct]                    = React.useState(null);
+  const [product,                    setProduct]                    = React.useState(null);
   const [currentAmount,              setCurrentAmount]              = React.useState(0);
   const [showCreateProduct,          setShowCreateProduct]          = React.useState(false);
   const [showCompaniesList,          setShowCompaniesList]          = React.useState(false);
@@ -32,7 +32,7 @@ export default function BarcodeResult(
         if (barcode !== null) {
           console.log(barcode)
           setIsLoading(true);
-          const url = '/api/article/from-barcode/' + barcode;
+          const url = '/api/product/from-barcode/' + barcode;
           console.log("waiting for response")
           const response = await fetchWithToken(url,
             { method: 'GET',
@@ -45,8 +45,8 @@ export default function BarcodeResult(
             const json = await response.json();
             console.log(json)
             if (json.success) {
-              setCurrentAmount(json.article.amount);
-              setProduct(json.article);
+              setCurrentAmount(json.product.amount);
+              setProduct(json.product);
               setShowCountDialog(true);
             } else {
               setShowMessageAssignToProduct(true);
@@ -73,7 +73,7 @@ export default function BarcodeResult(
     setIsLoading(true);
     const url = '/api/amount/';
     const body = JSON.stringify({
-      articleId : article.id,
+      productId : product.id,
       inventoryId : activeInventory.id,
       amount : currentAmount,
     });
@@ -90,11 +90,11 @@ export default function BarcodeResult(
   return (<>
     <Dialog open={showCountDialog}>
       <DialogTitle>
-        {article === null ? 'Laden' : article.name} {renderLoading()}
+        {product === null ? 'Laden' : product.name} {renderLoading()}
       </DialogTitle>
 
       <DialogContent>
-        {article === null ? null : 'Firma: ' + article.companyName} <br/><br/>
+        {product === null ? null : 'Firma: ' + product.companyName} <br/><br/>
         <IconButton onClick={()=>setCurrentAmount(Math.max(0,currentAmount-1))}>
           <RemoveCircleOutlineIcon/>
         </IconButton>  
@@ -173,9 +173,9 @@ export default function BarcodeResult(
       userToken         = {userToken}
       setUserToken      = {setUserToken}
       setSnackbar       = {setSnackbar}
-      onProductSelected = {async (article) => {
+      onProductSelected = {async (product) => {
         setShowProductsList(false);
-        const url = '/api/article/' + article.id + '/barcode';
+        const url = '/api/product/' + product.id + '/barcode';
         const response = await fetchWithToken(url,
           { method: 'PUT',
             headers: {
