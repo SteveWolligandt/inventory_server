@@ -12,7 +12,7 @@ import Fab from '@mui/material/Fab';
 import IconButton from '@mui/material/IconButton';
 import Zoom from '@mui/material/Zoom';
 import Box from '@mui/material/Box';
-import {DataGrid, GridToolbarQuickFilter} from '@mui/x-data-grid';
+import {DataGrid, GridToolbarQuickFilter, deDE} from '@mui/x-data-grid';
 import React, {useEffect} from 'react';
 import fetchWithToken from './jwtFetch.js';
 
@@ -425,6 +425,7 @@ export default function ProductsTable({
         columns              = {columns(setDeleteArguments, userToken, setUserToken)}
         processRowUpdate     = {processRowUpdate}
         experimentalFeatures = {{newEditingApi: true }}
+        localeText           = {deDE.components.MuiDataGrid.defaultProps.localeText}
       />);
   }
   return (<>
